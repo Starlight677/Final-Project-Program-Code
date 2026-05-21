@@ -4,11 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/twobodytesting.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Final Project Program.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Final Project Program.iml" afterDir="false" />
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Added simple mathematical calculations for a two-body system.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/twobodytesting.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -70,6 +68,19 @@
       <option name="presentableId" value="Default" />
       <updated>1779351571015</updated>
     </task>
+    <task id="LOCAL-00001" summary="Added simple mathematical calculations for a two-body system.">
+      <option name="closed" value="true" />
+      <created>1779356486214</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1779356486214</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Added simple mathematical calculations for a two-body system." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added simple mathematical calculations for a two-body system." />
   </component>
 </project>
