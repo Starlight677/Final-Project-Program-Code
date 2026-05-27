@@ -1,38 +1,36 @@
 import math as Math
-import time
 
 import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.animation import FuncAnimation
 
 class TwoBodyTesting:
     def __init__(self):
         pass
 
     def tickSimulation(self, body1Coords, body2Coords, body1Motion, body2Motion, body1Mass,
-                       body2Mass):
+                       body2Mass, body1Radius, body2Radius, secondsPerSimulationTick = 1):
         # Add existing motion to new motion from gravity
-        body1MotionChange = self.checkGravityMotionChange(body1Coords, body2Coords, body2Mass)
-        body2MotionChange = self.checkGravityMotionChange(body2Coords, body1Coords, body1Mass)
+        try:
+            body1Acceleration = self.checkGravityMotionChange(body1Coords, body2Coords,
+                                                              body2Mass, body1Radius, body2Radius)
+            body2Acceleration = self.checkGravityMotionChange(body2Coords, body1Coords,
+                                                              body1Mass, body2Radius, body1Radius)
 
-        body1Motion = self.modifyListContents(body1Motion, body1MotionChange, "+")
-        body2Motion = self.modifyListContents(body2Motion, body2MotionChange, "+")
+            body1Motion = self.modifyListContents(body1Motion, body1Acceleration, "+", secondsPerSimulationTick)
+            body2Motion = self.modifyListContents(body2Motion, body2Acceleration, "+", secondsPerSimulationTick)
 
-        # Update positions of bodies with their current motion
-        body1Coords = self.modifyListContents(body1Coords, body1Motion, "+")
-        body2Coords = self.modifyListContents(body2Coords, body2Motion, "+")
+            return body1Motion, body2Motion
+        except:
+            return False
 
-        return body1Coords, body2Coords, body1Motion, body2Motion
-
-    def modifyListContents(self, list1, list2, modifier):
+    def modifyListContents(self, list1, list2, modifier, valueMultiplier = 1):
         # Adds or multiplies together the contents of two lists
         if len(list1) == len(list2):
             if modifier == "+":
                 for i in range(len(list1)):
-                    list1[i] = list1[i] + list2[i]
+                    list1[i] = list1[i] + list2[i] * valueMultiplier
             elif modifier == "*":
                 for i in range(len(list1)):
-                    list1[i] = list1[i] * list2[i]
+                    list1[i] = list1[i] * list2[i] * valueMultiplier
             return list1
         else:
             return list1
@@ -44,9 +42,12 @@ class TwoBodyTesting:
         bodyTotalDistance = Math.sqrt(bodyDistances[0] ** 2 + bodyDistances[1] ** 2 + bodyDistances[2] ** 2)
         return bodyDistances, bodyTotalDistance
 
-    def checkGravityMotionChange(self, targetBodyCoords, pullingBodyCoords, pullingBodyMass):
+    def checkGravityMotionChange(self, targetBodyCoords, pullingBodyCoords, pullingBodyMass,
+                                 targetBodyRadius, pullingBodyRadius):
         bodyDistances, bodyTotalDistance = self.determineDistances(targetBodyCoords, pullingBodyCoords)
 
+        if bodyTotalDistance <= targetBodyRadius + pullingBodyRadius:
+            return False
         # Calculate gravity
         G = 6.6743*10**-11 #Gravitational constant
         pullingBodyGravity = (G*pullingBodyMass)/bodyTotalDistance**2
@@ -57,40 +58,68 @@ class TwoBodyTesting:
         return targetBodyMotion
 
     def runSimulation(self):
+        # Useful constants for defining planet parameters
         solarMass = 1.989e30
         earthMass = 5.972e24
 
-        # Set starting values
-        body1Coords = [0,0,0]
-        body2Coords = [-1.496e11,0,0]
-        body1Motion = [0,-1.5,0]
-        body2Motion = [0,29780,0]
-        body1Mass = solarMass * 1 # Mass in Earth/Solar masses
-        body2Mass = earthMass * 1
+        # Set starting values for bodies
+        # Order: coordinates, motion, mass, radius and colours (trail then dot colour)
+        body1Stats = [[0,0,0], [0, 0, 0], solarMass * 1, 7e7, ['yellow', 'yellow']] # The Sun
+        body2Stats = [[-1.521e11,0,0], [0,29290,0], earthMass * 1, 6.3e5, ['blue', 'blue']] # The Earth (at aphelion)
+        body3Stats = [[1.082e11, 0, 0], [0, -35000, 0], earthMass * 0.815, 6.05e5, ['orange', 'orange']] # Venus
+        body4Stats = [[0,2.064e11,0], [26490,0,0], earthMass * 0.107, 3.396e5, ['red', 'red']] # Mars (at perihelion)
+        body5Stats = [[0,-6.982e10,0], [-38900,0,0], earthMass * 0.055, 2.439e5, ['brown', 'brown']] # Mercury (at aphelion)
+        listOfBodies = [body1Stats, body2Stats, body3Stats, body4Stats, body5Stats]
 
         simulationTime = 0
-        simulationSize = 2e11
-        simulationTicksPerUpdate = 86400*7 # One graph update per X days
+        simulationSize = 3e11 # Size of the screen in meters
+        secondsPerSimuationTick = 60 # Seconds per simulation tick
+        ticksPerDisplayUpdate = (86400*5)/secondsPerSimuationTick # One graph update per 5 days
+        ticksPerStorageUpdata = 3600/secondsPerSimuationTick # One course point saved every hour
+        bodyCollision = False
 
         #Create list for previous positions of planets
-        body1PointsX = []
-        body1PointsY = []
-        body2PointsX = []
-        body2PointsY = []
+        bodyPoints = [[[],[]]]
+        for i in range(len(listOfBodies) - 1):
+            bodyPoints.append([[],[]])
 
-        while True:
+        while not bodyCollision:
             # Run the simulation for a tick + update timer
-            body1Coords, body2Coords, body1Motion, body2Motion= (
-                self.tickSimulation(body1Coords, body2Coords, body1Motion, body2Motion,
-                                    body1Mass, body2Mass))
+            try:
+                bodyNumber = 0
+                while bodyNumber < len(listOfBodies):
+                    # Iterate through every combination of bodies once
+                    secondBodyNumber = bodyNumber + 1
+                    while secondBodyNumber < len(listOfBodies):
+                        body1Stats = listOfBodies[bodyNumber]
+                        body2Stats = listOfBodies[secondBodyNumber]
+
+                        body1Stats[1], body2Stats[1]= (
+                            self.tickSimulation(body1Stats[0], body2Stats[0], body1Stats[1], body2Stats[1],
+                                                body1Stats[2], body2Stats[2], body1Stats[3], body2Stats[3],
+                                                secondsPerSimuationTick))
+                        listOfBodies[bodyNumber] = body1Stats
+                        listOfBodies[secondBodyNumber] = body2Stats
+                        secondBodyNumber = secondBodyNumber + 1
+
+                    # Update position of each body after all influences are calculated
+                    body1Stats = listOfBodies[bodyNumber]
+                    body1Stats[0] = self.modifyListContents(body1Stats[0], body1Stats[1], "+", secondsPerSimuationTick)
+                    listOfBodies[bodyNumber] = body1Stats
+                    bodyNumber = bodyNumber + 1
+
+            except:
+                bodyCollision = True
+                print("Simulation Terminated upon Body Collision")
             simulationTime = simulationTime + 1
 
-            if simulationTime % simulationTicksPerUpdate == 0: # Number of ticks simulated per frame shown to user
-                #Add current point to list of positions
-                body1PointsX.append(body1Coords[0])
-                body1PointsY.append(body1Coords[1])
-                body2PointsX.append(body2Coords[0])
-                body2PointsY.append(body2Coords[1])
+            if simulationTime % ticksPerDisplayUpdate == 0: # Number of ticks simulated per frame shown to user
+                #For each body, add current point to list of positions
+                bodyCount = 0
+                for body in listOfBodies:
+                    bodyPoints[bodyCount][0].append(body[0][0])
+                    bodyPoints[bodyCount][1].append(body[0][1])
+                    bodyCount = bodyCount + 1
 
                 # Wipe previous content and reconfigure graph
                 plt.ion()
@@ -99,21 +128,24 @@ class TwoBodyTesting:
                 plt.ylim(-simulationSize, simulationSize)
                 plt.xlabel("Distance (m)")
                 plt.ylabel("Distance (m)")
-                plt.text(simulationSize*-0.4, simulationSize*1.1, "Simulation Time: " + str(simulationTime/86400) + " days")
+                dayCount = round((simulationTime/86400)*secondsPerSimuationTick)
+                plt.text(simulationSize*-0.4, simulationSize*1.1, "Simulation Time: " + str(dayCount) + " days")
 
-                # Draw both the line of previous path and marker of current position
-                plt.plot(body1PointsX, body1PointsY, color='orange')
-                plt.plot(body2PointsX, body2PointsY, color='green')
-                A = plt.plot(body1Coords[0], body1Coords[1], 'o', color='yellow')
-                B = plt.plot(body2Coords[0], body2Coords[1], 'o', color='blue')
+                # For each body, draw both the line of previous path and marker of current position
+                bodyCount = 0
+                for body in listOfBodies:
+                    plt.plot(bodyPoints[bodyCount][0], bodyPoints[bodyCount][1], color=body[4][0])
+                    plt.plot(body[0][0], body[0][1], 'o', color=body[4][1])
+                    bodyCount = bodyCount + 1
 
                 # Draw graph
                 plt.show(block=False)
-                plt.pause(1)
+                plt.pause(0.5)
 
-            elif simulationTime % 5000 == 0:
+            elif simulationTime % ticksPerStorageUpdata == 0:
                 # Add current point to list of positions
-                body1PointsX.append(body1Coords[0])
-                body1PointsY.append(body1Coords[1])
-                body2PointsX.append(body2Coords[0])
-                body2PointsY.append(body2Coords[1])
+                bodyCount = 0
+                for body in listOfBodies:
+                    bodyPoints[bodyCount][0].append(body[0][0])
+                    bodyPoints[bodyCount][1].append(body[0][1])
+                    bodyCount = bodyCount + 1
