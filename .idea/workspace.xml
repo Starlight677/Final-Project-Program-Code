@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Improved simulation to add basic graphical interface via Matplotlib, and significantly improved readability for code structuring.">
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Expanded the simulation to handle more than two bodies, and added functionality to handle ticking the simulation in increments other than a second.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/twobodytesting.py" afterDir="false" />
     </list>
@@ -84,12 +84,21 @@
       <option name="project" value="LOCAL" />
       <updated>1779369826423</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Expanded the simulation to handle more than two bodies, and added functionality to handle ticking the simulation in increments other than a second.">
+      <option name="closed" value="true" />
+      <created>1779886344657</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1779886344657</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Added simple mathematical calculations for a two-body system." />
     <MESSAGE value="Improved simulation to add basic graphical interface via Matplotlib, and significantly improved readability for code structuring." />
-    <option name="LAST_COMMIT_MESSAGE" value="Improved simulation to add basic graphical interface via Matplotlib, and significantly improved readability for code structuring." />
+    <MESSAGE value="Expanded the simulation to handle more than two bodies, and added functionality to handle ticking the simulation in increments other than a second." />
+    <option name="LAST_COMMIT_MESSAGE" value="Expanded the simulation to handle more than two bodies, and added functionality to handle ticking the simulation in increments other than a second." />
   </component>
 </project>

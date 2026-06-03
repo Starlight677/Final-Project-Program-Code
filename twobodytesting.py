@@ -15,10 +15,16 @@ class TwoBodyTesting:
             body2Acceleration = self.checkGravityMotionChange(body2Coords, body1Coords,
                                                               body1Mass, body2Radius, body1Radius)
 
+            # Used for checking if a body's influence is significant or not
+            if sum(body1Acceleration) >= 0.001 or sum(body2Acceleration) >= 0.001:
+                exceedsThreshold = True
+            else:
+                exceedsThreshold = False
+
             body1Motion = self.modifyListContents(body1Motion, body1Acceleration, "+", secondsPerSimulationTick)
             body2Motion = self.modifyListContents(body2Motion, body2Acceleration, "+", secondsPerSimulationTick)
 
-            return body1Motion, body2Motion
+            return body1Motion, body2Motion, exceedsThreshold
         except:
             return False
 
@@ -57,13 +63,48 @@ class TwoBodyTesting:
         targetBodyMotion = [-(x*distanceModifier) for x in bodyDistances]
         return targetBodyMotion
 
+    def cycleBody(self, listOfBodies, bodyNumber, secondsPerSimuationTick, filterMask = [], filterTick = False):
+        #Calculate gravitational interaction for possible pairs of bodies
+        significantCompanions = []
+        if filterMask == []:
+            secondBodyNumber = bodyNumber + 1
+        else:
+            secondBodyNumber = 0
+
+        while secondBodyNumber < len(listOfBodies):
+            if filterMask == [] or filterMask[secondBodyNumber] == True:
+                body1Stats = listOfBodies[bodyNumber]
+                body2Stats = listOfBodies[secondBodyNumber]
+
+                body1Stats[1], body2Stats[1], isOverThreshold = (
+                    self.tickSimulation(body1Stats[0], body2Stats[0], body1Stats[1], body2Stats[1],
+                                        body1Stats[2], body2Stats[2], body1Stats[3], body2Stats[3],
+                                        secondsPerSimuationTick))
+                if filterTick and isOverThreshold:
+                    significantCompanions.append(True)
+                elif filterTick:
+                    significantCompanions.append(False)
+
+                listOfBodies[bodyNumber] = body1Stats
+                listOfBodies[secondBodyNumber] = body2Stats
+            secondBodyNumber = secondBodyNumber + 1
+        # Update position of each body after all influences are calculated
+        body1Stats = listOfBodies[bodyNumber]
+        body1Stats[0] = self.modifyListContents(body1Stats[0], body1Stats[1], "+", secondsPerSimuationTick)
+        listOfBodies[bodyNumber] = body1Stats
+
+        if filterTick:
+            return listOfBodies, significantCompanions
+        else:
+            return listOfBodies
+
     def runSimulation(self):
         # Useful constants for defining planet parameters
         solarMass = 1.989e30
         earthMass = 5.972e24
 
         # Set starting values for bodies
-        # Order: coordinates, motion, mass, radius and colours (trail then dot colour)
+        # Order: coordinates, motion, mass, radius and display colours (trail then dot colour)
         body1Stats = [[0,0,0], [0, 0, 0], solarMass * 1, 7e7, ['yellow', 'yellow']] # The Sun
         body2Stats = [[-1.521e11,0,0], [0,29290,0], earthMass * 1, 6.3e5, ['blue', 'blue']] # The Earth (at aphelion)
         body3Stats = [[1.082e11, 0, 0], [0, -35000, 0], earthMass * 0.815, 6.05e5, ['orange', 'orange']] # Venus
@@ -75,52 +116,49 @@ class TwoBodyTesting:
         simulationSize = 3e11 # Size of the screen in meters
         secondsPerSimuationTick = 60 # Seconds per simulation tick
         ticksPerDisplayUpdate = (86400*5)/secondsPerSimuationTick # One graph update per 5 days
-        ticksPerStorageUpdata = 3600/secondsPerSimuationTick # One course point saved every hour
-        bodyCollision = False
+        ticksPerStorageUpdate = 3600/secondsPerSimuationTick # One course point saved every hour
+        bodyCollision = False # Records whether any objects have collided
 
         #Create list for previous positions of planets
         bodyPoints = [[[],[]]]
+        significantCompanions = [[]]
         for i in range(len(listOfBodies) - 1):
             bodyPoints.append([[],[]])
+            significantCompanions.append([])
 
         while not bodyCollision:
-            # Run the simulation for a tick + update timer
-            try:
+            if simulationTime % ticksPerStorageUpdate == 0:
+                # Add current point to list of positions
+                try:
+                    bodyNumber = 0
+                    while bodyNumber < len(listOfBodies):
+                        # Iterate through every combination of bodies once
+                        listOfBodies, bodySignificantCompanions = self.cycleBody(listOfBodies, bodyNumber, secondsPerSimuationTick, listOfBodies,True)
+                        significantCompanions[bodyNumber] = bodySignificantCompanions
+                        bodyNumber = bodyNumber + 1
+                except:
+                    bodyCollision = True
+                    print("Simulation Terminated upon Body Collision")
+
                 bodyNumber = 0
-                while bodyNumber < len(listOfBodies):
-                    # Iterate through every combination of bodies once
-                    secondBodyNumber = bodyNumber + 1
-                    while secondBodyNumber < len(listOfBodies):
-                        body1Stats = listOfBodies[bodyNumber]
-                        body2Stats = listOfBodies[secondBodyNumber]
-
-                        body1Stats[1], body2Stats[1]= (
-                            self.tickSimulation(body1Stats[0], body2Stats[0], body1Stats[1], body2Stats[1],
-                                                body1Stats[2], body2Stats[2], body1Stats[3], body2Stats[3],
-                                                secondsPerSimuationTick))
-                        listOfBodies[bodyNumber] = body1Stats
-                        listOfBodies[secondBodyNumber] = body2Stats
-                        secondBodyNumber = secondBodyNumber + 1
-
-                    # Update position of each body after all influences are calculated
-                    body1Stats = listOfBodies[bodyNumber]
-                    body1Stats[0] = self.modifyListContents(body1Stats[0], body1Stats[1], "+", secondsPerSimuationTick)
-                    listOfBodies[bodyNumber] = body1Stats
+                for body in listOfBodies:
+                    bodyPoints[bodyNumber][0].append(body[0][0])
+                    bodyPoints[bodyNumber][1].append(body[0][1])
                     bodyNumber = bodyNumber + 1
 
-            except:
-                bodyCollision = True
-                print("Simulation Terminated upon Body Collision")
-            simulationTime = simulationTime + 1
+            else:
+                # Run the simulation for a tick
+                try:
+                    bodyNumber = 0
+                    while bodyNumber < len(listOfBodies):
+                        # Iterate through every combination of bodies once
+                        self.cycleBody(listOfBodies, bodyNumber, secondsPerSimuationTick, significantCompanions[bodyNumber])
+                        bodyNumber = bodyNumber + 1
+                except:
+                    bodyCollision = True
+                    print("Simulation Xerminated upon Body Collision")
 
             if simulationTime % ticksPerDisplayUpdate == 0: # Number of ticks simulated per frame shown to user
-                #For each body, add current point to list of positions
-                bodyCount = 0
-                for body in listOfBodies:
-                    bodyPoints[bodyCount][0].append(body[0][0])
-                    bodyPoints[bodyCount][1].append(body[0][1])
-                    bodyCount = bodyCount + 1
-
                 # Wipe previous content and reconfigure graph
                 plt.ion()
                 plt.clf()
@@ -142,10 +180,5 @@ class TwoBodyTesting:
                 plt.show(block=False)
                 plt.pause(0.5)
 
-            elif simulationTime % ticksPerStorageUpdata == 0:
-                # Add current point to list of positions
-                bodyCount = 0
-                for body in listOfBodies:
-                    bodyPoints[bodyCount][0].append(body[0][0])
-                    bodyPoints[bodyCount][1].append(body[0][1])
-                    bodyCount = bodyCount + 1
+            #Update timer
+            simulationTime = simulationTime + 1
