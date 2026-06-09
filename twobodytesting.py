@@ -138,7 +138,8 @@ class TwoBodyTesting:
         body3Stats = [[1.082e11, 0, 0], [0, -35000, 0], earthMass * 0.815, 6.05e5, ['orange', 'orange']] # Venus
         body4Stats = [[0,2.064e11,0], [26490,0,0], earthMass * 0.107, 3.396e5, ['red', 'red']] # Mars (at perihelion)
         body5Stats = [[0,-6.982e10,0], [-38900,0,0], earthMass * 0.055, 2.439e5, ['brown', 'brown']] # Mercury (at aphelion)
-        listOfBodies = [body1Stats, body2Stats, body3Stats, body4Stats, body5Stats]
+        body6Stats = [[-1.521e11, 3.84e7,0],[1022,29290,0], earthMass*0.0123, 1.738e5, ['grey', 'grey']] # The Moon
+        listOfBodies = [body1Stats, body6Stats, body3Stats, body4Stats, body5Stats, body2Stats]
 
         simulationTime = 0 # Time in ticks the simulation has run
         simulationSize = 3e11 # Size of the displayed area in meters

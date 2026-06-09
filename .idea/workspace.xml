@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Modified the simulation to update minor influences on bodies less often.">
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Fixed the significant-influence accounting so it actually works.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/twobodytesting.py" afterDir="false" />
     </list>
@@ -43,16 +43,17 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Python.main.executor&quot;: &quot;Run&quot;,
-    &quot;Python.twobodytesting.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.main.executor": "Run",
+    "Python.twobodytesting.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "master"
   }
-}</component>
+}]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -100,7 +101,15 @@
       <option name="project" value="LOCAL" />
       <updated>1780478830094</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Fixed the significant-influence accounting so it actually works.">
+      <option name="closed" value="true" />
+      <created>1780998662241</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1780998662241</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -108,6 +117,7 @@
     <MESSAGE value="Improved simulation to add basic graphical interface via Matplotlib, and significantly improved readability for code structuring." />
     <MESSAGE value="Expanded the simulation to handle more than two bodies, and added functionality to handle ticking the simulation in increments other than a second." />
     <MESSAGE value="Modified the simulation to update minor influences on bodies less often." />
-    <option name="LAST_COMMIT_MESSAGE" value="Modified the simulation to update minor influences on bodies less often." />
+    <MESSAGE value="Fixed the significant-influence accounting so it actually works." />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed the significant-influence accounting so it actually works." />
   </component>
 </project>
