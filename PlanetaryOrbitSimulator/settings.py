@@ -15,6 +15,11 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+STATIC_URL = '/static/'
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
@@ -49,8 +54,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'PlanetaryOrbitSimulator.urls'
-
-#BASE_DIR = 'C:\\Users\\mcleo\\OneDrive\\Documents\\ARU Year 4\\Final Project\\Final Project Program'
 
 TEMPLATES = [
     {

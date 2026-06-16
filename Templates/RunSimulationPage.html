@@ -21,7 +21,7 @@
             border-radius: 5vh;
         }
 
-        tick_simulation_button {
+        .tick_simulation_button {
             position: absolute;
             top: 85vh;
             left: 85vw;
@@ -31,6 +31,16 @@
             border: 2px solid black;
             padding: 5px;
             border-radius: 5vh;
+        }
+
+        .simulation_image_box {
+            position: absolute;
+            top: 25vh;
+            left: 25vw;
+            height: 50vh;
+            width: 50vw;
+            text-align: center;
+            border: 2px solid black;
         }
     </style>
     <body>
@@ -43,5 +53,8 @@
                 onclick="window.location.href='/run/'">
             Tick Simulation
         </button>
+        <div class ="simulation_image_box">
+
+        </div>
     </body>
 {% endblock %}

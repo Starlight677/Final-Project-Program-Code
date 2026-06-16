@@ -1,11 +1,11 @@
-import threading
 from idlelib.rpc import request_queue
 
 from django.http import HttpResponse
 from django.shortcuts import render
+import matplotlib.pyplot as plt
 
 from twobodytesting import TwoBodyTesting
-stopEvent = threading.Event() # See if this works
+storage = [0,[],[]]
 
 def testingPage(request):
     context = {}
@@ -13,6 +13,7 @@ def testingPage(request):
 
 def homePage(request):
     context = {}
+    plt.close('all')
     return render(request, "HomePage.html", context)
 
 def settingsPage(request):
@@ -28,5 +29,19 @@ def loadingPage(request):
     return render(request, "LoadSystemPage.html", context)
 
 def runSimulation(request):
+    simulationTime = storage[0]
+    listOfBodies = storage[1]
+    bodyPoints = storage[2]
+    setTicks = (86400*5)/60 + simulationTime
+
+
+    twoBodySim = TwoBodyTesting()
+    simulationTime, listOfBodies, bodyPoints = twoBodySim.runSimulation(setTicks, simulationTime, listOfBodies, bodyPoints, True)
+
+    storage[0] = simulationTime
+    storage[1] = listOfBodies
+    storage[2] = bodyPoints
+
     context = {}
+
     return render(request, "runSimulationPage.html", context)

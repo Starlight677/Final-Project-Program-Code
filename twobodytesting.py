@@ -1,8 +1,9 @@
 import math as Math
 
 import matplotlib.pyplot as plt
-from threading import Thread, Event
 import numpy as np
+from django.contrib.admin.templatetags.admin_list import admin_actions
+
 
 class TwoBodyTesting:
     def __init__(self):
@@ -128,7 +129,8 @@ class TwoBodyTesting:
             return listOfBodies
 
     def tickSimulation(self, simulationTime, ticksPerStorageUpdate, ticksPerDisplayUpdate, secondsPerSimulationTick,
-                       listOfBodies, significantCompanions, bodyPoints, simulationSize):
+                       listOfBodies, significantCompanions, bodyPoints, simulationSize, showFigure):
+        bodyCollision = False
         if simulationTime % ticksPerStorageUpdate == 0:
             # Add current point to list of positions
             try:
@@ -185,27 +187,30 @@ class TwoBodyTesting:
                 bodyCount = bodyCount + 1
 
             # Draw graph
-            plt.show(block=False)
-            plt.pause(0.5)
+            if showFigure:
+                plt.show(block=False)
+                plt.pause(0.25)
+            else:
+                plt.savefig('latestSimulation.png')
 
         return listOfBodies, significantCompanions, bodyPoints, bodyCollision
 
-    def runSimulation(self):
+    def runSimulation(self, setTicks = -1, simulationTime = 0, listOfBodies = [], bodyPoints = [], showFigure = True):
         # Useful constants for defining planet parameters
         solarMass = 1.989e30
         earthMass = 5.972e24
 
         # Set starting values for bodies
         # Order: coordinates, motion, mass, radius and display colours (trail then dot colour)
-        body1Stats = [[0,0,0], [0, 0, 0], solarMass * 1, 7e7, ['yellow', 'yellow']] # The Sun
-        body2Stats = [[-1.521e11,0,0], [0,29290,0], earthMass * 1, 6.3e5, ['blue', 'blue']] # The Earth (at aphelion)
-        body3Stats = [[1.082e11, 0, 0], [0, -35000, 0], earthMass * 0.815, 6.05e5, ['orange', 'orange']] # Venus
-        body4Stats = [[0,2.064e11,0], [26490,0,0], earthMass * 0.107, 3.396e5, ['red', 'red']] # Mars (at perihelion)
-        body5Stats = [[0,-6.982e10,0], [-38900,0,0], earthMass * 0.055, 2.439e5, ['brown', 'brown']] # Mercury (at aphelion)
-        body6Stats = [[-1.521e11, 3.84e7,0],[1022,29290,0], earthMass*0.0123, 1.738e5, ['grey', 'grey']] # The Moon
-        listOfBodies = [body1Stats, body6Stats, body3Stats, body4Stats, body5Stats, body2Stats]
+        if listOfBodies == []:
+            body1Stats = [[0,0,0], [0, 0, 0], solarMass * 1, 7e7, ['yellow', 'yellow']] # The Sun
+            body2Stats = [[-1.521e11,0,0], [0,29290,0], earthMass * 1, 6.3e5, ['blue', 'blue']] # The Earth (at aphelion)
+            body3Stats = [[1.082e11, 0, 0], [0, -35000, 0], earthMass * 0.815, 6.05e5, ['orange', 'orange']] # Venus
+            body4Stats = [[0,2.064e11,0], [26490,0,0], earthMass * 0.107, 3.396e5, ['red', 'red']] # Mars (at perihelion)
+            body5Stats = [[0,-6.982e10,0], [-38900,0,0], earthMass * 0.055, 2.439e5, ['brown', 'brown']] # Mercury (at aphelion)
+            body6Stats = [[-1.521e11, 3.84e7,0],[1022,29290,0], earthMass*0.0123, 1.738e5, ['grey', 'grey']] # The Moon
+            listOfBodies = [body1Stats, body6Stats, body3Stats, body4Stats, body5Stats, body2Stats]
 
-        simulationTime = 0 # Time in ticks the simulation has run
         simulationSize = 3e11 # Size of the displayed area in meters
         secondsPerSimulationTick = 60 # Seconds per simulation tick
         ticksPerDisplayUpdate = (86400*5)/secondsPerSimulationTick # One graph update per 5 days
@@ -213,7 +218,6 @@ class TwoBodyTesting:
         bodyCollision = False # Records whether any objects have collided
 
         #Construct lists for previous positions of planets and pair significance checks
-        bodyPoints = []
         significantCompanions = []
         for i in range(len(listOfBodies)):
             bodyPoints.append([[],[]]) # One entry to save a planet's coordinates
@@ -222,10 +226,12 @@ class TwoBodyTesting:
                 companionsEntry.append([])
             significantCompanions.append(companionsEntry)
 
-        while not bodyCollision:
+        while not bodyCollision and not setTicks == simulationTime:
             listOfBodies, significantCompanions, bodyPoints, bodyCollision = (
                 self.tickSimulation(simulationTime, ticksPerStorageUpdate, ticksPerDisplayUpdate,
                                 secondsPerSimulationTick,listOfBodies, significantCompanions,
-                                bodyPoints, simulationSize))
+                                bodyPoints, simulationSize, showFigure))
             # Update timer
             simulationTime = simulationTime + 1
+        if setTicks == simulationTime:
+            return simulationTime, listOfBodies, bodyPoints
