@@ -1,0 +1,81 @@
+{% extends 'page_template.html' %}
+{% load static %}
+
+{% block content %}
+    <style>
+        .main_page_element {
+            position: relative;
+            height: 0;
+            width: 0;
+        }
+
+        .title_box {
+            position: absolute;
+            top: 15vh;
+            left: 40vw;
+            height: 20vh;
+            width: 20vw;
+            text-align: center;
+            border: 2px solid black;
+            padding: 5px;
+            border-radius: 2vh;
+        }
+
+        .new_system_button {
+            position: absolute;
+            top: 45vh;
+            left: 35vw;
+            height: 10vh;
+            width: 30vw;
+            text-align: center;
+            border: 2px solid black;
+            padding: 5px;
+            border-radius: 5vh;
+        }
+
+        .load_system_button {
+            position: absolute;
+            top: 60vh;
+            left: 35vw;
+            height: 10vh;
+            width: 30vw;
+            text-align: center;
+            border: 2px solid black;
+            padding: 5px;
+            border-radius: 5vh;
+        }
+
+        .settings_button {
+            position: absolute;
+            top: 75vh;
+            left: 35vw;
+            height: 10vh;
+            width: 30vw;
+            text-align: center;
+            border: 2px solid black;
+            padding: 5px;
+            border-radius: 5vh;
+        }
+
+    </style>
+    <body>
+        <div class="title_box">
+            This is a title.
+        </div>
+
+        <button class="new_system_button"
+            onclick="window.location.href='/create'">
+            Create New System
+        </button>
+
+        <button class="load_system_button"
+            onclick="window.location.href='/load'">
+            Load Existing System
+        </button>
+
+        <button class="settings_button"
+            onclick="window.location.href='/settings'">
+            Settings
+        </button>
+    </body>
+{% endblock %}

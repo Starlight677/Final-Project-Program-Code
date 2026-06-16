@@ -4,9 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Fixed the significant-influence accounting so it actually works.">
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Set up Django.">
+      <change afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Templates/HomePage.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Templates/NewSystemPage.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Templates/SettingsPage.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Templates/TestingPage.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Templates/page_template.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/twobodytesting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/urls.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -17,6 +24,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Python Script" />
+        <option value="HTML File" />
       </list>
     </option>
   </component>
@@ -43,17 +51,27 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.main.executor": "Run",
-    "Python.twobodytesting.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.twobodytesting.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/mcleo/OneDrive/Documents/ARU Year 4/Final Project/Final Project Program&quot;
   }
-}]]></component>
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\mcleo\OneDrive\Documents\ARU Year 4\Final Project\Final Project Program\Templates" />
+      <recent name="C:\Users\mcleo\OneDrive\Documents\ARU Year 4\Final Project\Final Project Program" />
+      <recent name="C:\Users\mcleo\OneDrive\Documents\ARU Year 4\Final Project\Final Project Program\PlanetaryOrbitSimulator\Templates" />
+      <recent name="C:\Users\mcleo\OneDrive\Documents\ARU Year 4\Final Project\Final Project Program\PlanetaryOrbitSimulator\Templates\program" />
+    </key>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -109,7 +127,15 @@
       <option name="project" value="LOCAL" />
       <updated>1780998662241</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Set up Django.">
+      <option name="closed" value="true" />
+      <created>1780999784839</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1780999784839</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -118,6 +144,7 @@
     <MESSAGE value="Expanded the simulation to handle more than two bodies, and added functionality to handle ticking the simulation in increments other than a second." />
     <MESSAGE value="Modified the simulation to update minor influences on bodies less often." />
     <MESSAGE value="Fixed the significant-influence accounting so it actually works." />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed the significant-influence accounting so it actually works." />
+    <MESSAGE value="Set up Django." />
+    <option name="LAST_COMMIT_MESSAGE" value="Set up Django." />
   </component>
 </project>

@@ -17,6 +17,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from PlanetaryOrbitSimulator import views
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('hello/', views.testingPage),
+    path('settings/', views.settingsPage),
+    path('create/', views.createPage),
+    path('load/', views.loadingPage),
+    path('', views.homePage)
 ]

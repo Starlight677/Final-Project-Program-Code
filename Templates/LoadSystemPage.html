@@ -1,0 +1,30 @@
+{% extends 'page_template.html' %}
+{% load static %}
+
+{% block content %}
+    <style>
+        .main_page_element {
+            position: relative;
+            height: 0;
+            width: 0;
+        }
+
+        .back_to_menu_button {
+            position: absolute;
+            top: 85vh;
+            left: 5vw;
+            height: 10vh;
+            width: 10vw;
+            text-align: center;
+            border: 2px solid black;
+            padding: 5px;
+            border-radius: 5vh;
+        }
+    </style>
+    <body>
+        <button class="back_to_menu_button"
+                onclick="window.location.href='/'">
+            Return to Main Menu
+        </button>
+    </body>
+{% endblock %}
