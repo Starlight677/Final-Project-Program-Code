@@ -1,6 +1,7 @@
 import math as Math
 
 import matplotlib.pyplot as plt
+from threading import Thread, Event
 import numpy as np
 
 class TwoBodyTesting:
@@ -126,6 +127,69 @@ class TwoBodyTesting:
         else:
             return listOfBodies
 
+    def tickSimulation(self, simulationTime, ticksPerStorageUpdate, ticksPerDisplayUpdate, secondsPerSimulationTick,
+                       listOfBodies, significantCompanions, bodyPoints, simulationSize):
+        if simulationTime % ticksPerStorageUpdate == 0:
+            # Add current point to list of positions
+            try:
+                bodyNumber = 0
+                while bodyNumber < len(listOfBodies):
+                    # Iterate through every combination of bodies once
+                    listOfBodies, bodySignificantCompanions = self.cycleBody(listOfBodies, bodyNumber,
+                                                                             secondsPerSimulationTick,
+                                                                             significantCompanions[bodyNumber],
+                                                                             significantCompanions, True)
+                    significantCompanions[bodyNumber] = bodySignificantCompanions
+                    bodyNumber = bodyNumber + 1
+            except:
+                # Stop simulation if planets have collided
+                bodyCollision = True
+                print("Simulation Terminated upon Body Collision")
+
+            bodyNumber = 0
+            for body in listOfBodies:  # Add current points of planets to list for display
+                bodyPoints[bodyNumber][0].append(body[0][0])
+                bodyPoints[bodyNumber][1].append(body[0][1])
+                bodyNumber = bodyNumber + 1
+
+        else:
+            # Run the simulation for a tick
+            try:
+                bodyNumber = 0
+                while bodyNumber < len(listOfBodies):
+                    # Iterate through every combination of bodies once
+                    self.cycleBody(listOfBodies, bodyNumber, secondsPerSimulationTick, significantCompanions[bodyNumber],
+                                   significantCompanions)
+                    bodyNumber = bodyNumber + 1
+            except:
+                # Stop simulation if planets have collided
+                bodyCollision = True
+                print("Simulation Terminated upon Body Collision")
+
+        if simulationTime % ticksPerDisplayUpdate == 0:  # Number of ticks simulated per frame shown to user
+            # Wipe previous content and reconfigure graph
+            plt.ion()
+            plt.clf()
+            plt.xlim(-simulationSize, simulationSize)
+            plt.ylim(-simulationSize, simulationSize)
+            plt.xlabel("Distance (m)")
+            plt.ylabel("Distance (m)")
+            dayCount = round((simulationTime / 86400) * secondsPerSimulationTick)
+            plt.text(simulationSize * -0.4, simulationSize * 1.1, "Simulation Time: " + str(dayCount) + " days")
+
+            # For each body, draw both the line of previous path and marker of current position
+            bodyCount = 0
+            for body in listOfBodies:
+                plt.plot(bodyPoints[bodyCount][0], bodyPoints[bodyCount][1], color=body[4][0])
+                plt.plot(body[0][0], body[0][1], 'o', color=body[4][1])
+                bodyCount = bodyCount + 1
+
+            # Draw graph
+            plt.show(block=False)
+            plt.pause(0.5)
+
+        return listOfBodies, significantCompanions, bodyPoints, bodyCollision
+
     def runSimulation(self):
         # Useful constants for defining planet parameters
         solarMass = 1.989e30
@@ -143,9 +207,9 @@ class TwoBodyTesting:
 
         simulationTime = 0 # Time in ticks the simulation has run
         simulationSize = 3e11 # Size of the displayed area in meters
-        secondsPerSimuationTick = 60 # Seconds per simulation tick
-        ticksPerDisplayUpdate = (86400*5)/secondsPerSimuationTick # One graph update per 5 days
-        ticksPerStorageUpdate = 3600/secondsPerSimuationTick # One course point saved every hour
+        secondsPerSimulationTick = 60 # Seconds per simulation tick
+        ticksPerDisplayUpdate = (86400*5)/secondsPerSimulationTick # One graph update per 5 days
+        ticksPerStorageUpdate = 3600/secondsPerSimulationTick # One course point saved every hour
         bodyCollision = False # Records whether any objects have collided
 
         #Construct lists for previous positions of planets and pair significance checks
@@ -159,60 +223,9 @@ class TwoBodyTesting:
             significantCompanions.append(companionsEntry)
 
         while not bodyCollision:
-            if simulationTime % ticksPerStorageUpdate == 0:
-                # Add current point to list of positions
-                try:
-                    bodyNumber = 0
-                    while bodyNumber < len(listOfBodies):
-                        # Iterate through every combination of bodies once
-                        listOfBodies, bodySignificantCompanions = self.cycleBody(listOfBodies, bodyNumber, secondsPerSimuationTick, significantCompanions[bodyNumber], significantCompanions,True)
-                        significantCompanions[bodyNumber] = bodySignificantCompanions
-                        bodyNumber = bodyNumber + 1
-                except:
-                    #Stop simulation if planets have collided
-                    bodyCollision = True
-                    print("Simulation Terminated upon Body Collision")
-
-                bodyNumber = 0
-                for body in listOfBodies: # Add current points of planets to list for display
-                    bodyPoints[bodyNumber][0].append(body[0][0])
-                    bodyPoints[bodyNumber][1].append(body[0][1])
-                    bodyNumber = bodyNumber + 1
-
-            else:
-                # Run the simulation for a tick
-                try:
-                    bodyNumber = 0
-                    while bodyNumber < len(listOfBodies):
-                        # Iterate through every combination of bodies once
-                        self.cycleBody(listOfBodies, bodyNumber, secondsPerSimuationTick, significantCompanions[bodyNumber], significantCompanions)
-                        bodyNumber = bodyNumber + 1
-                except:
-                    # Stop simulation if planets have collided
-                    bodyCollision = True
-                    print("Simulation Terminated upon Body Collision")
-
-            if simulationTime % ticksPerDisplayUpdate == 0: # Number of ticks simulated per frame shown to user
-                # Wipe previous content and reconfigure graph
-                plt.ion()
-                plt.clf()
-                plt.xlim(-simulationSize, simulationSize)
-                plt.ylim(-simulationSize, simulationSize)
-                plt.xlabel("Distance (m)")
-                plt.ylabel("Distance (m)")
-                dayCount = round((simulationTime/86400)*secondsPerSimuationTick)
-                plt.text(simulationSize*-0.4, simulationSize*1.1, "Simulation Time: " + str(dayCount) + " days")
-
-                # For each body, draw both the line of previous path and marker of current position
-                bodyCount = 0
-                for body in listOfBodies:
-                    plt.plot(bodyPoints[bodyCount][0], bodyPoints[bodyCount][1], color=body[4][0])
-                    plt.plot(body[0][0], body[0][1], 'o', color=body[4][1])
-                    bodyCount = bodyCount + 1
-
-                # Draw graph
-                plt.show(block=False)
-                plt.pause(0.5)
-
-            #Update timer
+            listOfBodies, significantCompanions, bodyPoints, bodyCollision = (
+                self.tickSimulation(simulationTime, ticksPerStorageUpdate, ticksPerDisplayUpdate,
+                                secondsPerSimulationTick,listOfBodies, significantCompanions,
+                                bodyPoints, simulationSize))
+            # Update timer
             simulationTime = simulationTime + 1

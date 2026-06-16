@@ -1,8 +1,11 @@
+import threading
 from idlelib.rpc import request_queue
 
 from django.http import HttpResponse
 from django.shortcuts import render
 
+from twobodytesting import TwoBodyTesting
+stopEvent = threading.Event() # See if this works
 
 def testingPage(request):
     context = {}
@@ -23,3 +26,7 @@ def createPage(request):
 def loadingPage(request):
     context = {}
     return render(request, "LoadSystemPage.html", context)
+
+def runSimulation(request):
+    context = {}
+    return render(request, "runSimulationPage.html", context)

@@ -25,5 +25,6 @@ urlpatterns = [
     path('settings/', views.settingsPage),
     path('create/', views.createPage),
     path('load/', views.loadingPage),
+    path('run/', views.runSimulation),
     path('', views.homePage)
 ]
