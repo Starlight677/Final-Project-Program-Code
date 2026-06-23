@@ -4,10 +4,28 @@
     <meta charset="UTF-8">
     <title>Planetary Simulator App</title>
 </head>
+<style>
+    .main_page_element {
+        position: relative;
+        height: 0;
+        width: 0;
+    }
+
+    .background_image {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+        background-image: url("/media/BackgroundTestImage.png");
+    }
+</style>
 <body>
-<main class="main">
+    <div class="background_image">
+
+    </div>
     {% block content %}
+
     {% endblock %}
-</main>
 </body>
 </html>

@@ -1,9 +1,9 @@
-from PlanetaryOrbitSimulator.twobodytesting import TwoBodyTesting
+from PlanetaryOrbitSimulator.twobodytesting import PlanetarySimulationEngine
 
 
 def run_twobody():
-    twoBodySim = TwoBodyTesting()
-    twoBodySim.runSimulation()
+    planetSim = PlanetarySimulationEngine()
+    planetSim.runSimulation()
 
 if __name__ == '__main__':
     run_twobody()

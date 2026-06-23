@@ -4,12 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Allowed simulation graph to display and be ticked by the website.">
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Updated program to store data in the session, rather than a global variable.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Templates/HomePage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/HomePage.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Templates/LoadSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/LoadSystemPage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/NewSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/NewSystemPage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/RunSimulationPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/RunSimulationPage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/page_template.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/page_template.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -164,7 +169,15 @@
       <option name="project" value="LOCAL" />
       <updated>1782207037961</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="Updated program to store data in the session, rather than a global variable.">
+      <option name="closed" value="true" />
+      <created>1782216850844</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1782216850844</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -178,6 +191,7 @@
     <MESSAGE value="Condensed the simulation loop + added more website stuff." />
     <MESSAGE value="Some progress on making the simulation work with the web interface." />
     <MESSAGE value="Allowed simulation graph to display and be ticked by the website." />
-    <option name="LAST_COMMIT_MESSAGE" value="Allowed simulation graph to display and be ticked by the website." />
+    <MESSAGE value="Updated program to store data in the session, rather than a global variable." />
+    <option name="LAST_COMMIT_MESSAGE" value="Updated program to store data in the session, rather than a global variable." />
   </component>
 </project>

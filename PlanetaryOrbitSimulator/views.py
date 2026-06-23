@@ -1,8 +1,7 @@
 from django.shortcuts import render
 import matplotlib.pyplot as plt
 
-from PlanetaryOrbitSimulator.models import SimulationImage
-from PlanetaryOrbitSimulator.twobodytesting import TwoBodyTesting
+from PlanetaryOrbitSimulator.twobodytesting import PlanetarySimulationEngine
 
 def testingPage(request):
     context = {}
@@ -25,28 +24,37 @@ def loadingPage(request):
     context = {}
     return render(request, "LoadSystemPage.html", context)
 
-def runSimulation(request):
+def runSimulation(request, restartSimulation = 0, autoRunSimulation = 0):
 
     try: # Load variables from session if they exist, otherwise set to starting values
         simulationTime = request.session["simulationTime"]
         listOfBodies = request.session["listOfBodies"]
         bodyPoints = request.session["bodyPoints"]
-        setTicks = (86400*5)/60 + simulationTime
+        secondsPerSimulationTick = request.session["secondsPerSimulationTick"]
+        setTicks = (86400*5)/secondsPerSimulationTick + simulationTime
     except:
+        restartSimulation = 1
+
+    if restartSimulation == 1:
         simulationTime = 0
         listOfBodies = []
         bodyPoints = []
-        setTicks = (86400*5)/60
+        secondsPerSimulationTick = 60
+        request.session["secondsPerSimulationTick"] = secondsPerSimulationTick
+        setTicks = (86400*5)/secondsPerSimulationTick
 
 
-    twoBodySim = TwoBodyTesting() # Run simulation for specified time interval
-    simulationTime, listOfBodies, bodyPoints = twoBodySim.runSimulation(setTicks, simulationTime, listOfBodies, bodyPoints, False)
+    simulationEngine = PlanetarySimulationEngine() # Run simulation for specified time interval
+    simulationTime, listOfBodies, bodyPoints, simulationSize = simulationEngine.runSimulation(setTicks, simulationTime, listOfBodies, bodyPoints, secondsPerSimulationTick)
 
     # Update stored variables
     request.session["simulationTime"] = simulationTime
     request.session["listOfBodies"] = listOfBodies
     request.session["bodyPoints"] = bodyPoints
 
-    context = {}
+    daysElapsed = round((simulationTime/86400)*secondsPerSimulationTick) # Simulation time in days
+    statedSimulationSize = round(simulationSize/1000) # Simulation size in kilometers
+    fStatedSimulationSize = f"{statedSimulationSize:,}" #Adds commas to the number
+    context = {"simulationSize": fStatedSimulationSize, "daysElapsed": daysElapsed, "autoRunSimulation": autoRunSimulation}
 
     return render(request, "runSimulationPage.html", context)

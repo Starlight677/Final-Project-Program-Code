@@ -1,15 +1,10 @@
 import math as Math
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from PIL import Image
-from PlanetaryOrbitSimulator import models
-from django.contrib.admin.templatetags.admin_list import admin_actions
 
-from PlanetaryOrbitSimulator.models import SimulationImage
-
-
-class TwoBodyTesting:
+class PlanetarySimulationEngine:
     def __init__(self):
         pass
 
@@ -132,8 +127,28 @@ class TwoBodyTesting:
         else:
             return listOfBodies
 
+    def drawGraph(self, simulationSize, simulationTime, secondsPerSimulationTick, listOfBodies, bodyPoints):
+        # Draw a graph using MatPlotLib
+        matplotlib.use('agg') # Mode for not having issues with Django threading
+        plt.xlim(-simulationSize, simulationSize)
+        plt.ylim(-simulationSize, simulationSize)
+        plt.xlabel("Distance (m)")
+        plt.ylabel("Distance (m)")
+        plt.grid(True)
+
+        # For each body, draw both the line of previous path and marker of current position
+        bodyCount = 0
+        for body in listOfBodies:
+            plt.plot(bodyPoints[bodyCount][0], bodyPoints[bodyCount][1], color=body[4][0])
+            plt.plot(body[0][0], body[0][1], 'o', color=body[4][1])
+            bodyCount = bodyCount + 1
+
+        # Save graph to database
+        plt.savefig('media/latestSimulation.png')
+        plt.close('all')
+
     def tickSimulation(self, simulationTime, ticksPerStorageUpdate, ticksPerDisplayUpdate, secondsPerSimulationTick,
-                       listOfBodies, significantCompanions, bodyPoints, simulationSize, showFigure):
+                       listOfBodies, significantCompanions, bodyPoints, simulationSize):
         bodyCollision = False
         if simulationTime % ticksPerStorageUpdate == 0:
             # Add current point to list of positions
@@ -173,35 +188,11 @@ class TwoBodyTesting:
                 print("Simulation Terminated upon Body Collision")
 
         if simulationTime % ticksPerDisplayUpdate == 0:  # Number of ticks simulated per frame shown to user
-            # Wipe previous content and reconfigure graph
-            plt.ion()
-            plt.clf()
-            plt.xlim(-simulationSize, simulationSize)
-            plt.ylim(-simulationSize, simulationSize)
-            plt.xlabel("Distance (m)")
-            plt.ylabel("Distance (m)")
-            dayCount = round((simulationTime / 86400) * secondsPerSimulationTick)
-            plt.text(simulationSize * -0.4, simulationSize * 1.1, "Simulation Time: " + str(dayCount) + " days")
-
-            # For each body, draw both the line of previous path and marker of current position
-            bodyCount = 0
-            for body in listOfBodies:
-                plt.plot(bodyPoints[bodyCount][0], bodyPoints[bodyCount][1], color=body[4][0])
-                plt.plot(body[0][0], body[0][1], 'o', color=body[4][1])
-                bodyCount = bodyCount + 1
-
-            # Draw graph
-            if showFigure:
-                plt.show(block=False)
-                plt.pause(0.25)
-            else:
-                # Save graph to database
-                plt.savefig('media/latestSimulation.png')
-                plt.close('all')
+            self.drawGraph(simulationSize, simulationTime, secondsPerSimulationTick, listOfBodies, bodyPoints)
 
         return listOfBodies, significantCompanions, bodyPoints, bodyCollision
 
-    def runSimulation(self, setTicks = -1, simulationTime = 0, listOfBodies = [], bodyPoints = [], showFigure = True):
+    def runSimulation(self, setTicks = -1, simulationTime = 0, listOfBodies = [], bodyPoints = [], secondsPerSimulationTick = 60):
         # Useful constants for defining planet parameters
         solarMass = 1.989e30
         earthMass = 5.972e24
@@ -218,7 +209,6 @@ class TwoBodyTesting:
             listOfBodies = [body1Stats, body6Stats, body3Stats, body4Stats, body5Stats, body2Stats]
 
         simulationSize = 3e11 # Size of the displayed area in meters
-        secondsPerSimulationTick = 60 # Seconds per simulation tick
         ticksPerDisplayUpdate = (86400*5)/secondsPerSimulationTick # One graph update per 5 days
         ticksPerStorageUpdate = 3600/secondsPerSimulationTick # One course point saved every hour
         bodyCollision = False # Records whether any objects have collided
@@ -236,8 +226,8 @@ class TwoBodyTesting:
             listOfBodies, significantCompanions, bodyPoints, bodyCollision = (
                 self.tickSimulation(simulationTime, ticksPerStorageUpdate, ticksPerDisplayUpdate,
                                 secondsPerSimulationTick,listOfBodies, significantCompanions,
-                                bodyPoints, simulationSize, showFigure))
+                                bodyPoints, simulationSize))
             # Update timer
             simulationTime = simulationTime + 1
         if setTicks == simulationTime:
-            return simulationTime, listOfBodies, bodyPoints
+            return simulationTime, listOfBodies, bodyPoints, simulationSize
