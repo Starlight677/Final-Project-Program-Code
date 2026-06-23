@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 
 from PlanetaryOrbitSimulator.models import SimulationImage
 from PlanetaryOrbitSimulator.twobodytesting import TwoBodyTesting
-storage = [0,[],[]]
 
 def testingPage(request):
     context = {}
@@ -27,18 +26,26 @@ def loadingPage(request):
     return render(request, "LoadSystemPage.html", context)
 
 def runSimulation(request):
-    simulationTime = storage[0]
-    listOfBodies = storage[1]
-    bodyPoints = storage[2]
-    setTicks = (86400*5)/60 + simulationTime
+
+    try: # Load variables from session if they exist, otherwise set to starting values
+        simulationTime = request.session["simulationTime"]
+        listOfBodies = request.session["listOfBodies"]
+        bodyPoints = request.session["bodyPoints"]
+        setTicks = (86400*5)/60 + simulationTime
+    except:
+        simulationTime = 0
+        listOfBodies = []
+        bodyPoints = []
+        setTicks = (86400*5)/60
 
 
-    twoBodySim = TwoBodyTesting()
+    twoBodySim = TwoBodyTesting() # Run simulation for specified time interval
     simulationTime, listOfBodies, bodyPoints = twoBodySim.runSimulation(setTicks, simulationTime, listOfBodies, bodyPoints, False)
 
-    storage[0] = simulationTime
-    storage[1] = listOfBodies
-    storage[2] = bodyPoints
+    # Update stored variables
+    request.session["simulationTime"] = simulationTime
+    request.session["listOfBodies"] = listOfBodies
+    request.session["bodyPoints"] = bodyPoints
 
     context = {}
 

@@ -20,11 +20,29 @@
             padding: 5px;
             border-radius: 5vh;
         }
+
+        .run_simulation_button {
+            position: absolute;
+            top: 85vh;
+            left: 85vw;
+            height: 10vh;
+            width: 10vw;
+            text-align: center;
+            border: 2px solid black;
+            padding: 5px;
+            border-radius: 5vh;
+        }
+
     </style>
     <body>
         <button class="back_to_menu_button"
                 onclick="window.location.href='/'">
             Return to Main Menu
+        </button>
+
+        <button class="run_simulation_button"
+                onclick="window.location.href='/run/'">
+            Run Simulation
         </button>
     </body>
 {% endblock %}
