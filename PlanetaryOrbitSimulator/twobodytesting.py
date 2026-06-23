@@ -2,7 +2,11 @@ import math as Math
 
 import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image
+from PlanetaryOrbitSimulator import models
 from django.contrib.admin.templatetags.admin_list import admin_actions
+
+from PlanetaryOrbitSimulator.models import SimulationImage
 
 
 class TwoBodyTesting:
@@ -191,7 +195,9 @@ class TwoBodyTesting:
                 plt.show(block=False)
                 plt.pause(0.25)
             else:
-                plt.savefig('latestSimulation.png')
+                # Save graph to database
+                plt.savefig('media/latestSimulation.png')
+                plt.close('all')
 
         return listOfBodies, significantCompanions, bodyPoints, bodyCollision
 

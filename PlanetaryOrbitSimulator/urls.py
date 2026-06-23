@@ -15,16 +15,20 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, re_path
+from django.views.static import serve
+from django.conf import settings
 
 from PlanetaryOrbitSimulator import views
 
 urlpatterns = [
+    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
     path('admin/', admin.site.urls),
     path('hello/', views.testingPage),
     path('settings/', views.settingsPage),
     path('create/', views.createPage),
     path('load/', views.loadingPage),
     path('run/', views.runSimulation),
+
     path('', views.homePage)
 ]

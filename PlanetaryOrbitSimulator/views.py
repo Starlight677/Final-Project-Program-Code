@@ -1,10 +1,8 @@
-from idlelib.rpc import request_queue
-
-from django.http import HttpResponse
 from django.shortcuts import render
 import matplotlib.pyplot as plt
 
-from twobodytesting import TwoBodyTesting
+from PlanetaryOrbitSimulator.models import SimulationImage
+from PlanetaryOrbitSimulator.twobodytesting import TwoBodyTesting
 storage = [0,[],[]]
 
 def testingPage(request):
@@ -36,7 +34,7 @@ def runSimulation(request):
 
 
     twoBodySim = TwoBodyTesting()
-    simulationTime, listOfBodies, bodyPoints = twoBodySim.runSimulation(setTicks, simulationTime, listOfBodies, bodyPoints, True)
+    simulationTime, listOfBodies, bodyPoints = twoBodySim.runSimulation(setTicks, simulationTime, listOfBodies, bodyPoints, False)
 
     storage[0] = simulationTime
     storage[1] = listOfBodies

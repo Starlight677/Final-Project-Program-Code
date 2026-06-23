@@ -1,4 +1,4 @@
-from twobodytesting import TwoBodyTesting
+from PlanetaryOrbitSimulator.twobodytesting import TwoBodyTesting
 
 
 def run_twobody():
