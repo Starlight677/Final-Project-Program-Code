@@ -60,13 +60,14 @@
             position: absolute;
             top: 15vh;
             left: 75vw;
-            height: 30vh;
+            height: 35vh;
             width: 15vw;
             text-align: center;
             border: 2px solid black;
             background-color: white;
             overflow: auto;
             display: block;
+            padding: 5px;
             border-radius: 5vh;
         }
     </style>
@@ -87,12 +88,13 @@
         </button>
 
         <div class ="simulation_image_box">
-            <img src="/media/latestSimulation.png" alt="This image has failed to load.">
+            <img src="/media/latestSimulation.jpeg" alt="This image has failed to load.">
         </div>
 
         <div class ="simulation_information_box">
             <h2>Simulation Information:</h2>
-            <p>Simulation Size: {{simulationSize}}km Radius</p>
+            <p>Simulation Display Size: {{simulationSizeKM}}km / {{simulationSizeAU}}AU</p>
+            <p>Days Per Simulation Tick: {{daysPerTick}}</p>
             <p>Simulation Days Elapsed: {{daysElapsed}}</p>
         </div>
     </body>

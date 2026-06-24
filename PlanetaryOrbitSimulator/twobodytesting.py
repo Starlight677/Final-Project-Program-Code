@@ -127,7 +127,7 @@ class PlanetarySimulationEngine:
         else:
             return listOfBodies
 
-    def drawGraph(self, simulationSize, simulationTime, secondsPerSimulationTick, listOfBodies, bodyPoints):
+    def drawGraph(self, simulationSize, listOfBodies, bodyPoints):
         # Draw a graph using MatPlotLib
         matplotlib.use('agg') # Mode for not having issues with Django threading
         plt.xlim(-simulationSize, simulationSize)
@@ -144,11 +144,11 @@ class PlanetarySimulationEngine:
             bodyCount = bodyCount + 1
 
         # Save graph to database
-        plt.savefig('media/latestSimulation.png')
+        plt.savefig('media/latestSimulation.jpeg',transparent=True)
         plt.close('all')
 
-    def tickSimulation(self, simulationTime, ticksPerStorageUpdate, ticksPerDisplayUpdate, secondsPerSimulationTick,
-                       listOfBodies, significantCompanions, bodyPoints, simulationSize):
+    def tickSimulation(self, simulationTime, ticksPerStorageUpdate, secondsPerSimulationTick,
+                       listOfBodies, significantCompanions, bodyPoints):
         bodyCollision = False
         if simulationTime % ticksPerStorageUpdate == 0:
             # Add current point to list of positions
@@ -187,36 +187,15 @@ class PlanetarySimulationEngine:
                 bodyCollision = True
                 print("Simulation Terminated upon Body Collision")
 
-        if simulationTime % ticksPerDisplayUpdate == 0:  # Number of ticks simulated per frame shown to user
-            self.drawGraph(simulationSize, simulationTime, secondsPerSimulationTick, listOfBodies, bodyPoints)
-
         return listOfBodies, significantCompanions, bodyPoints, bodyCollision
 
-    def runSimulation(self, setTicks = -1, simulationTime = 0, listOfBodies = [], bodyPoints = [], secondsPerSimulationTick = 60):
+    def runSimulation(self, setTicks = -1, simulationTime = 0, listOfBodies = [], bodyPoints = [], secondsPerSimulationTick = 60, simulationSize = 3e11, ticksPerStorageUpdate = 60):
         # Useful constants for defining planet parameters
-        solarMass = 1.989e30
-        earthMass = 5.972e24
-
-        # Set starting values for bodies
-        # Order: coordinates, motion, mass, radius and display colours (trail then dot colour)
-        if listOfBodies == []:
-            body1Stats = [[0,0,0], [0, 0, 0], solarMass * 1, 7e7, ['yellow', 'yellow']] # The Sun
-            body2Stats = [[-1.521e11,0,0], [0,29290,0], earthMass * 1, 6.3e5, ['blue', 'blue']] # The Earth (at aphelion)
-            body3Stats = [[1.082e11, 0, 0], [0, -35000, 0], earthMass * 0.815, 6.05e5, ['orange', 'orange']] # Venus
-            body4Stats = [[0,2.064e11,0], [26490,0,0], earthMass * 0.107, 3.396e5, ['red', 'red']] # Mars (at perihelion)
-            body5Stats = [[0,-6.982e10,0], [-38900,0,0], earthMass * 0.055, 2.439e5, ['brown', 'brown']] # Mercury (at aphelion)
-            body6Stats = [[-1.521e11, 3.84e7,0],[1022,29290,0], earthMass*0.0123, 1.738e5, ['grey', 'grey']] # The Moon
-            listOfBodies = [body1Stats, body6Stats, body3Stats, body4Stats, body5Stats, body2Stats]
-
-        simulationSize = 3e11 # Size of the displayed area in meters
-        ticksPerDisplayUpdate = (86400*5)/secondsPerSimulationTick # One graph update per 5 days
-        ticksPerStorageUpdate = 3600/secondsPerSimulationTick # One course point saved every hour
         bodyCollision = False # Records whether any objects have collided
 
         #Construct lists for previous positions of planets and pair significance checks
         significantCompanions = []
-        for i in range(len(listOfBodies)):
-            bodyPoints.append([[],[]]) # One entry to save a planet's coordinates
+        for i in range(len(listOfBodies)): # One entry to save a planet's coordinates
             companionsEntry = []
             for j in range(len(listOfBodies)): # One list per planet of every other planet
                 companionsEntry.append([])
@@ -224,10 +203,64 @@ class PlanetarySimulationEngine:
 
         while not bodyCollision and not setTicks == simulationTime:
             listOfBodies, significantCompanions, bodyPoints, bodyCollision = (
-                self.tickSimulation(simulationTime, ticksPerStorageUpdate, ticksPerDisplayUpdate,
+                self.tickSimulation(simulationTime, ticksPerStorageUpdate,
                                 secondsPerSimulationTick,listOfBodies, significantCompanions,
-                                bodyPoints, simulationSize))
+                                bodyPoints))
             # Update timer
             simulationTime = simulationTime + 1
         if setTicks == simulationTime:
+            self.drawGraph(simulationSize, listOfBodies, bodyPoints)
             return simulationTime, listOfBodies, bodyPoints, simulationSize
+        elif bodyCollision:
+            # If two planets have collided, exit simulation loop
+            return simulationTime, listOfBodies, bodyPoints, simulationSize
+
+    def loadTemplates(self, templateNumber = 0):
+        solarMass = 1.989e30
+        earthMass = 5.972e24
+        moonMass = earthMass * 0.0123
+        if templateNumber == 0: # Inner Solar System planets
+            body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 1, 7e7, ['yellow', 'yellow']]  # The Sun
+            body2Stats = [[-1.521e11, 0, 0], [0, 29290, 0], earthMass * 1, 6.3e5,
+                          ['blue', 'blue']]  # The Earth (at aphelion)
+            body3Stats = [[1.082e11, 0, 0], [0, -35000, 0], earthMass * 0.815, 6.05e5, ['orange', 'orange']]  # Venus
+            body4Stats = [[0, 2.064e11, 0], [26490, 0, 0], earthMass * 0.107, 3.396e5,
+                          ['red', 'red']]  # Mars (at perihelion)
+            body5Stats = [[0, -6.982e10, 0], [-38900, 0, 0], earthMass * 0.055, 2.439e5,
+                          ['brown', 'brown']]  # Mercury (at aphelion)
+            body6Stats = [[-1.521e11, 3.84e7, 0], [1022, 29290, 0], moonMass * 1, 1.738e5,
+                          ['silver', 'silver']]  # The Moon
+            listOfBodies = [body1Stats, body6Stats, body3Stats, body4Stats, body5Stats, body2Stats]
+
+            secondsPerSimulationTick = 60
+            simulationSize = 3e11  # Size of the displayed area in meters
+            ticksPerStorageUpdate = 3600 / secondsPerSimulationTick  # One course point saved every hour
+            ticksPerPageUpdate = round((86400*5)/secondsPerSimulationTick) # One update per 5 days
+
+        elif templateNumber == 1:
+            # Moons of Jupiter
+            body1Stats = [[0, 0, 0], [0, 0, 0], earthMass * 318, 6.989e7, ['orange', 'orange']]  # Jupiter
+            body2Stats = [[4.217e8, 0, 0], [0, -17334, 0], moonMass * 1.05, 3.643e6, ['yellow', 'yellow']]  # Io
+            body3Stats = [[-6.71e8, 0, 0], [0, 13703, 0], moonMass * 0.9, 3.122e6, ['silver', 'silver']]  # Europa
+            body4Stats = [[0, 1.07e9, 0], [10880, 0, 0], moonMass * 2, 5.262e6, ['grey', 'grey']]  # Ganymede
+            body5Stats = [[0, -1.883e9, 0], [-8204, 0, 0], moonMass * 1.5, 4.821e6, ['blue', 'blue']]  # Callisto
+            listOfBodies = [body1Stats, body2Stats, body3Stats, body4Stats, body5Stats]
+
+            secondsPerSimulationTick = 6 # 10 simulation ticks per minute
+            simulationSize = 2e9  # Size of the displayed area in meters
+            ticksPerStorageUpdate = 600 / secondsPerSimulationTick  # One course point saved every ten minutes
+            ticksPerPageUpdate = round((86400/4) / secondsPerSimulationTick)  # One update per 6 hours
+        else:
+            # Display only a star if error in choosing starter configuration
+            body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 1, 7e7, ['yellow', 'yellow']]
+            listOfBodies = [body1Stats]
+            secondsPerSimulationTick = 60
+            simulationSize = 3e11  # Size of the displayed area in meters
+            ticksPerStorageUpdate = 3600 / secondsPerSimulationTick  # One course point saved every hour
+            ticksPerPageUpdate = round((86400 * 5) / secondsPerSimulationTick)  # One update per 5 days
+
+        bodyPoints = []
+        for i in range(len(listOfBodies)):
+            bodyPoints.append([[], []])
+
+        return listOfBodies, simulationSize, ticksPerStorageUpdate, ticksPerPageUpdate, secondsPerSimulationTick, bodyPoints

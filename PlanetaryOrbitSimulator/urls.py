@@ -27,6 +27,7 @@ urlpatterns = [
     path('hello/', views.testingPage),
     path('settings/', views.settingsPage),
     path('create/', views.createPage),
+    path('create/<int:templateIndex>', views.createPage),
     path('load/', views.loadingPage),
     path('run/<int:restartSimulation>/<int:autoRunSimulation>', views.runSimulation),
 
