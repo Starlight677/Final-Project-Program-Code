@@ -18,7 +18,7 @@ def settingsPage(request):
 
 def createPage(request, templateIndex = 0):
     request.session["templateIndex"] = templateIndex
-    templatesList = ["Inner Solar System", "Moons of Jupiter"]
+    templatesList = ["Inner Solar System", "Galilean Moons of Jupiter", "Ascendia A Star"]
     context = {"templatesList": templatesList, "templateIndex": templateIndex}
     return render(request, "NewSystemPage.html", context)
 
@@ -47,8 +47,13 @@ def runSimulation(request, restartSimulation = 0, autoRunSimulation = 0):
 
     if restartSimulation == 1:
         # Load and initialise new simulation setup from template
-        listOfBodies, simulationSize, ticksPerStorageUpdate, ticksPerPageUpdate, secondsPerSimulationTick, bodyPoints \
-            = simulationEngine.loadTemplates(request.session["templateIndex"])
+        try: # If template index isn't set, set to default value
+            listOfBodies, simulationSize, ticksPerStorageUpdate, ticksPerPageUpdate, secondsPerSimulationTick, bodyPoints \
+                = simulationEngine.loadTemplates(request.session["templateIndex"])
+        except:
+            request.session["templateIndex"] = 0
+            listOfBodies, simulationSize, ticksPerStorageUpdate, ticksPerPageUpdate, secondsPerSimulationTick, bodyPoints \
+                = simulationEngine.loadTemplates(request.session["templateIndex"])
         simulationTime = 0
         setTicks = 0
         # Set fixed values
@@ -67,9 +72,9 @@ def runSimulation(request, restartSimulation = 0, autoRunSimulation = 0):
 
     daysElapsed = round((simulationTime/86400)*secondsPerSimulationTick, 2) # Simulation time in days
     daysPerTick = round((ticksPerPageUpdate/86400)*secondsPerSimulationTick, 2)
-    statedSimulationSize = round(simulationSize/500) # Simulation diameter in kilometers
+    statedSimulationSize = round(simulationSize*1.495979e8) # Simulation diameter in kilometers
     fStatedSimulationSize = f"{statedSimulationSize:,}" #Adds commas to the number
-    AUStatedSimulationSize = round(statedSimulationSize/1.495979e8,3) # Calculates simulation diameter in Astronomical Units to 3DP
+    AUStatedSimulationSize = round(simulationSize,3) # Calculates simulation diameter in Astronomical Units to 3DP
 
     context = {"simulationSizeKM": fStatedSimulationSize, "simulationSizeAU": AUStatedSimulationSize,
                "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "autoRunSimulation": autoRunSimulation}
