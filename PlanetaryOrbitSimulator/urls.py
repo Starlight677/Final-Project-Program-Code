@@ -30,6 +30,7 @@ urlpatterns = [
     path('create/<int:templateIndex>', views.createPage),
     path('load/', views.loadingPage),
     path('run/<int:restartSimulation>/<int:autoRunSimulation>', views.runSimulation),
+    path('run/<int:restartSimulation>/<int:autoRunSimulation>/<int:reverseSimulation>', views.runSimulation),
 
     path('', views.homePage)
 ]

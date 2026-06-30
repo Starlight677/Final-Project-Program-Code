@@ -24,7 +24,7 @@
         .start_simulation_button {
             position: absolute;
             top: 70vh;
-            left: 85vw;
+            left: 87vw;
             height: 10vh;
             width: 10vw;
             text-align: center;
@@ -36,7 +36,19 @@
         .tick_simulation_button {
             position: absolute;
             top: 85vh;
-            left: 85vw;
+            left: 87vw;
+            height: 10vh;
+            width: 10vw;
+            text-align: center;
+            border: 2px solid black;
+            padding: 5px;
+            border-radius: 5vh;
+        }
+
+        .invert_simulation_button {
+            position: absolute;
+            top: 85vh;
+            left: 75vw;
             height: 10vh;
             width: 10vw;
             text-align: center;
@@ -60,7 +72,7 @@
             position: absolute;
             top: 15vh;
             left: 75vw;
-            height: 35vh;
+            height: 40vh;
             width: 15vw;
             text-align: center;
             border: 2px solid black;
@@ -78,13 +90,18 @@
         </button>
 
         <button class="start_simulation_button"
-                onclick="window.location.href='/run/0/1'">
+                onclick="window.location.href='/run/0/1/{{reverseSimulation}}'">
             Start Simulation
         </button>
 
         <button class="tick_simulation_button"
-                onclick="window.location.href='/run/0/0'">
+                onclick="window.location.href='/run/0/0/{{reverseSimulation}}'">
             Stop/Tick Simulation
+        </button>
+
+        <button class="invert_simulation_button"
+                onclick="window.location.href='/run/0/0/{{invertedReverseSimulation}}'">
+            Reverse Simulation Direction
         </button>
 
         <div class ="simulation_image_box">
@@ -96,12 +113,13 @@
             <p>Simulation Display Size: {{simulationSizeKM}}km / {{simulationSizeAU}}AU</p>
             <p>Days Per Simulation Tick: {{daysPerTick}}</p>
             <p>Simulation Days Elapsed: {{daysElapsed}}</p>
+            <p>Simulation Iteration Reversed: {{simulationInReverse}}</p>
         </div>
     </body>
     <script>
         let isSimulationRunning = {{autoRunSimulation}}
         if (isSimulationRunning == 1) {
-            window.setTimeout(function () {location.href = "1";}, 1000);
+            window.setTimeout(function () {location.href = "";}, 1000);
         }
     </script>
 {% endblock %}
