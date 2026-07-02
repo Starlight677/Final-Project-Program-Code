@@ -23,15 +23,22 @@ def createPage(request, templateIndex = 0):
     request.session["templateIndex"] = templateIndex
     templatesList = ["Inner Solar System", "Galilean Moons of Jupiter", "Ascendia A Star"]
 
-    # Get name of new simulation from user
-    simulationDefaults = {"simulationName": templatesList[templateIndex]}
+    simulationEngine = PlanetarySimulationEngine()
+    simulationEngine.loadTemplates(templateIndex)
+    simulationTimePerTick = simulationEngine.ticksPerPageUpdate * simulationEngine.secondsPerSimulationTick
+    simulationTimePerTick = simulationTimePerTick / 86400 # Give the time per tick in days, not seconds
+    # Get name of new simulation from user with a form
+    simulationDefaultValues = {"simulationName": simulationEngine.simulationName,
+                               "simulationSize": simulationEngine.simulationSize,
+                               "simulationTimePerUpdate": simulationTimePerTick,}
 
-    form = SimulationNameForm(request.POST or None, initial=simulationDefaults)
+    form = SimulationNameForm(request.POST or None, initial=simulationDefaultValues)
     if form.is_valid():
-        request.session["simulationName"] = form.cleaned_data["simulationName"]
-    # Set to default value if no name provided
-    if "simulationName" not in request.session or request.session["simulationName"] == "":
-        request.session["simulationName"] = templatesList[templateIndex]
+        simulationEngine.simulationName = form.cleaned_data["simulationName"]
+        simulationEngine.simulationSize = form.cleaned_data["simulationSize"]
+        adjustedTimePerTick = round(form.cleaned_data["simulationTimePerUpdate"] * 86400)
+        simulationEngine.ticksPerPageUpdate = adjustedTimePerTick/simulationEngine.secondsPerSimulationTick
+    request.session["simulationEngine"] = simulationEngine
 
     # Wipe this field to stop previous simulation conflicts
     if "selectedSimulation" in request.session:
@@ -42,15 +49,18 @@ def createPage(request, templateIndex = 0):
     return render(request, "NewSystemPage.html", context)
 
 def loadingPage(request, saveIndex = 0):
-    try: # Test if index can be loaded - if not, set it to default
-        templateIndex = request.session["templateIndex"]
-    except:
+    # Page for loading saves
+    if "templateIndex" not in request.session:
+        # Test if index can be loaded - if not, set it to default
         request.session["templateIndex"] = 0
 
-    allSimulations = StoredSimulation.objects.all()
-    allSimulations.order_by("pk")
-    selectedSimulation = allSimulations[saveIndex]
-    request.session["selectedSimulation"] = selectedSimulation
+    try:
+        allSimulations = StoredSimulation.objects.all()
+        allSimulations.order_by("pk")
+        selectedSimulation = allSimulations[saveIndex]
+        request.session["selectedSimulation"] = selectedSimulation
+    except:
+        allSimulations = []
 
     # Wipe this field to stop previous simulations carrying over
     if "simulationEngine" in request.session:
@@ -58,7 +68,6 @@ def loadingPage(request, saveIndex = 0):
 
     context = {"allSimulations": allSimulations, "saveIndex": saveIndex}
     return render(request, "LoadSystemPage.html", context)
-
 # Here starts methods used for runSimulation()
 
 def loadValues(objectToLoad, objectLoadFrom):
@@ -79,9 +88,9 @@ def loadSimulationEntry(request, restartSimulation):
         # Load selected save if found and not ordered to restart
         storedSim = request.session["selectedSimulation"]
         existingSimLoaded = True
-    elif "simulationName" in request.session:
+    elif "simulationEngine" in request.session:
         # If name for new save is found, use that
-        request.session["selectedSimulation"] = StoredSimulation(name=request.session["simulationName"])
+        request.session["selectedSimulation"] = StoredSimulation(name=request.session["simulationEngine"].simulationName)
         storedSim = request.session["selectedSimulation"]
         request.session["selectedSimulationIndex"] = storedSim.pk
         existingSimLoaded = False
@@ -93,28 +102,17 @@ def loadSimulationEntry(request, restartSimulation):
         existingSimLoaded = False
     return storedSim, existingSimLoaded
 
-def loadSimulation(request, restartSimulation, storedSim, existingSimLoaded):
+def loadSimulationEngine(request, storedSim):
     # Create a PlanetarySimulationEngine() object
-    if "simulationEngine" in request.session and restartSimulation == 0:
+    if "simulationEngine" in request.session:
         # Load variables from session if they exist and the simulation isn't ordered to restart
         simulationEngine = request.session["simulationEngine"]
         setTicks = simulationEngine.ticksPerPageUpdate + simulationEngine.simulationTime
-    elif existingSimLoaded and restartSimulation == 0:
+    else:
         # If variables not found, load from the database instead (slower than loading from session)
         simulationEngine = PlanetarySimulationEngine()
         simulationEngine = loadValues(simulationEngine, storedSim)
         setTicks = simulationEngine.ticksPerPageUpdate + simulationEngine.simulationTime
-    else:
-        # If neither can be loaded or simulation ordered to restart,
-        # load and initialise new simulation setup from template
-        simulationEngine = PlanetarySimulationEngine()
-        setTicks = 0
-        if "templateIndex" in request.session:
-            simulationEngine.loadTemplates(request.session["templateIndex"])
-        else:
-            # If template index isn't set, set to default value
-            request.session["templateIndex"] = 0
-            simulationEngine.loadTemplates(request.session["templateIndex"])
     return simulationEngine, setTicks
 
 # The backend main loop for running the simulation - runs on every simulation page refresh
@@ -123,7 +121,7 @@ def runSimulation(request, restartSimulation = 0, autoRunSimulation = 0, reverse
     storedSim, existingSimLoaded = loadSimulationEntry(request, restartSimulation)
 
     # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
-    simulationEngine, setTicks = loadSimulation(request, restartSimulation, storedSim, existingSimLoaded)
+    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
 
     if reverseSimulation == 0 or simulationEngine.simulationTime == 0:
         # Run instance of the simulation

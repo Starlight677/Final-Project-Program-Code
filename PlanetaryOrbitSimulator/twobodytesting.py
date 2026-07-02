@@ -14,6 +14,7 @@ class PlanetarySimulationEngine:
         self.ticksPerStorageUpdate = 0
         self.ticksPerPageUpdate = 0
         self.secondsPerSimulationTick = 0
+        self.simulationName = ""
         pass
 
     def tickBodyPair(self, body1Coords, body2Coords, body1Motion, body2Motion, body1Mass,
@@ -237,6 +238,7 @@ class PlanetarySimulationEngine:
             self.simulationSize = 2  # Size of the displayed area in AU
             self.ticksPerStorageUpdate = 3600 / self.secondsPerSimulationTick  # One course point saved every hour
             self.ticksPerPageUpdate = round((86400*5)/self.secondsPerSimulationTick) # One update per 5 days
+            self.simulationName = "Inner Solar System"
 
         elif templateNumber == 1:
             # Moons of Jupiter
@@ -251,8 +253,10 @@ class PlanetarySimulationEngine:
             self.simulationSize = 0.02  # Size of the displayed area in AU
             self.ticksPerStorageUpdate = 600 / self.secondsPerSimulationTick  # One course point saved every ten minutes
             self.ticksPerPageUpdate = round((86400/4) / self.secondsPerSimulationTick)  # One update per 6 hours
+            self.simulationName = "Galilean Moons of Jupiter"
+
         elif templateNumber == 2:
-            # Ascendia system (A star, innermost 4 planets)
+            # Ascendia system (A star)
             body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 0.2656, 7e7*0.474, ['orange', 'orange']] # Primary star
             body2Stats = [[-3.3e9, 0, 0], [0, 103364, 0], earthMass * 0.0908, 2.887e6,
                           ['grey', 'grey']]  # A 1
@@ -271,6 +275,8 @@ class PlanetarySimulationEngine:
             self.simulationSize = 0.5  # Size of the displayed area in AU
             self.ticksPerStorageUpdate = 600 / self.secondsPerSimulationTick  # One course point saved every ten minutes
             self.ticksPerPageUpdate = round((86400/2) / self.secondsPerSimulationTick)  # One update per 12 hours
+            self.simulationName = "Ascendia Primary Star"
+
         else:
             # Display only a star if error in choosing starter configuration
             body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 1, 7e7, ['yellow', 'yellow']]
@@ -279,6 +285,7 @@ class PlanetarySimulationEngine:
             self.simulationSize = 3e11  # Size of the displayed area in meters
             self.ticksPerStorageUpdate = 3600 / self.secondsPerSimulationTick  # One course point saved every hour
             self.ticksPerPageUpdate = round((86400 * 5) / self.secondsPerSimulationTick)  # One update per 5 days
+            self.simulationName = "Single Star"
 
         self.bodyPoints = []
         for i in range(len(self.listOfBodies)):
