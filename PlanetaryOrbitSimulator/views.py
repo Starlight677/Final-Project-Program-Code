@@ -1,39 +1,39 @@
 from django.shortcuts import render
-import matplotlib.pyplot as plt
 from .forms import SimulationNameForm
 
 from.models import StoredSimulation
 
 from PlanetaryOrbitSimulator.twobodytesting import PlanetarySimulationEngine
 
-def testingPage(request):
-    context = {}
-    return render(request, "TestingPage.html", context)
-
 def homePage(request):
+    # Backend for the homepage
     context = {}
-    plt.close('all')
     return render(request, "HomePage.html", context)
 
 def settingsPage(request):
+    # Backend for the Settings page
     context = {}
     return render(request, "SettingsPage.html", context)
 
 def createPage(request, templateIndex = 0):
+    # Backend for the Create New System page
     request.session["templateIndex"] = templateIndex
-    templatesList = ["Inner Solar System", "Galilean Moons of Jupiter", "Ascendia A Star"]
+    templatesList = ["Inner Solar System", "Galilean Moons of Jupiter", "Ascendia Primary Star", "Single Star"]
 
+    # Load a Planetary Simulation Engine for accessing parameters
     simulationEngine = PlanetarySimulationEngine()
     simulationEngine.loadTemplates(templateIndex)
     simulationTimePerTick = simulationEngine.ticksPerPageUpdate * simulationEngine.secondsPerSimulationTick
     simulationTimePerTick = simulationTimePerTick / 86400 # Give the time per tick in days, not seconds
-    # Get name of new simulation from user with a form
+
+    # Get details of new simulation from user with a form
     simulationDefaultValues = {"simulationName": simulationEngine.simulationName,
                                "simulationSize": simulationEngine.simulationSize,
                                "simulationTimePerUpdate": simulationTimePerTick,}
-
     form = SimulationNameForm(request.POST or None, initial=simulationDefaultValues)
+
     if form.is_valid():
+        # Load parameters from form
         simulationEngine.simulationName = form.cleaned_data["simulationName"]
         simulationEngine.simulationSize = form.cleaned_data["simulationSize"]
         adjustedTimePerTick = round(form.cleaned_data["simulationTimePerUpdate"] * 86400)
@@ -49,25 +49,39 @@ def createPage(request, templateIndex = 0):
     return render(request, "NewSystemPage.html", context)
 
 def loadingPage(request, saveIndex = 0):
-    # Page for loading saves
+    # Backend for the Load Existing System page
     if "templateIndex" not in request.session:
         # Test if index can be loaded - if not, set it to default
         request.session["templateIndex"] = 0
 
     try:
+        # Try loading stored simulations
         allSimulations = StoredSimulation.objects.all()
         allSimulations.order_by("pk")
         selectedSimulation = allSimulations[saveIndex]
         request.session["selectedSimulation"] = selectedSimulation
     except:
+        # If stored simulations can't be found, return blank array
         allSimulations = []
+        selectedSimulation = []
 
     # Wipe this field to stop previous simulations carrying over
     if "simulationEngine" in request.session:
         del request.session["simulationEngine"]
 
-    context = {"allSimulations": allSimulations, "saveIndex": saveIndex}
+    # Create variables for display in information box
+    daysElapsed = round((selectedSimulation.simulationTime / 86400) * selectedSimulation.secondsPerSimulationTick,
+                        2)  # Simulation time in days
+    daysPerTick = round((selectedSimulation.ticksPerPageUpdate / 86400) * selectedSimulation.secondsPerSimulationTick, 2)
+    statedSimulationSize = round(selectedSimulation.simulationSize * 1.495979e8)  # Simulation diameter in kilometers
+    fStatedSimulationSize = f"{statedSimulationSize:,}"  # Adds commas to the distance number
+    AUStatedSimulationSize = round(selectedSimulation.simulationSize,
+                                   3)  # Calculates simulation diameter in Astronomical Units to 3DP
+    context = {"allSimulations": allSimulations, "saveIndex": saveIndex, "name": selectedSimulation.name,
+               "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "simulationSizeKM": fStatedSimulationSize,
+               "simulationSizeAU": AUStatedSimulationSize}
     return render(request, "LoadSystemPage.html", context)
+
 # Here starts methods used for runSimulation()
 
 def loadValues(objectToLoad, objectLoadFrom):
@@ -89,13 +103,13 @@ def loadSimulationEntry(request, restartSimulation):
         storedSim = request.session["selectedSimulation"]
         existingSimLoaded = True
     elif "simulationEngine" in request.session:
-        # If name for new save is found, use that
+        # If name for new save can be found (from stored simulationEngine), use it
         request.session["selectedSimulation"] = StoredSimulation(name=request.session["simulationEngine"].simulationName)
         storedSim = request.session["selectedSimulation"]
         request.session["selectedSimulationIndex"] = storedSim.pk
         existingSimLoaded = False
     else:
-        # If no name, state so
+        # If no name, use placeholder
         request.session["selectedSimulation"] = StoredSimulation(name="No name found")
         storedSim = request.session["selectedSimulation"]
         request.session["selectedSimulationIndex"] = storedSim.pk

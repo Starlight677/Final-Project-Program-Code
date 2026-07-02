@@ -24,7 +24,6 @@ from PlanetaryOrbitSimulator import views
 urlpatterns = [
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
     path('admin/', admin.site.urls),
-    path('hello/', views.testingPage),
     path('settings/', views.settingsPage),
     path('create/', views.createPage),
     path('create/<int:templateIndex>', views.createPage),

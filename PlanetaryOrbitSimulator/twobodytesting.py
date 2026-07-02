@@ -282,7 +282,7 @@ class PlanetarySimulationEngine:
             body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 1, 7e7, ['yellow', 'yellow']]
             self.listOfBodies = [body1Stats]
             self.secondsPerSimulationTick = 60
-            self.simulationSize = 3e11  # Size of the displayed area in meters
+            self.simulationSize = 1  # Size of the displayed area in AU
             self.ticksPerStorageUpdate = 3600 / self.secondsPerSimulationTick  # One course point saved every hour
             self.ticksPerPageUpdate = round((86400 * 5) / self.secondsPerSimulationTick)  # One update per 5 days
             self.simulationName = "Single Star"
