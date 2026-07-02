@@ -33,6 +33,42 @@
             border-radius: 5vh;
         }
 
+        .choose_save_box {
+            position: absolute;
+            top: 10vh;
+            left: 10vw;
+            height: 40vh;
+            text-align: center;
+            overflow: auto;
+            display: block;
+        }
+
+        .choose_save_entry {
+            position: relative;
+            height: 10vh;
+            width: 15vw;
+            border: 2px solid black;
+            padding: 5px
+            text-align: center;
+            background-color: white;
+            border-radius: 15px;
+        }
+
+        .selected_save_entry {
+            position: relative;
+            height: 10vh;
+            width: 15vw;
+            border: 2px solid black;
+            padding: 5px
+            text-align: center;
+            background-color: grey;
+            border-radius: 15px;
+        }
+
+        .choose_save_entry:hover {
+            background-color: silver;
+        }
+
     </style>
     <body>
         <button class="back_to_menu_button"
@@ -44,5 +80,25 @@
                 onclick="window.location.href='/run/0/0'">
             Run Simulation
         </button>
+
+        <ul class="choose_save_box">
+            <li><h2 style="color:white">Saved Simulations:</h2></li>
+            {% for simulation in allSimulations %}
+                <li>
+                    {% if forloop.counter0 == saveIndex %}
+                        <button class ="selected_save_entry"
+                                onclick="window.location.href='/load/{{forloop.counter0}}'">
+                            {{simulation.name}}
+                        </button>
+                    {% else %}
+                        <button class ="choose_save_entry"
+                                onclick="window.location.href='/load/{{forloop.counter0}}'">
+                            {{simulation.name}}
+                        </button>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
     </body>
+
 {% endblock %}

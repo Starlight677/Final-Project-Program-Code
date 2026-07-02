@@ -68,6 +68,14 @@
         .choose_template_entry:hover {
             background-color: silver;
         }
+
+        .choose_name_form {
+            position: relative;
+            top: 10vh;
+            left: 50vw;
+            width: 40vw;
+            color: white;
+        }
     </style>
     <body>
         <button class="back_to_menu_button"
@@ -81,7 +89,7 @@
         </button>
 
         <ul class="choose_template_box">
-            <li><h2 style="color:white">Templates:</h2></li>
+            <li><h2 style="color:white">Select Template:</h2></li>
             {% for template in templatesList %}
                 <li>
                     {% if forloop.counter0 == templateIndex %}
@@ -98,5 +106,12 @@
                 </li>
             {% endfor %}
         </ul>
+        <form class ="choose_name_form" action="" method="post">
+            <h2>Simulation Options:</h2>
+            <p>Default values will be used if none are provided.</p>
+            {% csrf_token %}
+            {{ form }}
+            <input type="submit" value="Submit">
+        </form>
     </body>
 {% endblock %}
