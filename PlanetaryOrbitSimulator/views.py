@@ -97,17 +97,29 @@ def editSimulationPage(request, selectedBody = 0):
 
     bodyDisplayDetails = {"bodyMass": simulationEngine.listOfBodies[selectedBody][2],
                           "bodyColour": simulationEngine.listOfBodies[selectedBody][4][0],
-                          "bodyName": simulationEngine.listOfBodies[selectedBody][5]}
-    form = BodyDetailsForm(request.POST or None, initial=bodyDisplayDetails)
+                          "bodyName": simulationEngine.listOfBodies[selectedBody][5],
+                          "bodyRadius": simulationEngine.listOfBodies[selectedBody][3],
+                          "bodyXPosition": simulationEngine.listOfBodies[selectedBody][0][0],
+                          "bodyYPosition": simulationEngine.listOfBodies[selectedBody][0][1],
+                          "bodyXSpeed": simulationEngine.listOfBodies[selectedBody][1][0],
+                          "bodyYSpeed": simulationEngine.listOfBodies[selectedBody][1][1]}
+    detailsForm = BodyDetailsForm(request.POST or None, initial=bodyDisplayDetails)
 
-    if form.is_valid():
+    if detailsForm.is_valid():
         # Load parameters from form
-        simulationEngine.listOfBodies[selectedBody][2] = form.cleaned_data["bodyMass"]
-        simulationEngine.listOfBodies[selectedBody][5] = form.cleaned_data["bodyName"]
-        if form.cleaned_data["bodyColour"] in mcolors.CSS4_COLORS:
+        simulationEngine.listOfBodies[selectedBody][2] = detailsForm.cleaned_data["bodyMass"]
+        simulationEngine.listOfBodies[selectedBody][3] = detailsForm.cleaned_data["bodyRadius"]
+        simulationEngine.listOfBodies[selectedBody][5] = detailsForm.cleaned_data["bodyName"]
+
+        simulationEngine.listOfBodies[selectedBody][0][0] = detailsForm.cleaned_data["bodyXPosition"]
+        simulationEngine.listOfBodies[selectedBody][0][1] = detailsForm.cleaned_data["bodyYPosition"]
+        simulationEngine.listOfBodies[selectedBody][1][0] = detailsForm.cleaned_data["bodyXSpeed"]
+        simulationEngine.listOfBodies[selectedBody][1][1] = detailsForm.cleaned_data["bodyYSpeed"]
+
+        if detailsForm.cleaned_data["bodyColour"] in mcolors.CSS4_COLORS:
             # Only update colour if valid colour entered
-            simulationEngine.listOfBodies[selectedBody][4][0] = form.cleaned_data["bodyColour"]
-            simulationEngine.listOfBodies[selectedBody][4][1] = form.cleaned_data["bodyColour"] # Update both colour fields
+            simulationEngine.listOfBodies[selectedBody][4][0] = detailsForm.cleaned_data["bodyColour"]
+            simulationEngine.listOfBodies[selectedBody][4][1] = detailsForm.cleaned_data["bodyColour"] # Update both colour fields
         else:
             print("Invalid colour!")
 
@@ -138,7 +150,7 @@ def editSimulationPage(request, selectedBody = 0):
     # Package context for page
     context = {"simulationSizeKM": fStatedSimulationSize, "simulationSizeAU": AUStatedSimulationSize,
                "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "selectedBody": selectedBody,
-               "nextBody": nextBody, "lastBody": lastBody, "form": form}
+               "nextBody": nextBody, "lastBody": lastBody, "detailsForm": detailsForm}
 
     return render(request, "editSystemPage.html", context)
 

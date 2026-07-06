@@ -23,8 +23,8 @@
 
         .run_simulation_button {
             position: absolute;
-            top: 70vh;
-            left: 87vw;
+            top: 85vh;
+            left: 35vw;
             height: 10vh;
             width: 10vw;
             text-align: center;
@@ -59,18 +59,16 @@
 
         .simulation_image_box {
             position: absolute;
-            top: 15vh;
-            left: 5vw;
+            top: 10vh;
+            left: 0;
             width: 50vw;
             height: 50vh;
             text-align: center;
-            border: 2px solid black;
-            border-radius: 5vh;
         }
 
         .simulation_information_box {
             position: absolute;
-            top: 15vh;
+            top: 10vh;
             left: 80vw;
             height: 35vh;
             width: 15vw;
@@ -85,9 +83,9 @@
 
         .body_information_box {
             position: absolute;
-            top: 15vh;
-            left: 60vw;
-            height: 35vh;
+            top: 10vh;
+            left: 55vw;
+            height: 60vh;
             width: 15vw;
             text-align: center;
             border: 2px solid black;
@@ -133,9 +131,8 @@
 
         <form class ="body_information_box" action="" method="post">
             <h2>Body Values:</h2>
-            <p>Selected Body Number: {{selectedBody}}</p>
             {% csrf_token %}
-            {{ form }}
+            {{ detailsForm }}
             <input type="submit" value="Submit">
         </form>
     </body>
