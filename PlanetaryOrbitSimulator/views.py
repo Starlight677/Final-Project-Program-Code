@@ -1,6 +1,6 @@
 from django.shortcuts import render
-from .forms import SimulationNameForm
-
+from .forms import SimulationNameForm, BodyDetailsForm
+import matplotlib.colors as mcolors
 from.models import StoredSimulation
 
 from PlanetaryOrbitSimulator.twobodytesting import PlanetarySimulationEngine
@@ -85,6 +85,62 @@ def loadingPage(request, saveIndex = 0):
         del request.session["simulationEngine"]
 
     return render(request, "LoadSystemPage.html", context)
+
+def editSimulationPage(request, selectedBody = 0):
+    # For editing the simulation
+
+    # Load/create a database entry of the simulation
+    storedSim, existingSimLoaded = loadSimulationEntry(request)
+
+    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
+    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
+
+    bodyDisplayDetails = {"bodyMass": simulationEngine.listOfBodies[selectedBody][2],
+                          "bodyColour": simulationEngine.listOfBodies[selectedBody][4][0],
+                          "bodyName": simulationEngine.listOfBodies[selectedBody][5]}
+    form = BodyDetailsForm(request.POST or None, initial=bodyDisplayDetails)
+
+    if form.is_valid():
+        # Load parameters from form
+        simulationEngine.listOfBodies[selectedBody][2] = form.cleaned_data["bodyMass"]
+        simulationEngine.listOfBodies[selectedBody][5] = form.cleaned_data["bodyName"]
+        if form.cleaned_data["bodyColour"] in mcolors.CSS4_COLORS:
+            # Only update colour if valid colour entered
+            simulationEngine.listOfBodies[selectedBody][4][0] = form.cleaned_data["bodyColour"]
+            simulationEngine.listOfBodies[selectedBody][4][1] = form.cleaned_data["bodyColour"] # Update both colour fields
+        else:
+            print("Invalid colour!")
+
+    # Display graph and save any edits
+    simulationEngine.drawGraph()
+    request.session["simulationEngine"] = simulationEngine
+    storedSim = loadValues(storedSim, simulationEngine)
+    storedSim.save()
+
+    # Calculate values for display
+    daysElapsed = round((simulationEngine.simulationTime / 86400) * simulationEngine.secondsPerSimulationTick,2)  # Simulation time in days
+    daysPerTick = round((simulationEngine.ticksPerPageUpdate / 86400) * simulationEngine.secondsPerSimulationTick, 2)
+    statedSimulationSize = round(simulationEngine.simulationSize * 1.495979e8)  # Simulation diameter in kilometers
+    fStatedSimulationSize = f"{statedSimulationSize:,}"  # Adds commas to the number
+    AUStatedSimulationSize = round(simulationEngine.simulationSize,3)  # Calculates simulation diameter in Astronomical Units to 3DP
+
+    # Calculate next and previous bodies
+    if selectedBody >= len(simulationEngine.listOfBodies) - 1:
+        nextBody = selectedBody
+        lastBody = selectedBody - 1
+    elif selectedBody <= 0:
+        nextBody = selectedBody + 1
+        lastBody = selectedBody
+    else:
+        nextBody = selectedBody + 1
+        lastBody = selectedBody - 1
+
+    # Package context for page
+    context = {"simulationSizeKM": fStatedSimulationSize, "simulationSizeAU": AUStatedSimulationSize,
+               "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "selectedBody": selectedBody,
+               "nextBody": nextBody, "lastBody": lastBody, "form": form}
+
+    return render(request, "editSystemPage.html", context)
 
 # Here starts methods used for runSimulation()
 
@@ -175,3 +231,13 @@ def runSimulation(request, startSimulation = 0, autoRunSimulation = 0, reverseSi
                "reverseSimulation": reverseSimulation, "simulationInReverse": simulationInReverse, "invertedReverseSimulation": invertedReverseSimulation}
 
     return render(request, "runSimulationPage.html", context)
+
+def switchRun(request, autoRunSimulation, reverseSimulation):
+    # Switch whether the simulation is running or not
+    if autoRunSimulation == 0:
+        autoRunSimulation = 1
+    else:
+        autoRunSimulation = 0
+
+    # Then run the simulation
+    return runSimulation(request, 0, autoRunSimulation, reverseSimulation)

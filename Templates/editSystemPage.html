@@ -21,7 +21,7 @@
             border-radius: 5vh;
         }
 
-        .start_simulation_button {
+        .run_simulation_button {
             position: absolute;
             top: 70vh;
             left: 87vw;
@@ -33,7 +33,7 @@
             border-radius: 5vh;
         }
 
-        .tick_simulation_button {
+        .next_body_button {
             position: absolute;
             top: 85vh;
             left: 87vw;
@@ -45,21 +45,9 @@
             border-radius: 5vh;
         }
 
-        .invert_simulation_button {
+        .previous_body_button {
             position: absolute;
             top: 85vh;
-            left: 75vw;
-            height: 10vh;
-            width: 10vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 5vh;
-        }
-
-        .edit_simulation_button {
-            position: absolute;
-            top: 70vh;
             left: 75vw;
             height: 10vh;
             width: 10vw;
@@ -72,7 +60,7 @@
         .simulation_image_box {
             position: absolute;
             top: 15vh;
-            left: 25vw;
+            left: 5vw;
             width: 50vw;
             height: 50vh;
             text-align: center;
@@ -83,8 +71,8 @@
         .simulation_information_box {
             position: absolute;
             top: 15vh;
-            left: 75vw;
-            height: 40vh;
+            left: 80vw;
+            height: 35vh;
             width: 15vw;
             text-align: center;
             border: 2px solid black;
@@ -94,6 +82,22 @@
             padding: 5px;
             border-radius: 5vh;
         }
+
+        .body_information_box {
+            position: absolute;
+            top: 15vh;
+            left: 60vw;
+            height: 35vh;
+            width: 15vw;
+            text-align: center;
+            border: 2px solid black;
+            background-color: white;
+            overflow: auto;
+            display: block;
+            padding: 5px;
+            border-radius: 5vh;
+        }
+
     </style>
     <body>
         <button class="back_to_menu_button"
@@ -101,24 +105,19 @@
             Return to Main Menu
         </button>
 
-        <button class="start_simulation_button"
-                onclick="window.location.href='/autoRun/{{autoRunSimulation}}/{{reverseSimulation}}'">
-            Start/Stop Simulation
+        <button class="next_body_button"
+                onclick="window.location.href='/edit/{{nextBody}}'">
+            Next Body
         </button>
 
-        <button class="tick_simulation_button"
-                onclick="window.location.href='/run/0/0/{{reverseSimulation}}'">
-            Tick Simulation
+        <button class="previous_body_button"
+                onclick="window.location.href='/edit/{{lastBody}}'">
+            Previous Body
         </button>
 
-        <button class="invert_simulation_button"
-                onclick="window.location.href='/run/0/0/{{invertedReverseSimulation}}'">
-            Reverse Simulation Direction
-        </button>
-
-        <button class="edit_simulation_button"
-                onclick="window.location.href='/edit/0'">
-            Edit Simulation
+        <button class="run_simulation_button"
+                onclick="window.location.href='/run/1/0'">
+            Run Simulation
         </button>
 
         <div class ="simulation_image_box">
@@ -130,13 +129,14 @@
             <p>Simulation Display Size: {{simulationSizeKM}}km / {{simulationSizeAU}}AU</p>
             <p>Days Per Simulation Tick: {{daysPerTick}}</p>
             <p>Simulation Days Elapsed: {{daysElapsed}}</p>
-            <p>Simulation Iteration Reversed: {{simulationInReverse}}</p>
         </div>
+
+        <form class ="body_information_box" action="" method="post">
+            <h2>Body Values:</h2>
+            <p>Selected Body Number: {{selectedBody}}</p>
+            {% csrf_token %}
+            {{ form }}
+            <input type="submit" value="Submit">
+        </form>
     </body>
-    <script>
-        let isSimulationRunning = {{autoRunSimulation}}
-        if (isSimulationRunning == 1) {
-            window.setTimeout(function () {location.href = "";}, 1000);
-        }
-    </script>
 {% endblock %}

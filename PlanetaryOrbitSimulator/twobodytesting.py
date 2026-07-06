@@ -217,16 +217,17 @@ class PlanetarySimulationEngine:
         earthMass = 5.972e24
         moonMass = earthMass * 0.0123
         if templateNumber == 0: # Inner Solar System planets
-            body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 1, 7e8, ['yellow', 'yellow']]  # The Sun
+            body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 1, 7e8, ['yellow', 'yellow'],"The Sun"]
             body2Stats = [[-1.521e11, 0, 0], [0, 29290, 0], earthMass * 1, 6.3e6,
-                          ['blue', 'blue']]  # The Earth (at aphelion)
-            body3Stats = [[1.082e11, 0, 0], [0, -35000, 0], earthMass * 0.815, 6.05e6, ['orange', 'orange']]  # Venus
+                          ['blue', 'blue'], "The Earth"]  # The Earth (at aphelion)
+            body3Stats = [[1.082e11, 0, 0], [0, -35000, 0], earthMass * 0.815, 6.05e6,
+                          ['orange', 'orange'], "Venus"]  # Venus
             body4Stats = [[0, 2.064e11, 0], [26490, 0, 0], earthMass * 0.107, 3.396e6,
-                          ['red', 'red']]  # Mars (at perihelion)
+                          ['red', 'red'], "Mars"]  # Mars (at perihelion)
             body5Stats = [[0, -6.982e10, 0], [-38900, 0, 0], earthMass * 0.055, 2.439e6,
-                          ['darkgrey', 'darkgrey']]  # Mercury (at aphelion)
+                          ['darkgrey', 'darkgrey'], "Mercury"]  # Mercury (at aphelion)
             body6Stats = [[-1.521e11, 3.84e8, 0], [1022, 29290, 0], moonMass * 1, 1.738e6,
-                          ['silver', 'silver']]  # The Moon
+                          ['silver', 'silver'], "The Moon"]  # The Moon
             self.listOfBodies = [body1Stats, body6Stats, body3Stats, body4Stats, body5Stats, body2Stats]
 
             self.secondsPerSimulationTick = 60
@@ -237,11 +238,11 @@ class PlanetarySimulationEngine:
 
         elif templateNumber == 1:
             # Moons of Jupiter
-            body1Stats = [[0, 0, 0], [0, 0, 0], earthMass * 318, 6.989e7, ['darkorange', 'darkorange']]  # Jupiter
-            body2Stats = [[4.217e8, 0, 0], [0, -17334, 0], moonMass * 1.05, 3.643e6, ['gold', 'gold']]  # Io
-            body3Stats = [[-6.71e8, 0, 0], [0, 13703, 0], moonMass * 0.9, 3.122e6, ['lightsteelblue', 'lightsteelblue']]  # Europa
-            body4Stats = [[0, 1.07e9, 0], [10880, 0, 0], moonMass * 2, 5.262e6, ['silver', 'silver']]  # Ganymede
-            body5Stats = [[0, -1.883e9, 0], [-8204, 0, 0], moonMass * 1.5, 4.821e6, ['grey', 'grey']]  # Callisto
+            body1Stats = [[0, 0, 0], [0, 0, 0], earthMass * 318, 6.989e7, ['darkorange', 'darkorange'], "Jupiter"]  # Jupiter
+            body2Stats = [[4.217e8, 0, 0], [0, -17334, 0], moonMass * 1.05, 3.643e6, ['gold', 'gold'], "Io"]  # Io
+            body3Stats = [[-6.71e8, 0, 0], [0, 13703, 0], moonMass * 0.9, 3.122e6, ['lightsteelblue', 'lightsteelblue'], "Europa"]  # Europa
+            body4Stats = [[0, 1.07e9, 0], [10880, 0, 0], moonMass * 2, 5.262e6, ['silver', 'silver'], "Ganymede"]  # Ganymede
+            body5Stats = [[0, -1.883e9, 0], [-8204, 0, 0], moonMass * 1.5, 4.821e6, ['grey', 'grey'], "Callisto"]  # Callisto
             self.listOfBodies = [body1Stats, body2Stats, body3Stats, body4Stats, body5Stats]
 
             self.secondsPerSimulationTick = 6 # 10 simulation ticks per minute
@@ -252,19 +253,19 @@ class PlanetarySimulationEngine:
 
         elif templateNumber == 2:
             # Ascendia system (A star)
-            body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 0.2656, 7e7*0.474, ['orange', 'orange']] # Primary star
+            body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 0.2656, 7e7*0.474, ['orange', 'orange'], "Col 285 Sector ZX-R b5-0 A"] # Primary star
             body2Stats = [[-3.3e9, 0, 0], [0, 103364, 0], earthMass * 0.0908, 2.887e6,
-                          ['grey', 'grey']]  # A 1
+                          ['grey', 'grey'], "Col 285 Sector ZX-R b5-0 A 1"]  # A 1
             body3Stats = [[6e9, 0, 0], [0, -76657, 0], earthMass * 0.1077, 3.049e6,
-                          ['darkgrey', 'darkgrey']]  # Stephenson's Rock
+                          ['darkgrey', 'darkgrey'], "Stephenson's Rock"]  # Stephenson's Rock
             body4Stats = [[0,-1.04e10, 0], [-58225, 0, 0], earthMass * 0.0965, 2.944e6,
-                          ['orangered', 'orangered']]  # A 3
+                          ['orangered', 'orangered'], "Col 285 Sector ZX-R b5-0 A 3"]  # A 3
             body5Stats = [[0, 1.9e10, 0], [43077, 0, 0], earthMass * 0.1623, 4.434e6,
-                          ['lightskyblue', 'lightskyblue']]  # Ascendia
+                          ['lightskyblue', 'lightskyblue'], "Ascendia"]  # Ascendia
             body6Stats = [[0, -3.5e10, 0], [-31739, 0, 0], earthMass * 0.3876, 5.802e6,
-                          ['silver', 'silver']]  # A 5
+                          ['silver', 'silver'], "Col 285 Sector ZX-R b5-0 A 5"]  # A 5
             body7Stats = [[-6.44e10, 0, 0], [0, 23398, 0], earthMass * 0.2808, 5.27e6,
-                          ['silver', 'silver']]  # A 6
+                          ['silver', 'silver'], "Col 285 Sector ZX-R b5-0 A 6"]  # A 6
             self.listOfBodies = [body1Stats, body2Stats, body3Stats, body4Stats, body5Stats, body6Stats, body7Stats]
             self.secondsPerSimulationTick = 60
             self.simulationSize = 0.5  # Size of the displayed area in AU
@@ -273,8 +274,8 @@ class PlanetarySimulationEngine:
             self.simulationName = "Ascendia Primary Star"
         elif templateNumber == 3:
             # Binary Stars
-            body1Stats = [[-7.51e10, 0, 0], [0, 11000, 0], solarMass * 1, 7e7, ['yellow', 'yellow']] # Primary star
-            body2Stats = [[1.521e11, 0, 0], [0, -22000, 0], solarMass * 0.5, 5e7, ['orange', 'orange']] # Secondary star
+            body1Stats = [[-7.51e10, 0, 0], [0, 11000, 0], solarMass * 1, 7e7, ['yellow', 'yellow'], "Primary Star"] # Primary star
+            body2Stats = [[1.521e11, 0, 0], [0, -22000, 0], solarMass * 0.5, 5e7, ['orange', 'orange'], "Secondary Star"] # Secondary star
             self.listOfBodies = [body1Stats, body2Stats]
             self.secondsPerSimulationTick = 60
             self.simulationSize = 2  # Size of the displayed area in AU
@@ -283,7 +284,7 @@ class PlanetarySimulationEngine:
             self.simulationName = "Binary Stars"
         else:
             # Display only a star if error in choosing starter configuration
-            body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 1, 7e7, ['yellow', 'yellow']]
+            body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 1, 7e7, ['yellow', 'yellow'], "Primary Star"]
             self.listOfBodies = [body1Stats]
             self.secondsPerSimulationTick = 60
             self.simulationSize = 1  # Size of the displayed area in meters
@@ -291,13 +292,16 @@ class PlanetarySimulationEngine:
             self.ticksPerPageUpdate = round((86400 * 5) / self.secondsPerSimulationTick)  # One update per 5 days
             self.simulationName = "Single Star"
 
+        # Construct the BodyPoints list with a structured entry per body
         self.bodyPoints = []
         for i in range(len(self.listOfBodies)):
             self.bodyPoints.append([[], [], [[],[],[]]])
 
     def rollbackSimulation(self):
+        # Roll back the simulation
         storedValuesPerUpdate = round(self.ticksPerPageUpdate/self.ticksPerStorageUpdate)
         AU = 1.495979e11
+        # For each body, iterate through the stored points backwards
         for i in range(storedValuesPerUpdate):
             for index, body in enumerate(self.listOfBodies):
                 body[0][0] = self.bodyPoints[index][0].pop()*AU
@@ -306,6 +310,7 @@ class PlanetarySimulationEngine:
                 body[1][1] = self.bodyPoints[index][2][1].pop()
                 body[1][2] = self.bodyPoints[index][2][2].pop()
                 self.listOfBodies[index] = body
+
         self.simulationTime = self.simulationTime - self.ticksPerPageUpdate
         self.drawGraph()
         pass
