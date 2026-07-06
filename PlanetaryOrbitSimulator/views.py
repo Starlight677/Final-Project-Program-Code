@@ -18,7 +18,7 @@ def settingsPage(request):
 def createPage(request, templateIndex = 0):
     # Backend for the Create New System page
     request.session["templateIndex"] = templateIndex
-    templatesList = ["Inner Solar System", "Galilean Moons of Jupiter", "Ascendia Primary Star", "Single Star"]
+    templatesList = ["Inner Solar System", "Galilean Moons of Jupiter", "Ascendia Primary Star", "Binary Stars", "Single Star"]
 
     # Load a Planetary Simulation Engine for accessing parameters
     simulationEngine = PlanetarySimulationEngine()
@@ -60,26 +60,30 @@ def loadingPage(request, saveIndex = 0):
         allSimulations.order_by("pk")
         selectedSimulation = allSimulations[saveIndex]
         request.session["selectedSimulation"] = selectedSimulation
+
+        # Create variables for display in information box
+        daysElapsed = round((selectedSimulation.simulationTime / 86400) * selectedSimulation.secondsPerSimulationTick,
+                            2)  # Simulation time in days
+        daysPerTick = round(
+            (selectedSimulation.ticksPerPageUpdate / 86400) * selectedSimulation.secondsPerSimulationTick, 2)
+        statedSimulationSize = round(
+            selectedSimulation.simulationSize * 1.495979e8)  # Simulation diameter in kilometers
+        fStatedSimulationSize = f"{statedSimulationSize:,}"  # Adds commas to the distance number
+        AUStatedSimulationSize = round(selectedSimulation.simulationSize,
+                                       3)  # Calculates simulation diameter in Astronomical Units to 3DP
+        context = {"allSimulations": allSimulations, "saveIndex": saveIndex, "name": selectedSimulation.name,
+                   "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "simulationSizeKM": fStatedSimulationSize,
+                   "simulationSizeAU": AUStatedSimulationSize}
     except:
         # If stored simulations can't be found, return blank array
         allSimulations = []
         selectedSimulation = []
+        context = {"allSimulations": allSimulations, "selectedSimulation": selectedSimulation}
 
     # Wipe this field to stop previous simulations carrying over
     if "simulationEngine" in request.session:
         del request.session["simulationEngine"]
 
-    # Create variables for display in information box
-    daysElapsed = round((selectedSimulation.simulationTime / 86400) * selectedSimulation.secondsPerSimulationTick,
-                        2)  # Simulation time in days
-    daysPerTick = round((selectedSimulation.ticksPerPageUpdate / 86400) * selectedSimulation.secondsPerSimulationTick, 2)
-    statedSimulationSize = round(selectedSimulation.simulationSize * 1.495979e8)  # Simulation diameter in kilometers
-    fStatedSimulationSize = f"{statedSimulationSize:,}"  # Adds commas to the distance number
-    AUStatedSimulationSize = round(selectedSimulation.simulationSize,
-                                   3)  # Calculates simulation diameter in Astronomical Units to 3DP
-    context = {"allSimulations": allSimulations, "saveIndex": saveIndex, "name": selectedSimulation.name,
-               "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "simulationSizeKM": fStatedSimulationSize,
-               "simulationSizeAU": AUStatedSimulationSize}
     return render(request, "LoadSystemPage.html", context)
 
 # Here starts methods used for runSimulation()
@@ -96,62 +100,65 @@ def loadValues(objectToLoad, objectLoadFrom):
 
     return objectToLoad
 
-def loadSimulationEntry(request, restartSimulation):
+def loadSimulationEntry(request):
     #Load an entry from the simulation
-    if "selectedSimulation" in request.session and restartSimulation == 0:
-        # Load selected save if found and not ordered to restart
-        storedSim = request.session["selectedSimulation"]
+    if "selectedSimulation" in request.session:
+        # Use existing save if found
         existingSimLoaded = True
     elif "simulationEngine" in request.session:
-        # If name for new save can be found (from stored simulationEngine), use it
+        # If not, create new save
         request.session["selectedSimulation"] = StoredSimulation(name=request.session["simulationEngine"].simulationName)
-        storedSim = request.session["selectedSimulation"]
-        request.session["selectedSimulationIndex"] = storedSim.pk
         existingSimLoaded = False
     else:
-        # If no name, use placeholder
+        # If no name for new save, use placeholder
         request.session["selectedSimulation"] = StoredSimulation(name="No name found")
-        storedSim = request.session["selectedSimulation"]
-        request.session["selectedSimulationIndex"] = storedSim.pk
         existingSimLoaded = False
+    # Load save
+    storedSim = request.session["selectedSimulation"]
+    request.session["selectedSimulationIndex"] = storedSim.pk
     return storedSim, existingSimLoaded
 
 def loadSimulationEngine(request, storedSim):
     # Create a PlanetarySimulationEngine() object
     if "simulationEngine" in request.session:
-        # Load variables from session if they exist and the simulation isn't ordered to restart
+        # Load variables from session if they exist
         simulationEngine = request.session["simulationEngine"]
         setTicks = simulationEngine.ticksPerPageUpdate + simulationEngine.simulationTime
     else:
-        # If variables not found, load from the database instead (slower than loading from session)
+        # If variables not found in session, load from the database instead
         simulationEngine = PlanetarySimulationEngine()
         simulationEngine = loadValues(simulationEngine, storedSim)
         setTicks = simulationEngine.ticksPerPageUpdate + simulationEngine.simulationTime
     return simulationEngine, setTicks
 
 # The backend main loop for running the simulation - runs on every simulation page refresh
-def runSimulation(request, restartSimulation = 0, autoRunSimulation = 0, reverseSimulation = 0):
+def runSimulation(request, startSimulation = 0, autoRunSimulation = 0, reverseSimulation = 0):
     # Load/create a database entry of the simulation
-    storedSim, existingSimLoaded = loadSimulationEntry(request, restartSimulation)
+    storedSim, existingSimLoaded = loadSimulationEntry(request)
 
     # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
     simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
 
-    if reverseSimulation == 0 or simulationEngine.simulationTime == 0:
-        # Run instance of the simulation
+    if (reverseSimulation == 0 or simulationEngine.simulationTime == 0) and startSimulation == 0:
+        # Run instance of the simulation if not initially loaded
         simulationEngine.runSimulation(setTicks)
         simulationInReverse = "No"
         invertedReverseSimulation = 1 # Used for switching on the HTML page
-    else:
+    elif startSimulation == 0:
         # Run simulation in reverse if set to
         simulationEngine.rollbackSimulation()
         simulationInReverse = "Yes"
         invertedReverseSimulation = 0  # Used for switching on the HTML page
+    else:
+        # If simulation just being loaded, only draw graph
+        simulationEngine.drawGraph()
+        simulationInReverse = "No"
+        invertedReverseSimulation = 1
 
-    # Store updated simulation
+    # Store updated simulation in session variable
     request.session["simulationEngine"] = simulationEngine
 
-    # Update database entry
+    # Update database entry for simulation
     storedSim = loadValues(storedSim, simulationEngine)
     storedSim.save()
 

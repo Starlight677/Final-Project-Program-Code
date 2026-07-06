@@ -15,6 +15,7 @@ class PlanetarySimulationEngine:
         self.ticksPerPageUpdate = 0
         self.secondsPerSimulationTick = 0
         self.simulationName = ""
+        self.collidedPlanets = []
         pass
 
     def tickBodyPair(self, body1Coords, body2Coords, body1Motion, body2Motion, body1Mass,
@@ -37,24 +38,17 @@ class PlanetarySimulationEngine:
             exceedsThreshold = False
 
         # Add existing motion to new motion from gravity
-        body1Motion = self.modifyListContents(body1Motion, body1Acceleration, "+", secondsPerSimulationTick)
-        body2Motion = self.modifyListContents(body2Motion, body2Acceleration, "+", secondsPerSimulationTick)
+        body1Motion = self.addAcceleration(body1Motion, body1Acceleration, secondsPerSimulationTick)
+        body2Motion = self.addAcceleration(body2Motion, body2Acceleration, secondsPerSimulationTick)
 
         return body1Motion, body2Motion, exceedsThreshold
 
-    def modifyListContents(self, list1, list2, modifier, valueMultiplier = 1):
-        # Adds or multiplies together the contents of two lists, with a multiplier
+    def addAcceleration(self, bodyMotion, bodyAcceleration, valueMultiplier = 1):
+        # Adds together the contents of two lists, with a multiplier
         # used for accounting for seconds per tick
-        if len(list1) == len(list2):
-            if modifier == "+":
-                for i in range(len(list1)):
-                    list1[i] = list1[i] + list2[i] * valueMultiplier
-            elif modifier == "*":
-                for i in range(len(list1)):
-                    list1[i] = list1[i] * list2[i] * valueMultiplier
-            return list1
-        else:
-            return list1
+        for i in range(len(bodyMotion)):
+            bodyMotion[i] = bodyMotion[i] + bodyAcceleration[i] * valueMultiplier
+        return bodyMotion
 
     def determineDistances(self, body1Coords, body2Coords):
         # Calculates the distances (per-axis and total) between the two bodies
@@ -127,7 +121,7 @@ class PlanetarySimulationEngine:
 
         # Update position of the processed body after all influences are calculated
         body1Stats = self.listOfBodies[bodyNumber]
-        body1Stats[0] = self.modifyListContents(body1Stats[0], body1Stats[1], "+", self.secondsPerSimulationTick)
+        body1Stats[0] = self.addAcceleration(body1Stats[0], body1Stats[1], self.secondsPerSimulationTick)
         self.listOfBodies[bodyNumber] = body1Stats
 
         if filterTick:
@@ -169,7 +163,8 @@ class PlanetarySimulationEngine:
             except:
                 # Stop simulation if planets have collided
                 bodyCollision = True
-                print("Simulation Terminated upon Body Collision")
+                self.collidedPlanets.append(bodyNumber)
+                print("Body Collision")
 
             AU = 1.495979e11
             for bodyNumber, body in enumerate(self.listOfBodies):  # Add current points of planets (in AU) to list for display
@@ -276,13 +271,22 @@ class PlanetarySimulationEngine:
             self.ticksPerStorageUpdate = 600 / self.secondsPerSimulationTick  # One course point saved every ten minutes
             self.ticksPerPageUpdate = round((86400/2) / self.secondsPerSimulationTick)  # One update per 12 hours
             self.simulationName = "Ascendia Primary Star"
-
+        elif templateNumber == 3:
+            # Binary Stars
+            body1Stats = [[-7.51e10, 0, 0], [0, 11000, 0], solarMass * 1, 7e7, ['yellow', 'yellow']] # Primary star
+            body2Stats = [[1.521e11, 0, 0], [0, -22000, 0], solarMass * 0.5, 5e7, ['orange', 'orange']] # Secondary star
+            self.listOfBodies = [body1Stats, body2Stats]
+            self.secondsPerSimulationTick = 60
+            self.simulationSize = 2  # Size of the displayed area in AU
+            self.ticksPerStorageUpdate = 3600 / self.secondsPerSimulationTick  # One course point saved every hour
+            self.ticksPerPageUpdate = round((86400 * 30) / self.secondsPerSimulationTick)  # One update per 30 days
+            self.simulationName = "Binary Stars"
         else:
             # Display only a star if error in choosing starter configuration
             body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 1, 7e7, ['yellow', 'yellow']]
             self.listOfBodies = [body1Stats]
             self.secondsPerSimulationTick = 60
-            self.simulationSize = 1  # Size of the displayed area in AU
+            self.simulationSize = 1  # Size of the displayed area in meters
             self.ticksPerStorageUpdate = 3600 / self.secondsPerSimulationTick  # One course point saved every hour
             self.ticksPerPageUpdate = round((86400 * 5) / self.secondsPerSimulationTick)  # One update per 5 days
             self.simulationName = "Single Star"
