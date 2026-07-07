@@ -14,8 +14,8 @@ class BodyDetailsForm(forms.Form):
     bodyRadius = forms.FloatField(label="Body Radius (KM)", required=False)
     bodyColour = forms.CharField(label="Body Colour", max_length=100, required=False)
 
-    bodyXPosition = forms.FloatField(label="Body X Position (AU from Centre)", required=False)
-    bodyYPosition = forms.FloatField(label="Body Y Position (AU from Centre)", required=False)
+    bodyXPosition = forms.FloatField(label="Body X Position (AU)", required=False)
+    bodyYPosition = forms.FloatField(label="Body Y Position (AU)", required=False)
 
     bodyXSpeed = forms.FloatField(label="Body X Velocity (KM/s)", required=False)
     bodyYSpeed = forms.FloatField(label="Body Y Velocity (KM/s)", required=False)

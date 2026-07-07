@@ -73,7 +73,7 @@
             position: absolute;
             top: 15vh;
             left: 75vw;
-            height: 40vh;
+            height: 45vh;
             width: 15vw;
             text-align: center;
             border: 2px solid black;
@@ -114,13 +114,13 @@
             {% endfor %}
         </ul>
 
-        <div class ="simulation_information_box">
+        <form class ="simulation_information_box" action="" method="post">
             <h2>Simulation Information:</h2>
-            <p>Simulation Name: {{name}}</p>
-            <p>Simulation Display Size: {{simulationSizeKM}}km / {{simulationSizeAU}}AU</p>
-            <p>Days Per Simulation Tick: {{daysPerTick}}</p>
+            {% csrf_token %}
+            {{infoForm}}
             <p>Simulation Days Elapsed: {{daysElapsed}}</p>
-        </div>
+            <input type="submit" value="Submit">
+        </form>
     </body>
 
 

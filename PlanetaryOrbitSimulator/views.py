@@ -1,3 +1,4 @@
+from django.http import JsonResponse
 from django.shortcuts import render
 from .forms import SimulationNameForm, BodyDetailsForm
 import matplotlib.colors as mcolors
@@ -61,6 +62,23 @@ def loadingPage(request, saveIndex = 0):
         selectedSimulation = allSimulations[saveIndex]
         request.session["selectedSimulation"] = selectedSimulation
 
+        simulationEngine, setTicks = loadSimulationEngine(request, selectedSimulation, True)
+
+        simulationDefaultValues = {"simulationName": selectedSimulation.name,
+                                   "simulationSize": simulationEngine.simulationSize,
+                                   "simulationTimePerUpdate": simulationEngine.ticksPerPageUpdate/
+                                                              (86400/simulationEngine.secondsPerSimulationTick), }
+        infoForm = SimulationNameForm(request.POST or None, initial=simulationDefaultValues)
+
+        if infoForm.is_valid():
+            # Load parameters from form
+            selectedSimulation.name = infoForm.cleaned_data["simulationName"]
+            simulationEngine.simulationSize = infoForm.cleaned_data["simulationSize"]
+            adjustedTimePerTick = round(infoForm.cleaned_data["simulationTimePerUpdate"] * 86400)
+            simulationEngine.ticksPerPageUpdate = adjustedTimePerTick / simulationEngine.secondsPerSimulationTick
+        request.session["simulationEngine"] = simulationEngine
+        selectedSimulation.save()
+
         # Create variables for display in information box
         daysElapsed = round((selectedSimulation.simulationTime / 86400) * selectedSimulation.secondsPerSimulationTick,
                             2)  # Simulation time in days
@@ -73,16 +91,12 @@ def loadingPage(request, saveIndex = 0):
                                        3)  # Calculates simulation diameter in Astronomical Units to 3DP
         context = {"allSimulations": allSimulations, "saveIndex": saveIndex, "name": selectedSimulation.name,
                    "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "simulationSizeKM": fStatedSimulationSize,
-                   "simulationSizeAU": AUStatedSimulationSize}
+                   "simulationSizeAU": AUStatedSimulationSize, "infoForm": infoForm}
     except:
         # If stored simulations can't be found, return blank array
         allSimulations = []
         selectedSimulation = []
         context = {"allSimulations": allSimulations, "selectedSimulation": selectedSimulation}
-
-    # Wipe this field to stop previous simulations carrying over
-    if "simulationEngine" in request.session:
-        del request.session["simulationEngine"]
 
     return render(request, "LoadSystemPage.html", context)
 
@@ -98,6 +112,7 @@ def editSimulationPage(request, selectedBody = 0):
     #Generate useful context variables
     AU = 1.495979e11
 
+    # Round unnecessary precision before displaying to the user
     bodyDisplayDetails = {"bodyMass": roundToSignificantFigures(simulationEngine.listOfBodies[selectedBody][2],4),
                           "bodyColour": simulationEngine.listOfBodies[selectedBody][4][0],
                           "bodyName": simulationEngine.listOfBodies[selectedBody][5],
@@ -153,7 +168,7 @@ def editSimulationPage(request, selectedBody = 0):
     # Package context for page
     context = {"simulationSizeKM": fStatedSimulationSize, "simulationSizeAU": AUStatedSimulationSize,
                "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "selectedBody": selectedBody,
-               "nextBody": nextBody, "lastBody": lastBody, "detailsForm": detailsForm}
+               "nextBody": nextBody, "lastBody": lastBody, "detailsForm": detailsForm, "simulationName": storedSim.name}
 
     return render(request, "editSystemPage.html", context)
 
@@ -194,12 +209,11 @@ def loadSimulationEntry(request):
         existingSimLoaded = False
     # Load save
     storedSim = request.session["selectedSimulation"]
-    request.session["selectedSimulationIndex"] = storedSim.pk
     return storedSim, existingSimLoaded
 
-def loadSimulationEngine(request, storedSim):
+def loadSimulationEngine(request, storedSim, forceLoad=False):
     # Create a PlanetarySimulationEngine() object
-    if "simulationEngine" in request.session:
+    if "simulationEngine" in request.session and not forceLoad:
         # Load variables from session if they exist
         simulationEngine = request.session["simulationEngine"]
         setTicks = simulationEngine.ticksPerPageUpdate + simulationEngine.simulationTime
@@ -211,7 +225,7 @@ def loadSimulationEngine(request, storedSim):
     return simulationEngine, setTicks
 
 # The backend main loop for running the simulation - runs on every simulation page refresh
-def runSimulation(request, startSimulation = 0, autoRunSimulation = 0, reverseSimulation = 0):
+def runSimulation(request, startSimulation = 0, autoRunSimulation = 0, reverseSimulation = 0, noRefresh = False):
     # Load/create a database entry of the simulation
     storedSim, existingSimLoaded = loadSimulationEntry(request)
 
@@ -251,9 +265,13 @@ def runSimulation(request, startSimulation = 0, autoRunSimulation = 0, reverseSi
     # Package context for page
     context = {"simulationSizeKM": fStatedSimulationSize, "simulationSizeAU": AUStatedSimulationSize,
                "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "autoRunSimulation": autoRunSimulation,
-               "reverseSimulation": reverseSimulation, "simulationInReverse": simulationInReverse, "invertedReverseSimulation": invertedReverseSimulation}
+               "reverseSimulation": reverseSimulation, "simulationInReverse": simulationInReverse,
+               "invertedReverseSimulation": invertedReverseSimulation, "simulationName": storedSim.name}
 
-    return render(request, "runSimulationPage.html", context)
+    if noRefresh:
+        return JsonResponse(context)
+    else:
+        return render(request, "runSimulationPage.html", context)
 
 def switchRun(request, autoRunSimulation, reverseSimulation):
     # Switch whether the simulation is running or not
@@ -263,4 +281,5 @@ def switchRun(request, autoRunSimulation, reverseSimulation):
         autoRunSimulation = 0
 
     # Then run the simulation
+
     return runSimulation(request, 0, autoRunSimulation, reverseSimulation)
