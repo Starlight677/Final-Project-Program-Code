@@ -11,11 +11,11 @@ class BodyDetailsForm(forms.Form):
     # Used for editing a body in the simulation
     bodyName = forms.CharField(label="Body Name", max_length=100, required=False)
     bodyMass = forms.FloatField(label="Body Mass (kg)", required=False)
-    bodyRadius = forms.FloatField(label="Body Radius (M)", required=False)
+    bodyRadius = forms.FloatField(label="Body Radius (KM)", required=False)
     bodyColour = forms.CharField(label="Body Colour", max_length=100, required=False)
 
-    bodyXPosition = forms.FloatField(label="Body X Position (M)", required=False)
-    bodyYPosition = forms.FloatField(label="Body Y Position (M)", required=False)
+    bodyXPosition = forms.FloatField(label="Body X Position (AU from Centre)", required=False)
+    bodyYPosition = forms.FloatField(label="Body Y Position (AU from Centre)", required=False)
 
-    bodyXSpeed = forms.FloatField(label="Body X Velocity (M/s)", required=False)
-    bodyYSpeed = forms.FloatField(label="Body Y Velocity (M/s)", required=False)
+    bodyXSpeed = forms.FloatField(label="Body X Velocity (KM/s)", required=False)
+    bodyYSpeed = forms.FloatField(label="Body Y Velocity (KM/s)", required=False)

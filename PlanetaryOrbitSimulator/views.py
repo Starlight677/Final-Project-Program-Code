@@ -95,14 +95,17 @@ def editSimulationPage(request, selectedBody = 0):
     # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
     simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
 
-    bodyDisplayDetails = {"bodyMass": simulationEngine.listOfBodies[selectedBody][2],
+    #Generate useful context variables
+    AU = 1.495979e11
+
+    bodyDisplayDetails = {"bodyMass": roundToSignificantFigures(simulationEngine.listOfBodies[selectedBody][2],4),
                           "bodyColour": simulationEngine.listOfBodies[selectedBody][4][0],
                           "bodyName": simulationEngine.listOfBodies[selectedBody][5],
-                          "bodyRadius": simulationEngine.listOfBodies[selectedBody][3],
-                          "bodyXPosition": simulationEngine.listOfBodies[selectedBody][0][0],
-                          "bodyYPosition": simulationEngine.listOfBodies[selectedBody][0][1],
-                          "bodyXSpeed": simulationEngine.listOfBodies[selectedBody][1][0],
-                          "bodyYSpeed": simulationEngine.listOfBodies[selectedBody][1][1]}
+                          "bodyRadius": round(simulationEngine.listOfBodies[selectedBody][3]/1000,3),
+                          "bodyXPosition": roundToSignificantFigures(simulationEngine.listOfBodies[selectedBody][0][0]/AU,6),
+                          "bodyYPosition": roundToSignificantFigures(simulationEngine.listOfBodies[selectedBody][0][1]/AU,6),
+                          "bodyXSpeed": round(simulationEngine.listOfBodies[selectedBody][1][0]/1000,3),
+                          "bodyYSpeed": round(simulationEngine.listOfBodies[selectedBody][1][1]/1000,3),}
     detailsForm = BodyDetailsForm(request.POST or None, initial=bodyDisplayDetails)
 
     if detailsForm.is_valid():
@@ -111,10 +114,10 @@ def editSimulationPage(request, selectedBody = 0):
         simulationEngine.listOfBodies[selectedBody][3] = detailsForm.cleaned_data["bodyRadius"]
         simulationEngine.listOfBodies[selectedBody][5] = detailsForm.cleaned_data["bodyName"]
 
-        simulationEngine.listOfBodies[selectedBody][0][0] = detailsForm.cleaned_data["bodyXPosition"]
-        simulationEngine.listOfBodies[selectedBody][0][1] = detailsForm.cleaned_data["bodyYPosition"]
-        simulationEngine.listOfBodies[selectedBody][1][0] = detailsForm.cleaned_data["bodyXSpeed"]
-        simulationEngine.listOfBodies[selectedBody][1][1] = detailsForm.cleaned_data["bodyYSpeed"]
+        simulationEngine.listOfBodies[selectedBody][0][0] = detailsForm.cleaned_data["bodyXPosition"]*AU
+        simulationEngine.listOfBodies[selectedBody][0][1] = detailsForm.cleaned_data["bodyYPosition"]*AU
+        simulationEngine.listOfBodies[selectedBody][1][0] = detailsForm.cleaned_data["bodyXSpeed"]*1000
+        simulationEngine.listOfBodies[selectedBody][1][1] = detailsForm.cleaned_data["bodyYSpeed"]*1000
 
         if detailsForm.cleaned_data["bodyColour"] in mcolors.CSS4_COLORS:
             # Only update colour if valid colour entered
@@ -153,6 +156,14 @@ def editSimulationPage(request, selectedBody = 0):
                "nextBody": nextBody, "lastBody": lastBody, "detailsForm": detailsForm}
 
     return render(request, "editSystemPage.html", context)
+
+def roundToSignificantFigures(number, significiantFigures):
+    # Modified version of a function from IDiTect.com
+    # Article at: https://www.iditect.com/faq/python/how-to-round-a-number-to-significant-figures-in-python.html
+    formattedNumber = "{:.{}g}".format(number, significiantFigures)
+    # Convert the formatted string back to a floating-point number
+    roundedNumber = float(formattedNumber)
+    return roundedNumber
 
 # Here starts methods used for runSimulation()
 
