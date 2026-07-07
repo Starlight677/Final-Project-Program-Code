@@ -39,6 +39,7 @@ def createPage(request, templateIndex = 0):
         simulationEngine.simulationSize = form.cleaned_data["simulationSize"]
         adjustedTimePerTick = round(form.cleaned_data["simulationTimePerUpdate"] * 86400)
         simulationEngine.ticksPerPageUpdate = adjustedTimePerTick/simulationEngine.secondsPerSimulationTick
+    simulationEngine.drawGraph()
     request.session["simulationEngine"] = simulationEngine
 
     # Wipe this field to stop previous simulation conflicts
@@ -76,6 +77,7 @@ def loadingPage(request, saveIndex = 0):
             simulationEngine.simulationSize = infoForm.cleaned_data["simulationSize"]
             adjustedTimePerTick = round(infoForm.cleaned_data["simulationTimePerUpdate"] * 86400)
             simulationEngine.ticksPerPageUpdate = adjustedTimePerTick / simulationEngine.secondsPerSimulationTick
+        simulationEngine.drawGraph()
         request.session["simulationEngine"] = simulationEngine
         selectedSimulation.save()
 
@@ -225,7 +227,7 @@ def loadSimulationEngine(request, storedSim, forceLoad=False):
     return simulationEngine, setTicks
 
 # The backend main loop for running the simulation - runs on every simulation page refresh
-def runSimulation(request, startSimulation = 0, autoRunSimulation = 0, reverseSimulation = 0, noRefresh = False):
+def runSimulation(request, startSimulation = 0, autoRunSimulation = 0, reverseSimulation = 0):
     # Load/create a database entry of the simulation
     storedSim, existingSimLoaded = loadSimulationEntry(request)
 
@@ -268,10 +270,7 @@ def runSimulation(request, startSimulation = 0, autoRunSimulation = 0, reverseSi
                "reverseSimulation": reverseSimulation, "simulationInReverse": simulationInReverse,
                "invertedReverseSimulation": invertedReverseSimulation, "simulationName": storedSim.name}
 
-    if noRefresh:
-        return JsonResponse(context)
-    else:
-        return render(request, "runSimulationPage.html", context)
+    return render(request, "runSimulationPage.html", context)
 
 def switchRun(request, autoRunSimulation, reverseSimulation):
     # Switch whether the simulation is running or not
@@ -281,5 +280,4 @@ def switchRun(request, autoRunSimulation, reverseSimulation):
         autoRunSimulation = 0
 
     # Then run the simulation
-
     return runSimulation(request, 0, autoRunSimulation, reverseSimulation)

@@ -37,7 +37,7 @@
             position: absolute;
             top: 10vh;
             left: 10vw;
-            height: 60vh;
+            height: 70vh;
             text-align: center;
             overflow: auto;
             display: block;
@@ -83,6 +83,18 @@
             padding: 5px;
             border-radius: 5vh;
         }
+
+        .simulation_image_box {
+            position: absolute;
+            top: 15vh;
+            left: 30vw;
+            width: 40vw;
+            height: 40vh;
+            text-align: center;
+            border: 2px solid black;
+            border-radius: 5vh;
+        }
+
     </style>
     <body>
         <button class="back_to_menu_button"
@@ -94,6 +106,10 @@
                 onclick="window.location.href='/run/1/0'">
             Run Simulation
         </button>
+
+        <div class ="simulation_image_box">
+            <img src="/media/latestSimulation.jpeg" alt="This image has failed to load.">
+        </div>
 
         <ul class="choose_save_box">
             <li><h2 style="color:white">Saved Simulations:</h2></li>
@@ -119,7 +135,7 @@
             {% csrf_token %}
             {{infoForm}}
             <p>Simulation Days Elapsed: {{daysElapsed}}</p>
-            <input type="submit" value="Submit">
+            <input type="submit" value="Confirm Changes">
         </form>
     </body>
 
