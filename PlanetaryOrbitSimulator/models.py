@@ -9,3 +9,4 @@ class StoredSimulation(models.Model):
     ticksPerPageUpdate = models.IntegerField(default=0)
     secondsPerSimulationTick = models.IntegerField(default=0)
     name = models.TextField(default="")
+    image = models.ImageField(default="")

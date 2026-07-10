@@ -4,12 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Added ability to customise pre-existing saves in the Load Simulation screen.">
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Added display to the Load and Create pages showing an image of the simulation.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Templates/LoadSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/LoadSystemPage.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Templates/NewSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/NewSystemPage.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Templates/editSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/editSystemPage.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -277,7 +276,15 @@
       <option name="project" value="LOCAL" />
       <updated>1783429786210</updated>
     </task>
-    <option name="localTasksCounter" value="25" />
+    <task id="LOCAL-00025" summary="Added display to the Load and Create pages showing an image of the simulation.">
+      <option name="closed" value="true" />
+      <created>1783436621241</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1783436621241</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -305,6 +312,7 @@
     <MESSAGE value="Added ability to change position and velocity of the bodies." />
     <MESSAGE value="Modified data being shown in the edit screen to remove unnecessary precision." />
     <MESSAGE value="Added ability to customise pre-existing saves in the Load Simulation screen." />
-    <option name="LAST_COMMIT_MESSAGE" value="Added ability to customise pre-existing saves in the Load Simulation screen." />
+    <MESSAGE value="Added display to the Load and Create pages showing an image of the simulation." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added display to the Load and Create pages showing an image of the simulation." />
   </component>
 </project>

@@ -142,8 +142,11 @@ class PlanetarySimulationEngine:
         # For each body, draw both the line of previous path and marker of current position
         AU = 1.495979e11
         for i,body in enumerate(self.listOfBodies):
-            plt.plot((self.bodyPoints[i][0]), (self.bodyPoints[i][1]), color=body[4][0]) #BodyPoints already converted
-            plt.plot((body[0][0])/AU, (body[0][1])/AU, 'o', color=body[4][1])
+            try:
+                plt.plot((self.bodyPoints[i][0]), (self.bodyPoints[i][1]), color=body[4][0]) #BodyPoints already converted
+                plt.plot((body[0][0])/AU, (body[0][1])/AU, 'o', color=body[4][1])
+            except IndexError: # If point not found for body, continue
+                continue
 
         # Save graph to file
         plt.savefig('media/latestSimulation.jpeg', transparent=True)
@@ -303,13 +306,16 @@ class PlanetarySimulationEngine:
         AU = 1.495979e11
         # For each body, iterate through the stored points backwards
         for i in range(storedValuesPerUpdate):
-            for index, body in enumerate(self.listOfBodies):
-                body[0][0] = self.bodyPoints[index][0].pop()*AU
-                body[0][1] = self.bodyPoints[index][1].pop()*AU
-                body[1][0] = self.bodyPoints[index][2][0].pop()
-                body[1][1] = self.bodyPoints[index][2][1].pop()
-                body[1][2] = self.bodyPoints[index][2][2].pop()
-                self.listOfBodies[index] = body
+            try:
+                for index, body in enumerate(self.listOfBodies):
+                    body[0][0] = self.bodyPoints[index][0].pop()*AU
+                    body[0][1] = self.bodyPoints[index][1].pop()*AU
+                    body[1][0] = self.bodyPoints[index][2][0].pop()
+                    body[1][1] = self.bodyPoints[index][2][1].pop()
+                    body[1][2] = self.bodyPoints[index][2][2].pop()
+                    self.listOfBodies[index] = body
+            except IndexError: # If an added body doesn't have any points left
+                pass
 
         self.simulationTime = self.simulationTime - self.ticksPerPageUpdate
         self.drawGraph()

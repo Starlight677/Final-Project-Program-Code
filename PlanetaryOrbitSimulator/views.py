@@ -77,9 +77,12 @@ def loadingPage(request, saveIndex = 0):
             simulationEngine.simulationSize = infoForm.cleaned_data["simulationSize"]
             adjustedTimePerTick = round(infoForm.cleaned_data["simulationTimePerUpdate"] * 86400)
             simulationEngine.ticksPerPageUpdate = adjustedTimePerTick / simulationEngine.secondsPerSimulationTick
+
+            selectedSimulation = loadValues(selectedSimulation, simulationEngine) #Store and save everything in the database
+            selectedSimulation.save()
+
         simulationEngine.drawGraph()
         request.session["simulationEngine"] = simulationEngine
-        selectedSimulation.save()
 
         # Create variables for display in information box
         daysElapsed = round((selectedSimulation.simulationTime / 86400) * selectedSimulation.secondsPerSimulationTick,
@@ -113,20 +116,34 @@ def editSimulationPage(request, selectedBody = 0):
 
     #Generate useful context variables
     AU = 1.495979e11
-
-    # Round unnecessary precision before displaying to the user
-    bodyDisplayDetails = {"bodyMass": roundToSignificantFigures(simulationEngine.listOfBodies[selectedBody][2],4),
-                          "bodyColour": simulationEngine.listOfBodies[selectedBody][4][0],
-                          "bodyName": simulationEngine.listOfBodies[selectedBody][5],
-                          "bodyRadius": round(simulationEngine.listOfBodies[selectedBody][3]/1000,3),
-                          "bodyXPosition": roundToSignificantFigures(simulationEngine.listOfBodies[selectedBody][0][0]/AU,6),
-                          "bodyYPosition": roundToSignificantFigures(simulationEngine.listOfBodies[selectedBody][0][1]/AU,6),
-                          "bodyXSpeed": round(simulationEngine.listOfBodies[selectedBody][1][0]/1000,3),
-                          "bodyYSpeed": round(simulationEngine.listOfBodies[selectedBody][1][1]/1000,3),}
+    if selectedBody == len(simulationEngine.listOfBodies):
+        bodyDisplayDetails = {"bodyMass": 0,
+                              "bodyColour": "White",
+                              "bodyName": "Add New Body",
+                              "bodyRadius": 0,
+                              "bodyXPosition": 0,
+                              "bodyYPosition": 0,
+                              "bodyXSpeed": 0,
+                              "bodyYSpeed": 0, }
+    else:
+        # Round unnecessary precision before displaying to the user
+        bodyDisplayDetails = {"bodyMass": roundToSignificantFigures(simulationEngine.listOfBodies[selectedBody][2],4),
+                              "bodyColour": simulationEngine.listOfBodies[selectedBody][4][0],
+                              "bodyName": simulationEngine.listOfBodies[selectedBody][5],
+                              "bodyRadius": round(simulationEngine.listOfBodies[selectedBody][3]/1000,3),
+                              "bodyXPosition": roundToSignificantFigures(simulationEngine.listOfBodies[selectedBody][0][0]/AU,6),
+                              "bodyYPosition": roundToSignificantFigures(simulationEngine.listOfBodies[selectedBody][0][1]/AU,6),
+                              "bodyXSpeed": round(simulationEngine.listOfBodies[selectedBody][1][0]/1000,3),
+                              "bodyYSpeed": round(simulationEngine.listOfBodies[selectedBody][1][1]/1000,3),}
     detailsForm = BodyDetailsForm(request.POST or None, initial=bodyDisplayDetails)
 
     if detailsForm.is_valid():
         # Load parameters from form
+        if selectedBody == len(simulationEngine.listOfBodies):
+            # If creating new body, add empty framework to list
+            simulationEngine.listOfBodies.append([[0, 0, 0], [0, 0, 0], 0, 0, ['white', 'white'], ""])
+            simulationEngine.bodyPoints.append([[], [], [[],[],[]]])
+
         simulationEngine.listOfBodies[selectedBody][2] = detailsForm.cleaned_data["bodyMass"]
         simulationEngine.listOfBodies[selectedBody][3] = detailsForm.cleaned_data["bodyRadius"]
         simulationEngine.listOfBodies[selectedBody][5] = detailsForm.cleaned_data["bodyName"]
@@ -157,7 +174,7 @@ def editSimulationPage(request, selectedBody = 0):
     AUStatedSimulationSize = round(simulationEngine.simulationSize,3)  # Calculates simulation diameter in Astronomical Units to 3DP
 
     # Calculate next and previous bodies
-    if selectedBody >= len(simulationEngine.listOfBodies) - 1:
+    if selectedBody >= len(simulationEngine.listOfBodies):
         nextBody = selectedBody
         lastBody = selectedBody - 1
     elif selectedBody <= 0:
