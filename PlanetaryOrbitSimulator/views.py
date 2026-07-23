@@ -1,23 +1,43 @@
-from django.http import JsonResponse
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login
+from django.contrib import messages
 from django.shortcuts import render
-from .forms import SimulationNameForm, BodyDetailsForm
+from .forms import SimulationNameForm, BodyDetailsForm, LoginForm
 import matplotlib.colors as mcolors
 from.models import StoredSimulation
 
 from PlanetaryOrbitSimulator.twobodytesting import PlanetarySimulationEngine
 
+def getUser(request):
+    user = request.user
+    return user
+
 def homePage(request):
     # Backend for the homepage
-    context = {}
+    user = getUser(request)
+    context = {"user": user}
     return render(request, "HomePage.html", context)
 
 def settingsPage(request):
     # Backend for the Settings page
+    user = getUser(request)
     context = {}
     return render(request, "SettingsPage.html", context)
 
+def loginPage(request):
+    form = LoginForm(request.POST or None)
+    if form.is_valid():
+        if User.objects.filter(username=form.cleaned_data["username"]).exists():
+            user = authenticate(username = form.cleaned_data["username"], password = form.cleaned_data["password"])
+            if user is None:
+                messages.error(request, "Invalid username or password.")
+            else:
+                login(request, user)
+    return render(request, "LoginPage.html", {"loginForm": form})
+
 def createPage(request, templateIndex = 0):
     # Backend for the Create New System page
+    user = getUser(request)
     request.session["templateIndex"] = templateIndex
     templatesList = ["Inner Solar System", "Galilean Moons of Jupiter", "Ascendia Primary Star", "Binary Stars", "Single Star"]
 
@@ -52,13 +72,14 @@ def createPage(request, templateIndex = 0):
 
 def loadingPage(request, saveIndex = 0):
     # Backend for the Load Existing System page
+    user = getUser(request)
     if "templateIndex" not in request.session:
         # Test if index can be loaded - if not, set it to default
         request.session["templateIndex"] = 0
 
     try:
         # Try loading stored simulations
-        allSimulations = StoredSimulation.objects.all()
+        allSimulations = StoredSimulation.objects.filter(user=user)
         allSimulations.order_by("pk")
         selectedSimulation = allSimulations[saveIndex]
         request.session["selectedSimulation"] = selectedSimulation
@@ -107,7 +128,7 @@ def loadingPage(request, saveIndex = 0):
 
 def editSimulationPage(request, selectedBody = 0):
     # For editing the simulation
-
+    user = getUser(request)
     # Load/create a database entry of the simulation
     storedSim, existingSimLoaded = loadSimulationEntry(request)
 
@@ -246,6 +267,7 @@ def loadSimulationEngine(request, storedSim, forceLoad=False):
 # The backend main loop for running the simulation - runs on every simulation page refresh
 def runSimulation(request, startSimulation = 0, autoRunSimulation = 0, reverseSimulation = 0):
     # Load/create a database entry of the simulation
+    user = getUser(request)
     storedSim, existingSimLoaded = loadSimulationEntry(request)
 
     # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
@@ -272,6 +294,7 @@ def runSimulation(request, startSimulation = 0, autoRunSimulation = 0, reverseSi
 
     # Update database entry for simulation
     storedSim = loadValues(storedSim, simulationEngine)
+    storedSim.user = user
     storedSim.save()
 
     # Calculate values for display

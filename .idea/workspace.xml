@@ -4,12 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Added display to the Load and Create pages showing an image of the simulation.">
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Added ability to create new bodies.">
+      <change afterPath="$PROJECT_DIR$/Templates/LoginPage.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/forms.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/HomePage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/HomePage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -284,11 +287,18 @@
       <option name="project" value="LOCAL" />
       <updated>1783436621241</updated>
     </task>
-    <option name="localTasksCounter" value="26" />
+    <task id="LOCAL-00026" summary="Added ability to create new bodies.">
+      <option name="closed" value="true" />
+      <created>1783674097650</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1783674097650</updated>
+    </task>
+    <option name="localTasksCounter" value="27" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Added simple mathematical calculations for a two-body system." />
     <MESSAGE value="Improved simulation to add basic graphical interface via Matplotlib, and significantly improved readability for code structuring." />
     <MESSAGE value="Expanded the simulation to handle more than two bodies, and added functionality to handle ticking the simulation in increments other than a second." />
     <MESSAGE value="Modified the simulation to update minor influences on bodies less often." />
@@ -313,6 +323,7 @@
     <MESSAGE value="Modified data being shown in the edit screen to remove unnecessary precision." />
     <MESSAGE value="Added ability to customise pre-existing saves in the Load Simulation screen." />
     <MESSAGE value="Added display to the Load and Create pages showing an image of the simulation." />
-    <option name="LAST_COMMIT_MESSAGE" value="Added display to the Load and Create pages showing an image of the simulation." />
+    <MESSAGE value="Added ability to create new bodies." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added ability to create new bodies." />
   </component>
 </project>

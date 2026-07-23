@@ -19,3 +19,7 @@ class BodyDetailsForm(forms.Form):
 
     bodyXSpeed = forms.FloatField(label="Body X Velocity (KM/s)", required=False)
     bodyYSpeed = forms.FloatField(label="Body Y Velocity (KM/s)", required=False)
+
+class LoginForm(forms.Form):
+    username = forms.CharField(label="Username", max_length=100, required=True)
+    password = forms.CharField(label="Password", max_length=100, required=True)
