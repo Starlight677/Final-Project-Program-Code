@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from django.shortcuts import render
-from .forms import SimulationNameForm, BodyDetailsForm, LoginForm
+from .forms import SimulationNameForm, BodyDetailsForm, LoginForm, RegisterForm
 import matplotlib.colors as mcolors
 from.models import StoredSimulation
 
@@ -33,7 +33,18 @@ def loginPage(request):
                 messages.error(request, "Invalid username or password.")
             else:
                 login(request, user)
-    return render(request, "LoginPage.html", {"loginForm": form})
+    return render(request, "LoginPage.html", {"loginForm": form, "currentUser": request.user})
+
+def registerPage(request):
+    form = RegisterForm(request.POST or None)
+    if form.is_valid():
+        if not User.objects.filter(username=form.cleaned_data["username"]).exists():
+            if form.cleaned_data["password"] == form.cleaned_data["passwordRepeated"]:
+                user = User.objects.create_user(username=form.cleaned_data["username"], password=form.cleaned_data["password"])
+                user.save()
+                login(request, user)
+
+    return render(request, "RegisterPage.html", {"registerForm": form, "currentUser": request.user})
 
 def createPage(request, templateIndex = 0):
     # Backend for the Create New System page

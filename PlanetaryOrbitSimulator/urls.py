@@ -34,6 +34,7 @@ urlpatterns = [
     path('run/<int:startSimulation>/<int:autoRunSimulation>/<int:reverseSimulation>', views.runSimulation),
     path('edit/<int:selectedBody>', views.editSimulationPage),
     path('login/', views.loginPage),
+    path('register/', views.registerPage),
 
     path('', views.homePage)
 ]

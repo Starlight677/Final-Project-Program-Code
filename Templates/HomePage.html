@@ -54,6 +54,18 @@
             border-radius: 5vh;
         }
 
+        .login_button {
+            position: absolute;
+            top: 10vh;
+            left: 85vw;
+            height: 10vh;
+            width: 10vw;
+            text-align: center;
+            border: 2px solid black;
+            padding: 5px;
+            border-radius: 2vh;
+        }
+
     </style>
     <body>
         <div class="title_box">
@@ -73,6 +85,11 @@
         <button class="settings_button"
             onclick="window.location.href='/settings'">
             Settings
+        </button>
+
+        <button class="login_button"
+                onclick="window.location.href='/login'">
+            Login
         </button>
     </body>
 {% endblock %}

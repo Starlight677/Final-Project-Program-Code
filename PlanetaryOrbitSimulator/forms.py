@@ -23,3 +23,8 @@ class BodyDetailsForm(forms.Form):
 class LoginForm(forms.Form):
     username = forms.CharField(label="Username", max_length=100, required=True)
     password = forms.CharField(label="Password", max_length=100, required=True)
+
+class RegisterForm(forms.Form):
+    username = forms.CharField(label="Username", max_length=100, required=True)
+    password = forms.CharField(label="Password", max_length=100, required=True)
+    passwordRepeated = forms.CharField(label="Repeat Password", max_length=100, required=True)
