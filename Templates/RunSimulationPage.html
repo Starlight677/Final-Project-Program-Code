@@ -122,15 +122,16 @@
         </button>
 
         <div class ="simulation_image_box">
-            <img src="/media/latestSimulation.jpeg" alt="This image has failed to load.">
+            <img src="/media/latestSimulation{{user}}.jpeg" alt="This image has failed to load.">
         </div>
 
         <div class ="simulation_information_box">
-            <h2>Simulation Information:</h2>
+            <h3>Simulation Information:</h3>
             <p>Simulation Name: {{simulationName}}</p>
             <p>Simulation Display Size: {{simulationSizeKM}}km / {{simulationSizeAU}}AU</p>
             <p>Days Per Simulation Tick: {{daysPerTick}}</p>
             <p>Simulation Days Elapsed: {{daysElapsed}}</p>
+            <p>Focused Body: {{focusBodyName}}</p>
             <p>Simulation Iteration Reversed: {{simulationInReverse}}</p>
         </div>
     </body>

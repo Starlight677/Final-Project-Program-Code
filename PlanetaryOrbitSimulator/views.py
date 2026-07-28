@@ -29,9 +29,7 @@ def loginPage(request):
     if form.is_valid():
         if User.objects.filter(username=form.cleaned_data["username"]).exists():
             user = authenticate(username = form.cleaned_data["username"], password = form.cleaned_data["password"])
-            if user is None:
-                messages.error(request, "Invalid username or password.")
-            else:
+            if user is not None:
                 login(request, user)
     return render(request, "LoginPage.html", {"loginForm": form, "currentUser": request.user})
 
@@ -70,7 +68,7 @@ def createPage(request, templateIndex = 0):
         simulationEngine.simulationSize = form.cleaned_data["simulationSize"]
         adjustedTimePerTick = round(form.cleaned_data["simulationTimePerUpdate"] * 86400)
         simulationEngine.ticksPerPageUpdate = adjustedTimePerTick/simulationEngine.secondsPerSimulationTick
-    simulationEngine.drawGraph()
+    simulationEngine.drawGraph(user)
     request.session["simulationEngine"] = simulationEngine
 
     # Wipe this field to stop previous simulation conflicts
@@ -113,7 +111,7 @@ def loadingPage(request, saveIndex = 0):
             selectedSimulation = loadValues(selectedSimulation, simulationEngine) #Store and save everything in the database
             selectedSimulation.save()
 
-        simulationEngine.drawGraph()
+        simulationEngine.drawGraph(user)
         request.session["simulationEngine"] = simulationEngine
 
         # Create variables for display in information box
@@ -168,7 +166,6 @@ def editSimulationPage(request, selectedBody = 0):
                               "bodyXSpeed": round(simulationEngine.listOfBodies[selectedBody][1][0]/1000,3),
                               "bodyYSpeed": round(simulationEngine.listOfBodies[selectedBody][1][1]/1000,3),}
     detailsForm = BodyDetailsForm(request.POST or None, initial=bodyDisplayDetails)
-
     if detailsForm.is_valid():
         # Load parameters from form
         if selectedBody == len(simulationEngine.listOfBodies):
@@ -192,8 +189,14 @@ def editSimulationPage(request, selectedBody = 0):
         else:
             print("Invalid colour!")
 
+    # Focus the screen on the selected body
+    if selectedBody < len(simulationEngine.listOfBodies):
+        simulationEngine.focusBody = selectedBody
+    else:
+        simulationEngine.focusBody = -1
+
     # Display graph and save any edits
-    simulationEngine.drawGraph()
+    simulationEngine.drawGraph(user)
     request.session["simulationEngine"] = simulationEngine
     storedSim = loadValues(storedSim, simulationEngine)
     storedSim.save()
@@ -219,7 +222,8 @@ def editSimulationPage(request, selectedBody = 0):
     # Package context for page
     context = {"simulationSizeKM": fStatedSimulationSize, "simulationSizeAU": AUStatedSimulationSize,
                "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "selectedBody": selectedBody,
-               "nextBody": nextBody, "lastBody": lastBody, "detailsForm": detailsForm, "simulationName": storedSim.name}
+               "nextBody": nextBody, "lastBody": lastBody, "detailsForm": detailsForm,
+               "simulationName": storedSim.name, "focusBodyName": simulationEngine.focusBodyName}
 
     return render(request, "editSystemPage.html", context)
 
@@ -286,17 +290,17 @@ def runSimulation(request, startSimulation = 0, autoRunSimulation = 0, reverseSi
 
     if (reverseSimulation == 0 or simulationEngine.simulationTime == 0) and startSimulation == 0:
         # Run instance of the simulation if not initially loaded
-        simulationEngine.runSimulation(setTicks)
+        simulationEngine.runSimulation(user, setTicks)
         simulationInReverse = "No"
         invertedReverseSimulation = 1 # Used for switching on the HTML page
     elif startSimulation == 0:
         # Run simulation in reverse if set to
-        simulationEngine.rollbackSimulation()
+        simulationEngine.rollbackSimulation(user)
         simulationInReverse = "Yes"
         invertedReverseSimulation = 0  # Used for switching on the HTML page
     else:
         # If simulation just being loaded, only draw graph
-        simulationEngine.drawGraph()
+        simulationEngine.drawGraph(user)
         simulationInReverse = "No"
         invertedReverseSimulation = 1
 
@@ -319,7 +323,8 @@ def runSimulation(request, startSimulation = 0, autoRunSimulation = 0, reverseSi
     context = {"simulationSizeKM": fStatedSimulationSize, "simulationSizeAU": AUStatedSimulationSize,
                "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "autoRunSimulation": autoRunSimulation,
                "reverseSimulation": reverseSimulation, "simulationInReverse": simulationInReverse,
-               "invertedReverseSimulation": invertedReverseSimulation, "simulationName": storedSim.name}
+               "invertedReverseSimulation": invertedReverseSimulation, "simulationName": storedSim.name,
+               "focusBodyName": simulationEngine.focusBodyName}
 
     return render(request, "runSimulationPage.html", context)
 

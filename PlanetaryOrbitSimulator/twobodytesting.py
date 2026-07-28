@@ -10,6 +10,9 @@ class PlanetarySimulationEngine:
         self.listOfBodies = []
         self.simulationTime = 0
         self.simulationSize = 0
+        self.focusPoint = [0,0] # Coordinates of focus window
+        self.focusBody = -1
+        self.focusBodyName = "None"
         self.bodyPoints = []
         self.ticksPerStorageUpdate = 0
         self.ticksPerPageUpdate = 0
@@ -130,11 +133,12 @@ class PlanetarySimulationEngine:
         else:
             pass
 
-    def drawGraph(self):
+    def drawGraph(self, user):
         # Draw a graph using MatPlotLib
         matplotlib.use('agg') # Mode for not having issues with Django threading
-        plt.xlim(-self.simulationSize, self.simulationSize)
-        plt.ylim(-self.simulationSize, self.simulationSize)
+        self.updateFocusPoint() # Plot the boundaries of the graph
+        plt.xlim(-self.simulationSize+self.focusPoint[0], self.simulationSize+self.focusPoint[0])
+        plt.ylim(-self.simulationSize+self.focusPoint[1], self.simulationSize+self.focusPoint[1])
         plt.xlabel("Distance (AU)")
         plt.ylabel("Distance (AU)")
         plt.grid(True)
@@ -149,8 +153,18 @@ class PlanetarySimulationEngine:
                 continue
 
         # Save graph to file
-        plt.savefig('media/latestSimulation.jpeg', transparent=True)
+        plt.savefig('media/latestSimulation' + user.username + '.jpeg', transparent=True)
         plt.close('all')
+
+    def updateFocusPoint(self):
+        if self.focusBody == -1:
+            self.focusPoint = [0,0]
+            self.focusBodyName = "None"
+        else:
+            AU = 1.495979e11
+            chosenFocusBody = self.listOfBodies[self.focusBody]
+            self.focusPoint = [chosenFocusBody[0][0]/AU, chosenFocusBody[0][1]/AU]
+            self.focusBodyName = chosenFocusBody[5]
 
     def tickSimulation(self, significantCompanions):
         bodyCollision = False
@@ -192,7 +206,7 @@ class PlanetarySimulationEngine:
 
         return significantCompanions, bodyCollision
 
-    def runSimulation(self, setTicks = -1):
+    def runSimulation(self, user, setTicks = -1):
         # Useful constants for defining planet parameters
         bodyCollision = False # Records whether any objects have collided
 
@@ -209,7 +223,7 @@ class PlanetarySimulationEngine:
             # Update timer
             self.simulationTime = self.simulationTime + 1
         if setTicks == self.simulationTime:
-            self.drawGraph()
+            self.drawGraph(user)
             pass
         elif bodyCollision:
             # If two planets have collided, exit simulation loop
@@ -300,7 +314,7 @@ class PlanetarySimulationEngine:
         for i in range(len(self.listOfBodies)):
             self.bodyPoints.append([[], [], [[],[],[]]])
 
-    def rollbackSimulation(self):
+    def rollbackSimulation(self, user):
         # Roll back the simulation
         storedValuesPerUpdate = round(self.ticksPerPageUpdate/self.ticksPerStorageUpdate)
         AU = 1.495979e11
@@ -318,5 +332,5 @@ class PlanetarySimulationEngine:
                 pass
 
         self.simulationTime = self.simulationTime - self.ticksPerPageUpdate
-        self.drawGraph()
+        self.drawGraph(user)
         pass
