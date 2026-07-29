@@ -29,10 +29,10 @@ urlpatterns = [
     path('create/<int:templateIndex>', views.createPage),
     path('load/', views.loadingPage),
     path('load/<int:saveIndex>', views.loadingPage),
-    path('run/<int:startSimulation>/<int:autoRunSimulation>', views.runSimulation),
-    path('autoRun/<int:autoRunSimulation>/<int:reverseSimulation>', views.switchRun),
-    path('run/<int:startSimulation>/<int:autoRunSimulation>/<int:reverseSimulation>', views.runSimulation),
+    path('run/<int:dontRunSimulation>/<int:autoRunSimulation>', views.runSimulation),
+    path('run/<int:dontRunSimulation>/<int:autoRunSimulation>/<int:reverseSimulation>/<int:changeFocusBody>', views.runSimulation),
     path('edit/<int:selectedBody>', views.editSimulationPage),
+    path('stop/', views.stopSimulation),
     path('login/', views.loginPage),
     path('register/', views.registerPage),
 

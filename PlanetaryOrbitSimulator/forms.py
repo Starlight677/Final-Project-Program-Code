@@ -28,3 +28,7 @@ class RegisterForm(forms.Form):
     username = forms.CharField(label="Username", max_length=100, required=True)
     password = forms.CharField(label="Password", max_length=100, required=True)
     passwordRepeated = forms.CharField(label="Repeat Password", max_length=100, required=True)
+
+class ConfigureSimulationForm(forms.Form):
+    simulationSize = forms.FloatField(label="Simulation Name", required=False)
+    focusedBody = forms.CharField(label="Focused Body", max_length=100, required=False)

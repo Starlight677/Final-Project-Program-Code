@@ -137,8 +137,8 @@ class PlanetarySimulationEngine:
         # Draw a graph using MatPlotLib
         matplotlib.use('agg') # Mode for not having issues with Django threading
         self.updateFocusPoint() # Plot the boundaries of the graph
-        plt.xlim(-self.simulationSize+self.focusPoint[0], self.simulationSize+self.focusPoint[0])
-        plt.ylim(-self.simulationSize+self.focusPoint[1], self.simulationSize+self.focusPoint[1])
+        plt.xlim((-self.simulationSize)+self.focusPoint[0], self.simulationSize+self.focusPoint[0])
+        plt.ylim((-self.simulationSize)+self.focusPoint[1], self.simulationSize+self.focusPoint[1])
         plt.xlabel("Distance (AU)")
         plt.ylabel("Distance (AU)")
         plt.grid(True)
@@ -157,7 +157,8 @@ class PlanetarySimulationEngine:
         plt.close('all')
 
     def updateFocusPoint(self):
-        if self.focusBody == -1:
+        if self.focusBody == -1 or self.focusBody >= len(self.listOfBodies):
+            self.focusBody = -1
             self.focusPoint = [0,0]
             self.focusBodyName = "None"
         else:

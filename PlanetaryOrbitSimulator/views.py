@@ -280,7 +280,7 @@ def loadSimulationEngine(request, storedSim, forceLoad=False):
     return simulationEngine, setTicks
 
 # The backend main loop for running the simulation - runs on every simulation page refresh
-def runSimulation(request, startSimulation = 0, autoRunSimulation = 0, reverseSimulation = 0):
+def runSimulation(request, dontRunSimulation = 0, autoRunSimulation = 0, reverseSimulation = 0, changeFocusBody = 0):
     # Load/create a database entry of the simulation
     user = getUser(request)
     storedSim, existingSimLoaded = loadSimulationEntry(request)
@@ -288,12 +288,16 @@ def runSimulation(request, startSimulation = 0, autoRunSimulation = 0, reverseSi
     # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
     simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
 
-    if (reverseSimulation == 0 or simulationEngine.simulationTime == 0) and startSimulation == 0:
+    if changeFocusBody == 1: # Change body screen is focused on
+        simulationEngine.focusBody = simulationEngine.focusBody + 1
+        simulationEngine.updateFocusPoint()
+
+    if (reverseSimulation == 0 or simulationEngine.simulationTime == 0) and dontRunSimulation == 0:
         # Run instance of the simulation if not initially loaded
         simulationEngine.runSimulation(user, setTicks)
         simulationInReverse = "No"
         invertedReverseSimulation = 1 # Used for switching on the HTML page
-    elif startSimulation == 0:
+    elif dontRunSimulation == 0:
         # Run simulation in reverse if set to
         simulationEngine.rollbackSimulation(user)
         simulationInReverse = "Yes"
@@ -328,12 +332,5 @@ def runSimulation(request, startSimulation = 0, autoRunSimulation = 0, reverseSi
 
     return render(request, "runSimulationPage.html", context)
 
-def switchRun(request, autoRunSimulation, reverseSimulation):
-    # Switch whether the simulation is running or not
-    if autoRunSimulation == 0:
-        autoRunSimulation = 1
-    else:
-        autoRunSimulation = 0
-
-    # Then run the simulation
-    return runSimulation(request, 0, autoRunSimulation, reverseSimulation)
+def stopSimulation(request):
+    return render(request, "stopSimulationPage.html")

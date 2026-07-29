@@ -59,6 +59,18 @@
 
         .edit_simulation_button {
             position: absolute;
+            top: 85vh;
+            left: 17vw;
+            height: 10vh;
+            width: 10vw;
+            text-align: center;
+            border: 2px solid black;
+            padding: 5px;
+            border-radius: 5vh;
+        }
+
+        .change_focus_button {
+            position: absolute;
             top: 70vh;
             left: 75vw;
             height: 10vh;
@@ -83,7 +95,7 @@
         .simulation_information_box {
             position: absolute;
             top: 15vh;
-            left: 75vw;
+            left: 5vw;
             height: 45vh;
             width: 15vw;
             text-align: center;
@@ -102,18 +114,23 @@
         </button>
 
         <button class="start_simulation_button"
-                onclick="window.location.href='/autoRun/{{autoRunSimulation}}/{{reverseSimulation}}'">
-            Start/Stop Simulation
+                onclick="window.location.href='/run/0/1/1/0'">
+            Start Simulation
         </button>
 
         <button class="tick_simulation_button"
-                onclick="window.location.href='/run/0/0/{{reverseSimulation}}'">
-            Tick Simulation
+                onclick="window.location.href='/stop/'">
+            Stop Simulation
         </button>
 
         <button class="invert_simulation_button"
-                onclick="window.location.href='/run/0/0/{{invertedReverseSimulation}}'">
+                onclick="window.location.href='/run/1/0/{{invertedReverseSimulation}}/0'">
             Reverse Simulation Direction
+        </button>
+
+        <button class="change_focus_button"
+                onclick="window.location.href='/run/1/0/{{reverseSimulation}}/1'">
+            Focus Next Body
         </button>
 
         <button class="edit_simulation_button"

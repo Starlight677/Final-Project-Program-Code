@@ -1,0 +1,30 @@
+{% extends 'page_template.html' %}
+{% load static %}
+
+{% block content %}
+    <style>
+        .main_page_element {
+            position: relative;
+            height: 0;
+            width: 0;
+        }
+
+        .redirect_in_progress_box {
+            position: absolute;
+            top: 40vh;
+            left: 40vw;
+            height: 20vh;
+            width: 20vw;
+            text-align: center;
+            color: white;
+        }
+    </style>
+    <body>
+    <div class="redirect_in_progress_box">
+        Stopping Simulation...
+    </div>
+    </body>
+    <script>
+        window.setTimeout(function () {location.href = "/run/1/0/0/0";}, 1);
+    </script>
+{% endblock %}
