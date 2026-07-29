@@ -331,6 +331,3 @@ def runSimulation(request, dontRunSimulation = 0, autoRunSimulation = 0, reverse
                "focusBodyName": simulationEngine.focusBodyName}
 
     return render(request, "runSimulationPage.html", context)
-
-def stopSimulation(request):
-    return render(request, "stopSimulationPage.html")
