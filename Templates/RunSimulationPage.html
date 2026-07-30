@@ -106,6 +106,21 @@
             padding: 5px;
             border-radius: 5vh;
         }
+
+        .simulation_edit_box {
+            position: absolute;
+            top: 15vh;
+            left: 75vw;
+            height: 45vh;
+            width: 15vw;
+            text-align: center;
+            border: 2px solid black;
+            background-color: white;
+            overflow: auto;
+            display: block;
+            padding: 5px;
+            border-radius: 5vh;
+        }
     </style>
     <body>
         <button class="back_to_menu_button"
@@ -119,12 +134,12 @@
         </button>
 
         <button class="tick_simulation_button"
-                onclick="window.location.href='/run/1/0/{{reverseSimulation}}/0'">
+                onclick="window.location.href='/stop/{{reverseSimulation}}'">
             Stop Simulation
         </button>
 
         <button class="invert_simulation_button"
-                onclick="window.location.href='/run/1/0/{{invertedReverseSimulation}}/0'">
+                onclick="window.location.href='/run/1/0/{{switchReverseSimulation}}/0'">
             Reverse Simulation Direction
         </button>
 
@@ -149,13 +164,20 @@
             <p>Days Per Simulation Tick: {{daysPerTick}}</p>
             <p>Simulation Days Elapsed: {{daysElapsed}}</p>
             <p>Focused Body: {{focusBodyName}}</p>
-            <p>Simulation Iteration Reversed: {{simulationInReverse}}</p>
+            <p>Simulation Iteration Reversed: {{isSimulationInReverse}}</p>
         </div>
+
+        <form class ="simulation_edit_box" action="" method="post">
+            <h2>Modify Simulation Values:</h2>
+            {% csrf_token %}
+            {{infoForm}}
+            <input type="submit" value="Confirm Changes">
+        </form>
     </body>
     <script>
         let isSimulationRunning = {{autoRunSimulation}}
         if (isSimulationRunning == 1) {
-            window.setTimeout(function () {location.href = "";}, 1000);
+            window.setTimeout(function () {location.href = '/run/0/1/{{reverseSimulation}}/0';}, 1000);
         }
     </script>
 {% endblock %}

@@ -4,10 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Added functionality to focus view on body.">
-      <change afterPath="$PROJECT_DIR$/Templates/stopSimulationPage.html" afterDir="false" />
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Found a more efficient way to stop the simulation without needing a redirect.">
+      <change afterPath="$PROJECT_DIR$/Templates/StopSimulationPage.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/forms.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
@@ -318,12 +317,26 @@
       <option name="project" value="LOCAL" />
       <updated>1785232349115</updated>
     </task>
-    <option name="localTasksCounter" value="30" />
+    <task id="LOCAL-00030" summary="Fixed bugs in the body focusing feature, and created a separate redirect page for stopping the simulation.">
+      <option name="closed" value="true" />
+      <created>1785315021562</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1785315021562</updated>
+    </task>
+    <task id="LOCAL-00031" summary="Found a more efficient way to stop the simulation without needing a redirect.">
+      <option name="closed" value="true" />
+      <created>1785315200630</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1785315200630</updated>
+    </task>
+    <option name="localTasksCounter" value="32" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Fixed the significant-influence accounting so it actually works." />
-    <MESSAGE value="Set up Django." />
     <MESSAGE value="Created framework for the pages in the application." />
     <MESSAGE value="Condensed the simulation loop + added more website stuff." />
     <MESSAGE value="Some progress on making the simulation work with the web interface." />
@@ -347,6 +360,8 @@
     <MESSAGE value="Added login system, and users can only access simulations they created." />
     <MESSAGE value="Added functional login and register system." />
     <MESSAGE value="Added functionality to focus view on body." />
-    <option name="LAST_COMMIT_MESSAGE" value="Added functionality to focus view on body." />
+    <MESSAGE value="Fixed bugs in the body focusing feature, and created a separate redirect page for stopping the simulation." />
+    <MESSAGE value="Found a more efficient way to stop the simulation without needing a redirect." />
+    <option name="LAST_COMMIT_MESSAGE" value="Found a more efficient way to stop the simulation without needing a redirect." />
   </component>
 </project>

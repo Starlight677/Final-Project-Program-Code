@@ -1,0 +1,29 @@
+{% extends 'page_template.html' %}
+{% load static %}
+
+{% block content %}
+    <style>
+        .main_page_element {
+            position: relative;
+            height: 0;
+            width: 0;
+        }
+
+        .simulation_image_box {
+            position: absolute;
+            top: 10vh;
+            left: 0;
+            width: 50vw;
+            height: 50vh;
+            text-align: center;
+        }
+    </style>
+    <body>
+        <div class ="simulation_image_box">
+            <img src="/media/latestSimulation{{user}}.jpeg" alt="This image has failed to load.">
+        </div>
+    </body>
+    <script>
+        window.setTimeout(function () {location.href = '/run/1/0/{{reverseSimulation}}/0';}, 1);
+    </script>
+{% endblock %}

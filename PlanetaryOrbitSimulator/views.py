@@ -95,21 +95,7 @@ def loadingPage(request, saveIndex = 0):
 
         simulationEngine, setTicks = loadSimulationEngine(request, selectedSimulation, True)
 
-        simulationDefaultValues = {"simulationName": selectedSimulation.name,
-                                   "simulationSize": simulationEngine.simulationSize,
-                                   "simulationTimePerUpdate": simulationEngine.ticksPerPageUpdate/
-                                                              (86400/simulationEngine.secondsPerSimulationTick), }
-        infoForm = SimulationNameForm(request.POST or None, initial=simulationDefaultValues)
-
-        if infoForm.is_valid():
-            # Load parameters from form
-            selectedSimulation.name = infoForm.cleaned_data["simulationName"]
-            simulationEngine.simulationSize = infoForm.cleaned_data["simulationSize"]
-            adjustedTimePerTick = round(infoForm.cleaned_data["simulationTimePerUpdate"] * 86400)
-            simulationEngine.ticksPerPageUpdate = adjustedTimePerTick / simulationEngine.secondsPerSimulationTick
-
-            selectedSimulation = loadValues(selectedSimulation, simulationEngine) #Store and save everything in the database
-            selectedSimulation.save()
+        selectedSimulation, simulationEngine, infoForm = makeSimulationForm(request, selectedSimulation, simulationEngine)
 
         simulationEngine.drawGraph(user)
         request.session["simulationEngine"] = simulationEngine
@@ -134,6 +120,26 @@ def loadingPage(request, saveIndex = 0):
         context = {"allSimulations": allSimulations, "selectedSimulation": selectedSimulation}
 
     return render(request, "LoadSystemPage.html", context)
+
+def makeSimulationForm(request, storedSim, simulationEngine):
+    simulationDefaultValues = {"simulationName": storedSim.name,
+                               "simulationSize": simulationEngine.simulationSize,
+                               "simulationTimePerUpdate": simulationEngine.ticksPerPageUpdate /
+                                                          (86400 / simulationEngine.secondsPerSimulationTick), }
+    infoForm = SimulationNameForm(request.POST or None,
+                                  initial=simulationDefaultValues)  # Allow configuring information
+
+    if infoForm.is_valid():
+        # Load parameters from form
+        storedSim.name = infoForm.cleaned_data["simulationName"]
+        simulationEngine.simulationSize = infoForm.cleaned_data["simulationSize"]
+        adjustedTimePerTick = round(infoForm.cleaned_data["simulationTimePerUpdate"] * 86400)
+        simulationEngine.ticksPerPageUpdate = adjustedTimePerTick / simulationEngine.secondsPerSimulationTick
+
+        storedSim = loadValues(storedSim, simulationEngine)  # Store and save everything in the database
+        storedSim.save()
+
+    return storedSim, simulationEngine, infoForm
 
 def editSimulationPage(request, selectedBody = 0):
     # For editing the simulation
@@ -292,21 +298,28 @@ def runSimulation(request, dontRunSimulation = 0, autoRunSimulation = 0, reverse
         simulationEngine.focusBody = simulationEngine.focusBody + 1
         simulationEngine.updateFocusPoint()
 
+    if autoRunSimulation == 0:
+        switchAutoRunSimulation = 1 #Used for constructing stop/start simulation link
+    else:
+        switchAutoRunSimulation = 0
+
+    storedSim, simulationEngine, infoForm = makeSimulationForm(request, storedSim, simulationEngine)
+
     if (reverseSimulation == 0 or simulationEngine.simulationTime == 0) and dontRunSimulation == 0:
         # Run instance of the simulation if not initially loaded
         simulationEngine.runSimulation(user, setTicks)
-        simulationInReverse = "No"
-        invertedReverseSimulation = 1 # Used for switching on the HTML page
+        isSimulationInReverse = "No"
+        switchReverseSimulation = 1 # Used for switching on the HTML page
     elif dontRunSimulation == 0:
         # Run simulation in reverse if set to
         simulationEngine.rollbackSimulation(user)
-        simulationInReverse = "Yes"
-        invertedReverseSimulation = 0  # Used for switching on the HTML page
+        isSimulationInReverse = "Yes"
+        switchReverseSimulation = 0  # Used for switching on the HTML page
     else:
         # If simulation just being loaded, only draw graph
         simulationEngine.drawGraph(user)
-        simulationInReverse = "No"
-        invertedReverseSimulation = 1
+        isSimulationInReverse = "No" # Text description for display
+        switchReverseSimulation = 1 # Numeric designation for link construction
 
     # Store updated simulation in session variable
     request.session["simulationEngine"] = simulationEngine
@@ -326,8 +339,13 @@ def runSimulation(request, dontRunSimulation = 0, autoRunSimulation = 0, reverse
     # Package context for page
     context = {"simulationSizeKM": fStatedSimulationSize, "simulationSizeAU": AUStatedSimulationSize,
                "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "autoRunSimulation": autoRunSimulation,
-               "reverseSimulation": reverseSimulation, "simulationInReverse": simulationInReverse,
-               "invertedReverseSimulation": invertedReverseSimulation, "simulationName": storedSim.name,
-               "focusBodyName": simulationEngine.focusBodyName}
+               "reverseSimulation": reverseSimulation, "isSimulationInReverse": isSimulationInReverse,
+               "switchReverseSimulation": switchReverseSimulation, "simulationName": storedSim.name,
+               "focusBodyName": simulationEngine.focusBodyName, "switchAutoRunSimulation": switchAutoRunSimulation,
+               "infoForm": infoForm,}
 
     return render(request, "runSimulationPage.html", context)
+
+def stopSimulation(request, reverseSimulation):
+    context = {"reverseSimulation": reverseSimulation}
+    return render(request, "stopSimulationPage.html", context)

@@ -137,6 +137,11 @@ class PlanetarySimulationEngine:
         # Draw a graph using MatPlotLib
         matplotlib.use('agg') # Mode for not having issues with Django threading
         self.updateFocusPoint() # Plot the boundaries of the graph
+
+        fig = plt.figure()
+        ax = fig.add_subplot()
+        ax.set_aspect('equal', adjustable='box')
+
         plt.xlim((-self.simulationSize)+self.focusPoint[0], self.simulationSize+self.focusPoint[0])
         plt.ylim((-self.simulationSize)+self.focusPoint[1], self.simulationSize+self.focusPoint[1])
         plt.xlabel("Distance (AU)")
