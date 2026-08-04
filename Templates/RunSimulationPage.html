@@ -154,7 +154,7 @@
         </button>
 
         <div class="simulation_image_box">
-            <img src="/media/latestSimulation{{user}}.jpeg" alt="Test">
+            <img src="/media/latestSimulation{{user}}.jpeg" id="simImage" alt="Test">
         </div>
 
         <div class ="simulation_information_box">
@@ -162,7 +162,7 @@
             <p>Simulation Name: {{simulationName}}</p>
             <p>Simulation Display Size: {{simulationSizeKM}}km / {{simulationSizeAU}}AU</p>
             <p>Days Per Simulation Tick: {{daysPerTick}}</p>
-            <p>Simulation Days Elapsed: {{daysElapsed}}</p>
+            <p id="daysElapsedBox">Simulation Days Elapsed: {{daysElapsed}}</p>
             <p>Focused Body: {{focusBodyName}}</p>
             <p>Simulation Iteration Reversed: {{isSimulationInReverse}}</p>
         </div>
@@ -177,16 +177,19 @@
     <script>
         let isSimulationRunning = {{autoRunSimulation}}
         if (isSimulationRunning == 1) {
-            setInterval(simulationImageUpdate, 1000)
+            setInterval(simulationImageUpdate, 3000)
         }
 
         function simulationImageUpdate(){
             $.ajax({
                 url: '/update/',
                 type: 'get',
+                cache: false,
 
                 success: function(data) {
-                    {{daysElapsed}} = data.updatedDaysElapsed
+                    var cacheBustURL = data.updatedImageURL + '?' + Date.now();
+                    $("#simImage").attr('src', cacheBustURL);
+                    $("#daysElapsedBox").text("Simulation Days Elapsed: " + data.daysElapsed);
                 },
 
                 error: function() {

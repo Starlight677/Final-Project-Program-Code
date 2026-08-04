@@ -1,8 +1,10 @@
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
-from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
+from django.core.cache import cache
+from django.http import JsonResponse
 from django.shortcuts import render
+from django.utils.cache import patch_cache_control
+
 from .forms import SimulationNameForm, BodyDetailsForm, LoginForm, RegisterForm
 import matplotlib.colors as mcolors
 from.models import StoredSimulation
@@ -351,7 +353,8 @@ def runSimulation(request, dontRunSimulation = 0, autoRunSimulation = 0, reverse
                "focusBodyName": simulationEngine.focusBodyName, "switchAutoRunSimulation": switchAutoRunSimulation,
                "infoForm": infoForm,}
 
-    return render(request, "runSimulationPage.html", context)
+    constructedResponse = render(request, "runSimulationPage.html", context)
+    return constructedResponse
 
 def stopSimulation(request, reverseSimulation):
     context = {"reverseSimulation": reverseSimulation}
@@ -370,7 +373,7 @@ def updateSimulationImage(request):
     storedSim, simulationEngine, isSimulationInReverse, switchReverseSimulation = (
         runSimulationTick(request, simulationEngine, storedSim, 0, 0, setTicks))
 
-    daysElapsed = round((simulationEngine.simulationTime / 86400) * simulationEngine.secondsPerSimulationTick,
-                        2)  # Simulation time in days
-    updatedImageURL = "media/latestSimulation" + user.username + ".jpeg"
-    return JsonResponse({"updatedImageURL": updatedImageURL, "updatedDaysElapsed": daysElapsed})
+    daysElapsed = round((simulationEngine.simulationTime / 86400) * simulationEngine.secondsPerSimulationTick, 2)  # Simulation time in days
+    updatedImageURL = "/media/latestSimulation" + user.username + ".jpeg"
+    constructedResponse = JsonResponse({"updatedImageURL": updatedImageURL, "daysElapsed": daysElapsed})
+    return constructedResponse
