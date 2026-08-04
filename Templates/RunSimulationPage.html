@@ -153,8 +153,8 @@
             Edit Simulation
         </button>
 
-        <div class ="simulation_image_box">
-            <img src="/media/latestSimulation{{user}}.jpeg" alt="This image has failed to load.">
+        <div class="simulation_image_box">
+            <img src="/media/latestSimulation{{user}}.jpeg" alt="Test">
         </div>
 
         <div class ="simulation_information_box">
@@ -177,7 +177,24 @@
     <script>
         let isSimulationRunning = {{autoRunSimulation}}
         if (isSimulationRunning == 1) {
-            window.setTimeout(function () {location.href = '/run/0/1/{{reverseSimulation}}/0';}, 1000);
+            setInterval(simulationImageUpdate, 1000)
         }
+
+        function simulationImageUpdate(){
+            $.ajax({
+                url: '/update/',
+                type: 'get',
+
+                success: function(data) {
+                    {{daysElapsed}} = data.updatedDaysElapsed
+                },
+
+                error: function() {
+                    alert("Error in updating simulation.");
+                    window.location.href = '/stop/0'
+                }
+            });
+        }
+
     </script>
 {% endblock %}

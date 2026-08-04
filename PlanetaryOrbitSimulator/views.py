@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from .forms import SimulationNameForm, BodyDetailsForm, LoginForm, RegisterForm
 import matplotlib.colors as mcolors
@@ -285,26 +286,8 @@ def loadSimulationEngine(request, storedSim, forceLoad=False):
         setTicks = simulationEngine.ticksPerPageUpdate + simulationEngine.simulationTime
     return simulationEngine, setTicks
 
-# The backend main loop for running the simulation - runs on every simulation page refresh
-def runSimulation(request, dontRunSimulation = 0, autoRunSimulation = 0, reverseSimulation = 0, changeFocusBody = 0):
-    # Load/create a database entry of the simulation
-    user = getUser(request)
-    storedSim, existingSimLoaded = loadSimulationEntry(request)
-
-    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
-    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
-
-    if changeFocusBody == 1: # Change body screen is focused on
-        simulationEngine.focusBody = simulationEngine.focusBody + 1
-        simulationEngine.updateFocusPoint()
-
-    if autoRunSimulation == 0:
-        switchAutoRunSimulation = 1 #Used for constructing stop/start simulation link
-    else:
-        switchAutoRunSimulation = 0
-
-    storedSim, simulationEngine, infoForm = makeSimulationForm(request, storedSim, simulationEngine)
-
+def runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, dontRunSimulation, setTicks):
+    user = request.user
     if (reverseSimulation == 0 or simulationEngine.simulationTime == 0) and dontRunSimulation == 0:
         # Run instance of the simulation if not initially loaded
         simulationEngine.runSimulation(user, setTicks)
@@ -329,6 +312,30 @@ def runSimulation(request, dontRunSimulation = 0, autoRunSimulation = 0, reverse
     storedSim.user = user
     storedSim.save()
 
+    return storedSim, simulationEngine, isSimulationInReverse, switchReverseSimulation
+
+# The backend main loop for running the simulation - runs on every simulation page refresh
+def runSimulation(request, dontRunSimulation = 0, autoRunSimulation = 0, reverseSimulation = 0, changeFocusBody = 0):
+    # Load/create a database entry of the simulation
+    storedSim, existingSimLoaded = loadSimulationEntry(request)
+
+    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
+    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
+
+    if changeFocusBody == 1: # Change body screen is focused on
+        simulationEngine.focusBody = simulationEngine.focusBody + 1
+        simulationEngine.updateFocusPoint()
+
+    if autoRunSimulation == 0:
+        switchAutoRunSimulation = 1 #Used for constructing stop/start simulation link
+    else:
+        switchAutoRunSimulation = 0
+
+    storedSim, simulationEngine, infoForm = makeSimulationForm(request, storedSim, simulationEngine)
+
+    storedSim, simulationEngine, isSimulationInReverse, switchReverseSimulation = (
+        runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, dontRunSimulation, setTicks))
+
     # Calculate values for display
     daysElapsed = round((simulationEngine.simulationTime/86400)*simulationEngine.secondsPerSimulationTick, 2) # Simulation time in days
     daysPerTick = round((simulationEngine.ticksPerPageUpdate/86400)*simulationEngine.secondsPerSimulationTick, 2)
@@ -349,3 +356,21 @@ def runSimulation(request, dontRunSimulation = 0, autoRunSimulation = 0, reverse
 def stopSimulation(request, reverseSimulation):
     context = {"reverseSimulation": reverseSimulation}
     return render(request, "stopSimulationPage.html", context)
+
+def updateSimulationImage(request):
+    user = request.user
+    # Load/create a database entry of the simulation
+    storedSim, existingSimLoaded = loadSimulationEntry(request)
+
+    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
+    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
+
+    storedSim, simulationEngine, infoForm = makeSimulationForm(request, storedSim, simulationEngine)
+
+    storedSim, simulationEngine, isSimulationInReverse, switchReverseSimulation = (
+        runSimulationTick(request, simulationEngine, storedSim, 0, 0, setTicks))
+
+    daysElapsed = round((simulationEngine.simulationTime / 86400) * simulationEngine.secondsPerSimulationTick,
+                        2)  # Simulation time in days
+    updatedImageURL = "media/latestSimulation" + user.username + ".jpeg"
+    return JsonResponse({"updatedImageURL": updatedImageURL, "updatedDaysElapsed": daysElapsed})

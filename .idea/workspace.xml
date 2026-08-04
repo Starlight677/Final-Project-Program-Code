@@ -4,13 +4,21 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Found a more efficient way to stop the simulation without needing a redirect.">
-      <change afterPath="$PROJECT_DIR$/Templates/StopSimulationPage.html" afterDir="false" />
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Squared the generated simulation image.">
+      <change afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/migrations/0001_initial.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/migrations/0002_alter_storedsimulation_user_delete_user.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/migrations/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/media/BackgroundTestImage.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/media/latestSimulation.jpeg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/media/latestSimulationBRIK.jpeg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/media/latestSimulationDavid.jpeg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/latestSimulation.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Templates/RunSimulationPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/RunSimulationPage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/page_template.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/page_template.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -333,11 +341,18 @@
       <option name="project" value="LOCAL" />
       <updated>1785315200630</updated>
     </task>
-    <option name="localTasksCounter" value="32" />
+    <task id="LOCAL-00032" summary="Squared the generated simulation image.">
+      <option name="closed" value="true" />
+      <created>1785399229663</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1785399229663</updated>
+    </task>
+    <option name="localTasksCounter" value="33" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Created framework for the pages in the application." />
     <MESSAGE value="Condensed the simulation loop + added more website stuff." />
     <MESSAGE value="Some progress on making the simulation work with the web interface." />
     <MESSAGE value="Allowed simulation graph to display and be ticked by the website." />
@@ -362,6 +377,7 @@
     <MESSAGE value="Added functionality to focus view on body." />
     <MESSAGE value="Fixed bugs in the body focusing feature, and created a separate redirect page for stopping the simulation." />
     <MESSAGE value="Found a more efficient way to stop the simulation without needing a redirect." />
-    <option name="LAST_COMMIT_MESSAGE" value="Found a more efficient way to stop the simulation without needing a redirect." />
+    <MESSAGE value="Squared the generated simulation image." />
+    <option name="LAST_COMMIT_MESSAGE" value="Squared the generated simulation image." />
   </component>
 </project>
