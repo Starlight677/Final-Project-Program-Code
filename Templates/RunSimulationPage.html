@@ -144,7 +144,7 @@
         </button>
 
         <button class="change_focus_button"
-                onclick="window.location.href='/run/1/0/{{reverseSimulation}}/1'">
+                id="focusButton">
             Focus Next Body
         </button>
 
@@ -163,7 +163,7 @@
             <p>Simulation Display Size: {{simulationSizeKM}}km / {{simulationSizeAU}}AU</p>
             <p>Days Per Simulation Tick: {{daysPerTick}}</p>
             <p id="daysElapsedBox">Simulation Days Elapsed: {{daysElapsed}}</p>
-            <p>Focused Body: {{focusBodyName}}</p>
+            <p id="focusBodyBox">Focused Body: {{focusBodyName}}</p>
             <p>Simulation Iteration Reversed: {{isSimulationInReverse}}</p>
         </div>
 
@@ -187,8 +187,9 @@
                 cache: false,
 
                 success: function(data) {
-                    var cacheBustURL = data.updatedImageURL + '?' + Date.now();
-                    $("#simImage").attr('src', cacheBustURL);
+                    // Add date to the request to make the client re-request it
+                    var modifiedURL = data.updatedImageURL + '?' + Date.now();
+                    $("#simImage").attr('src', modifiedURL);
                     $("#daysElapsedBox").text("Simulation Days Elapsed: " + data.daysElapsed);
                 },
 
@@ -198,6 +199,26 @@
                 }
             });
         }
+
+        $('#focusButton').click(function(event) {
+            event.preventDefault();
+            $.ajax({
+                url: '/focus/',
+                type: 'get',
+                cache: false,
+
+                success: function(data) {
+                    // Add date to the request to make the client re-request it
+                    var modifiedURL = data.updatedImageURL + '?' + Date.now();
+                    $("#simImage").attr('src', modifiedURL);
+                    $("#focusBodyBox").text("Focused Body: " + data.focusBodyName);
+                },
+
+                error: function() {
+                    alert("Error in changing focus.");
+                }
+            });
+        });
 
     </script>
 {% endblock %}

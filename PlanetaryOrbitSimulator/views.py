@@ -357,6 +357,14 @@ def runSimulation(request, dontRunSimulation = 0, autoRunSimulation = 0, reverse
     return constructedResponse
 
 def stopSimulation(request, reverseSimulation):
+    # Load/create a database entry of the simulation
+    storedSim, existingSimLoaded = loadSimulationEntry(request)
+
+    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
+    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
+
+    runSimulationTick(request, simulationEngine, storedSim, 0, 1, setTicks)
+
     context = {"reverseSimulation": reverseSimulation}
     return render(request, "stopSimulationPage.html", context)
 
@@ -368,12 +376,27 @@ def updateSimulationImage(request):
     # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
     simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
 
-    storedSim, simulationEngine, infoForm = makeSimulationForm(request, storedSim, simulationEngine)
-
     storedSim, simulationEngine, isSimulationInReverse, switchReverseSimulation = (
         runSimulationTick(request, simulationEngine, storedSim, 0, 0, setTicks))
 
     daysElapsed = round((simulationEngine.simulationTime / 86400) * simulationEngine.secondsPerSimulationTick, 2)  # Simulation time in days
     updatedImageURL = "/media/latestSimulation" + user.username + ".jpeg"
     constructedResponse = JsonResponse({"updatedImageURL": updatedImageURL, "daysElapsed": daysElapsed})
+    return constructedResponse
+
+def changeSimulationFocus(request):
+    user = request.user
+    # Load/create a database entry of the simulation
+    storedSim, existingSimLoaded = loadSimulationEntry(request)
+
+    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
+    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
+
+    simulationEngine.focusBody = simulationEngine.focusBody + 1
+    simulationEngine.updateFocusPoint()
+
+    runSimulationTick(request, simulationEngine, storedSim, 0, 1, setTicks)
+
+    updatedImageURL = "/media/latestSimulation" + user.username + ".jpeg"
+    constructedResponse = JsonResponse({"updatedImageURL": updatedImageURL, "focusBodyName": simulationEngine.focusBodyName})
     return constructedResponse
