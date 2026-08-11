@@ -4,14 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="AJAX implementation of running the simulation fully implemented.">
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="AJAX for switching focused body added.">
       <change afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Templates/RunSimulationPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/RunSimulationPage.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/media/latestSimulation.jpeg" beforeDir="false" afterPath="$PROJECT_DIR$/media/latestSimulation.jpeg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/media/latestSimulationDavid.jpeg" beforeDir="false" afterPath="$PROJECT_DIR$/media/latestSimulationDavid.jpeg" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -358,11 +353,18 @@
       <option name="project" value="LOCAL" />
       <updated>1785849907541</updated>
     </task>
-    <option name="localTasksCounter" value="35" />
+    <task id="LOCAL-00035" summary="AJAX for switching focused body added.">
+      <option name="closed" value="true" />
+      <created>1785860557051</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1785860557051</updated>
+    </task>
+    <option name="localTasksCounter" value="36" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Allowed simulation graph to display and be ticked by the website." />
     <MESSAGE value="Updated program to store data in the session, rather than a global variable." />
     <MESSAGE value="Added visual improvements and the ability to automatically tick the simulation." />
     <MESSAGE value="Added the ability to pick from starting templates." />
@@ -387,6 +389,7 @@
     <MESSAGE value="Squared the generated simulation image." />
     <MESSAGE value="Got AJAX partially working." />
     <MESSAGE value="AJAX implementation of running the simulation fully implemented." />
-    <option name="LAST_COMMIT_MESSAGE" value="AJAX implementation of running the simulation fully implemented." />
+    <MESSAGE value="AJAX for switching focused body added." />
+    <option name="LAST_COMMIT_MESSAGE" value="AJAX for switching focused body added." />
   </component>
 </project>
