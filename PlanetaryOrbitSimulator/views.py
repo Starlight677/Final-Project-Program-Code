@@ -294,17 +294,14 @@ def runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, d
         # Run instance of the simulation if not initially loaded
         simulationEngine.runSimulation(user, setTicks)
         isSimulationInReverse = "No"
-        switchReverseSimulation = 1 # Used for switching on the HTML page
     elif dontRunSimulation == 0:
         # Run simulation in reverse if set to
         simulationEngine.rollbackSimulation(user)
         isSimulationInReverse = "Yes"
-        switchReverseSimulation = 0  # Used for switching on the HTML page
     else:
         # If simulation just being loaded, only draw graph
         simulationEngine.drawGraph(user)
         isSimulationInReverse = "No" # Text description for display
-        switchReverseSimulation = 1 # Numeric designation for link construction
 
     # Store updated simulation in session variable
     request.session["simulationEngine"] = simulationEngine
@@ -314,7 +311,7 @@ def runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, d
     storedSim.user = user
     storedSim.save()
 
-    return storedSim, simulationEngine, isSimulationInReverse, switchReverseSimulation
+    return storedSim, simulationEngine, isSimulationInReverse
 
 # The backend main loop for running the simulation - runs on every simulation page refresh
 def runSimulation(request, dontRunSimulation = 0, reverseSimulation = 0):
@@ -326,7 +323,7 @@ def runSimulation(request, dontRunSimulation = 0, reverseSimulation = 0):
 
     storedSim, simulationEngine, infoForm = makeSimulationForm(request, storedSim, simulationEngine)
 
-    storedSim, simulationEngine, isSimulationInReverse, switchReverseSimulation = (
+    storedSim, simulationEngine, isSimulationInReverse, = (
         runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, dontRunSimulation, setTicks))
 
     # Calculate values for display
@@ -338,8 +335,7 @@ def runSimulation(request, dontRunSimulation = 0, reverseSimulation = 0):
 
     # Package context for page
     context = {"simulationSizeKM": fStatedSimulationSize, "simulationSizeAU": AUStatedSimulationSize,
-               "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "reverseSimulation": reverseSimulation,
-               "isSimulationInReverse": isSimulationInReverse, "switchReverseSimulation": switchReverseSimulation,
+               "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "isSimulationInReverse": isSimulationInReverse,
                "simulationName": storedSim.name, "focusBodyName": simulationEngine.focusBodyName,
                "infoForm": infoForm,}
 
@@ -366,12 +362,13 @@ def updateSimulationImage(request, reverseSimulation = 0):
     # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
     simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
 
-    storedSim, simulationEngine, isSimulationInReverse, switchReverseSimulation = (
+    storedSim, simulationEngine, isSimulationInReverse = (
         runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, 0, setTicks))
 
     daysElapsed = round((simulationEngine.simulationTime / 86400) * simulationEngine.secondsPerSimulationTick, 2)  # Simulation time in days
     updatedImageURL = "/media/latestSimulation" + user.username + ".jpeg"
-    constructedResponse = JsonResponse({"updatedImageURL": updatedImageURL, "daysElapsed": daysElapsed})
+    constructedResponse = JsonResponse({"updatedImageURL": updatedImageURL, "daysElapsed": daysElapsed,
+                                        "isSimulationInReverse": isSimulationInReverse})
     return constructedResponse
 
 def changeSimulationFocus(request):

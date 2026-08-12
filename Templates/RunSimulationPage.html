@@ -136,8 +136,7 @@
             Stop Simulation
         </button>
 
-        <button class="invert_simulation_button"
-                onclick="window.location.href='/run/1/{{switchReverseSimulation}}'">
+        <button class="invert_simulation_button" id="reverseButton">
             Reverse Simulation Direction
         </button>
 
@@ -162,7 +161,7 @@
             <p>Days Per Simulation Tick: {{daysPerTick}}</p>
             <p id="daysElapsedBox">Simulation Days Elapsed: {{daysElapsed}}</p>
             <p id="focusBodyBox">Focused Body: {{focusBodyName}}</p>
-            <p>Simulation Iteration Reversed: {{isSimulationInReverse}}</p>
+            <p id="reverseBox">Simulation Iteration Reversed: {{isSimulationInReverse}}</p>
         </div>
 
         <form class ="simulation_edit_box" action="" method="post">
@@ -174,12 +173,12 @@
     </body>
     <script>
         let isSimulationRunning = 0
-        let isSimulationReversing = {{reverseSimulation}}
+        let isSimulationReversing = 0
         $("#stopButton").css('background','grey');
 
         function simulationImageUpdate(){
             $.ajax({
-                url: '/update/',
+                url: '/update/' + isSimulationReversing,
                 type: 'get',
                 cache: false,
 
@@ -188,6 +187,7 @@
                     var modifiedURL = data.updatedImageURL + '?' + Date.now();
                     $("#simImage").attr('src', modifiedURL);
                     $("#daysElapsedBox").text("Simulation Days Elapsed: " + data.daysElapsed);
+                    $("#reverseBox").text("Simulation Iteration Reversed: " + data.isSimulationInReverse);
                     if (isSimulationRunning == 1) {
                         // Call another simulation update after a second if the simulation is still running
                         setTimeout(simulationImageUpdate(), 1000);
@@ -237,6 +237,16 @@
             simulationImageUpdate();
             $("#stopButton").css('background','');
             $("#startButton").css('background','grey');
+        });
+
+        $('#reverseButton').click(function(event) {
+            event.preventDefault();
+            if (isSimulationReversing == 0) {
+                isSimulationReversing = 1;
+            } else {
+                isSimulationReversing = 0;
+            }
+            simulationImageUpdate();
         });
 
     </script>

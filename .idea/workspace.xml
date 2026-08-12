@@ -4,15 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Set the DEBUG state to False in preparation for hosting the site.">
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Extended AJAX.">
       <change afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/settings.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Templates/LoadSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/LoadSystemPage.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Templates/NewSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/NewSystemPage.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Templates/RunSimulationPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/RunSimulationPage.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Templates/StopSimulationPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/StopSimulationPage.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Templates/editSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/editSystemPage.html" afterDir="false" />
@@ -379,11 +375,18 @@
       <option name="project" value="LOCAL" />
       <updated>1786438134216</updated>
     </task>
-    <option name="localTasksCounter" value="37" />
+    <task id="LOCAL-00037" summary="Extended AJAX.">
+      <option name="closed" value="true" />
+      <created>1786531270315</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1786531270315</updated>
+    </task>
+    <option name="localTasksCounter" value="38" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Added visual improvements and the ability to automatically tick the simulation." />
     <MESSAGE value="Added the ability to pick from starting templates." />
     <MESSAGE value="Graph converted to give distances in AU." />
     <MESSAGE value="Modified program to use object variables rather than passing everything back and forth through methods." />
@@ -408,6 +411,7 @@
     <MESSAGE value="AJAX implementation of running the simulation fully implemented." />
     <MESSAGE value="AJAX for switching focused body added." />
     <MESSAGE value="Set the DEBUG state to False in preparation for hosting the site." />
-    <option name="LAST_COMMIT_MESSAGE" value="Set the DEBUG state to False in preparation for hosting the site." />
+    <MESSAGE value="Extended AJAX." />
+    <option name="LAST_COMMIT_MESSAGE" value="Extended AJAX." />
   </component>
 </project>
