@@ -33,7 +33,7 @@
             border-radius: 5vh;
         }
 
-        .tick_simulation_button {
+        .stop_simulation_button {
             position: absolute;
             top: 85vh;
             left: 87vw;
@@ -128,18 +128,16 @@
             Return to Main Menu
         </button>
 
-        <button class="start_simulation_button"
-                onclick="window.location.href='/run/0/1/{{reverseSimulation}}/0'">
+        <button class="start_simulation_button" id="startButton">
             Start Simulation
         </button>
 
-        <button class="tick_simulation_button"
-                onclick="window.location.href='/stop/{{reverseSimulation}}'">
+        <button class="stop_simulation_button" id="stopButton">
             Stop Simulation
         </button>
 
         <button class="invert_simulation_button"
-                onclick="window.location.href='/run/1/0/{{switchReverseSimulation}}/0'">
+                onclick="window.location.href='/run/1/{{switchReverseSimulation}}'">
             Reverse Simulation Direction
         </button>
 
@@ -175,10 +173,9 @@
         </form>
     </body>
     <script>
-        let isSimulationRunning = {{autoRunSimulation}}
-        if (isSimulationRunning == 1) {
-            setInterval(simulationImageUpdate, 3000)
-        }
+        let isSimulationRunning = 0
+        let isSimulationReversing = {{reverseSimulation}}
+        $("#stopButton").css('background','grey');
 
         function simulationImageUpdate(){
             $.ajax({
@@ -191,6 +188,14 @@
                     var modifiedURL = data.updatedImageURL + '?' + Date.now();
                     $("#simImage").attr('src', modifiedURL);
                     $("#daysElapsedBox").text("Simulation Days Elapsed: " + data.daysElapsed);
+                    if (isSimulationRunning == 1) {
+                        // Call another simulation update after a second if the simulation is still running
+                        setTimeout(simulationImageUpdate(), 1000);
+                    }
+                    else {
+                        // Set colour of the start simulation button once simulation stops running
+                        $("#startButton").css('background','');
+                    }
                 },
 
                 error: function() {
@@ -218,6 +223,20 @@
                     alert("Error in changing focus.");
                 }
             });
+        });
+
+        $('#stopButton').click(function(event) {
+            event.preventDefault();
+            isSimulationRunning = 0;
+            $("#stopButton").css('background','grey');
+        });
+
+        $('#startButton').click(function(event) {
+            event.preventDefault();
+            isSimulationRunning = 1;
+            simulationImageUpdate();
+            $("#stopButton").css('background','');
+            $("#startButton").css('background','grey');
         });
 
     </script>

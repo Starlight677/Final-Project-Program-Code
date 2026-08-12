@@ -317,21 +317,12 @@ def runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, d
     return storedSim, simulationEngine, isSimulationInReverse, switchReverseSimulation
 
 # The backend main loop for running the simulation - runs on every simulation page refresh
-def runSimulation(request, dontRunSimulation = 0, autoRunSimulation = 0, reverseSimulation = 0, changeFocusBody = 0):
+def runSimulation(request, dontRunSimulation = 0, reverseSimulation = 0):
     # Load/create a database entry of the simulation
     storedSim, existingSimLoaded = loadSimulationEntry(request)
 
     # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
     simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
-
-    if changeFocusBody == 1: # Change body screen is focused on
-        simulationEngine.focusBody = simulationEngine.focusBody + 1
-        simulationEngine.updateFocusPoint()
-
-    if autoRunSimulation == 0:
-        switchAutoRunSimulation = 1 #Used for constructing stop/start simulation link
-    else:
-        switchAutoRunSimulation = 0
 
     storedSim, simulationEngine, infoForm = makeSimulationForm(request, storedSim, simulationEngine)
 
@@ -347,10 +338,9 @@ def runSimulation(request, dontRunSimulation = 0, autoRunSimulation = 0, reverse
 
     # Package context for page
     context = {"simulationSizeKM": fStatedSimulationSize, "simulationSizeAU": AUStatedSimulationSize,
-               "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "autoRunSimulation": autoRunSimulation,
-               "reverseSimulation": reverseSimulation, "isSimulationInReverse": isSimulationInReverse,
-               "switchReverseSimulation": switchReverseSimulation, "simulationName": storedSim.name,
-               "focusBodyName": simulationEngine.focusBodyName, "switchAutoRunSimulation": switchAutoRunSimulation,
+               "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "reverseSimulation": reverseSimulation,
+               "isSimulationInReverse": isSimulationInReverse, "switchReverseSimulation": switchReverseSimulation,
+               "simulationName": storedSim.name, "focusBodyName": simulationEngine.focusBodyName,
                "infoForm": infoForm,}
 
     constructedResponse = render(request, "runSimulationPage.html", context)
@@ -368,7 +358,7 @@ def stopSimulation(request, reverseSimulation):
     context = {"reverseSimulation": reverseSimulation}
     return render(request, "stopSimulationPage.html", context)
 
-def updateSimulationImage(request):
+def updateSimulationImage(request, reverseSimulation = 0):
     user = request.user
     # Load/create a database entry of the simulation
     storedSim, existingSimLoaded = loadSimulationEntry(request)
@@ -377,7 +367,7 @@ def updateSimulationImage(request):
     simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
 
     storedSim, simulationEngine, isSimulationInReverse, switchReverseSimulation = (
-        runSimulationTick(request, simulationEngine, storedSim, 0, 0, setTicks))
+        runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, 0, setTicks))
 
     daysElapsed = round((simulationEngine.simulationTime / 86400) * simulationEngine.secondsPerSimulationTick, 2)  # Simulation time in days
     updatedImageURL = "/media/latestSimulation" + user.username + ".jpeg"
