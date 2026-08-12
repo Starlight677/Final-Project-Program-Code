@@ -140,10 +140,11 @@ class PlanetarySimulationEngine:
 
         fig = plt.figure()
         ax = fig.add_subplot()
-        ax.set_aspect('equal', adjustable='box')
+        #ax.set_aspect('equal', adjustable='box')
 
         plt.xlim((-self.simulationSize)+self.focusPoint[0], self.simulationSize+self.focusPoint[0])
         plt.ylim((-self.simulationSize)+self.focusPoint[1], self.simulationSize+self.focusPoint[1])
+        plt.figure(figsize=(6.5,6.5))
         plt.xlabel("Distance (AU)")
         plt.ylabel("Distance (AU)")
         plt.grid(True)

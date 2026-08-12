@@ -12,7 +12,7 @@
         .back_to_menu_button {
             position: absolute;
             top: 85vh;
-            left: 5vw;
+            left: 2vw;
             height: 10vh;
             width: 10vw;
             text-align: center;
@@ -60,7 +60,7 @@
         .edit_simulation_button {
             position: absolute;
             top: 85vh;
-            left: 17vw;
+            left: 14vw;
             height: 10vh;
             width: 10vw;
             text-align: center;
@@ -83,13 +83,9 @@
 
         .simulation_image_box {
             position: absolute;
-            top: 15vh;
-            left: 25vw;
-            width: 50vw;
-            height: 50vh;
+            top: 5vh;
+            left: 27vw;
             text-align: center;
-            border: 2px solid black;
-            border-radius: 5vh;
         }
 
         .simulation_information_box {
@@ -110,7 +106,7 @@
         .simulation_edit_box {
             position: absolute;
             top: 15vh;
-            left: 75vw;
+            left: 78vw;
             height: 45vh;
             width: 15vw;
             text-align: center;
@@ -187,7 +183,9 @@
                     var modifiedURL = data.updatedImageURL + '?' + Date.now();
                     $("#simImage").attr('src', modifiedURL);
                     $("#daysElapsedBox").text("Simulation Days Elapsed: " + data.daysElapsed);
-                    $("#reverseBox").text("Simulation Iteration Reversed: " + data.isSimulationInReverse);
+                    if (typeof(data.focusBodyName) != "undefined") { // Update the focused body's name
+                        $("#focusBodyBox").text("Focused Body: " + data.focusBodyName);
+                    }
                     if (isSimulationRunning == 1) {
                         // Call another simulation update after a second if the simulation is still running
                         setTimeout(simulationImageUpdate(), 1000);

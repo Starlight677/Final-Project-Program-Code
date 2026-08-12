@@ -1,8 +1,9 @@
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from django.core.cache import cache
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.utils.cache import patch_cache_control
 
 from .forms import SimulationNameForm, BodyDetailsForm, LoginForm, RegisterForm
@@ -21,6 +22,7 @@ def homePage(request):
     context = {"user": user}
     return render(request, "HomePage.html", context)
 
+@login_required(login_url="/login/")
 def settingsPage(request):
     # Backend for the Settings page
     user = getUser(request)
@@ -34,6 +36,7 @@ def loginPage(request):
             user = authenticate(username = form.cleaned_data["username"], password = form.cleaned_data["password"])
             if user is not None:
                 login(request, user)
+                return redirect("/")
     return render(request, "LoginPage.html", {"loginForm": form, "currentUser": request.user})
 
 def registerPage(request):
@@ -47,6 +50,7 @@ def registerPage(request):
 
     return render(request, "RegisterPage.html", {"registerForm": form, "currentUser": request.user})
 
+@login_required(login_url="/login/")
 def createPage(request, templateIndex = 0):
     # Backend for the Create New System page
     user = getUser(request)
@@ -82,6 +86,7 @@ def createPage(request, templateIndex = 0):
 
     return render(request, "NewSystemPage.html", context)
 
+@login_required(login_url="/login/")
 def loadingPage(request, saveIndex = 0):
     # Backend for the Load Existing System page
     user = getUser(request)
@@ -144,6 +149,7 @@ def makeSimulationForm(request, storedSim, simulationEngine):
 
     return storedSim, simulationEngine, infoForm
 
+@login_required(login_url="/login/")
 def editSimulationPage(request, selectedBody = 0):
     # For editing the simulation
     user = getUser(request)
@@ -314,6 +320,7 @@ def runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, d
     return storedSim, simulationEngine, isSimulationInReverse
 
 # The backend main loop for running the simulation - runs on every simulation page refresh
+@login_required(login_url="/login/")
 def runSimulation(request, dontRunSimulation = 0, reverseSimulation = 0):
     # Load/create a database entry of the simulation
     storedSim, existingSimLoaded = loadSimulationEntry(request)
@@ -342,6 +349,7 @@ def runSimulation(request, dontRunSimulation = 0, reverseSimulation = 0):
     constructedResponse = render(request, "runSimulationPage.html", context)
     return constructedResponse
 
+@login_required(login_url="/login/")
 def stopSimulation(request, reverseSimulation):
     # Load/create a database entry of the simulation
     storedSim, existingSimLoaded = loadSimulationEntry(request)
