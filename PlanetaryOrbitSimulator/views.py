@@ -414,3 +414,38 @@ def changeSimulationFocus(request):
     updatedImageURL = "/media/latestSimulation" + user.username + ".jpeg"
     constructedResponse = JsonResponse({"updatedImageURL": updatedImageURL, "focusBodyName": simulationEngine.focusBodyName})
     return constructedResponse
+
+def processRunForm(request):
+    user = request.user
+    # Load/create a database entry of the simulation
+    storedSim, existingSimLoaded = loadSimulationEntry(request)
+
+    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
+    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
+
+    runForm = SimulationNameForm(request.POST)
+
+    if runForm.is_valid():
+        storedSim.name = runForm.cleaned_data["simulationName"]
+        simulationEngine.simulationSize = runForm.cleaned_data["simulationSize"]
+        adjustedTimePerTick =  round(runForm.cleaned_data["simulationTimePerUpdate"] * 86400)
+        simulationEngine.ticksPerPageUpdate = adjustedTimePerTick  / simulationEngine.secondsPerSimulationTick
+    else:
+        raise ValueError
+
+    request.session["simulationEngine"] = simulationEngine
+    storedSim = loadValues(storedSim, simulationEngine)
+    storedSim.user = user
+    storedSim.save()
+
+    # Calculate values for display
+    daysPerTick = round((simulationEngine.ticksPerPageUpdate / 86400) * simulationEngine.secondsPerSimulationTick, 2)
+    statedSimulationSize = round(simulationEngine.simulationSize * 1.495979e8)  # Simulation diameter in kilometers
+    fStatedSimulationSize = f"{statedSimulationSize:,}"  # Adds commas to the number
+    AUStatedSimulationSize = round(simulationEngine.simulationSize,
+                                   3)  # Calculates simulation diameter in Astronomical Units to 3DP
+
+    response = {"simulationName": storedSim.name, "daysPerTick": daysPerTick, "simulationSizeAU": AUStatedSimulationSize,
+                "simulationSizeKM": fStatedSimulationSize}
+    return JsonResponse(response)
+

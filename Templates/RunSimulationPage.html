@@ -152,19 +152,19 @@
 
         <div class ="simulation_information_box">
             <h3>Simulation Information:</h3>
-            <p>Simulation Name: {{simulationName}}</p>
-            <p>Simulation Display Size: {{simulationSizeKM}}km / {{simulationSizeAU}}AU</p>
-            <p>Days Per Simulation Tick: {{daysPerTick}}</p>
+            <p id="nameBox">Simulation Name: {{simulationName}}</p>
+            <p id="displaySizeBox">Simulation Display Size: {{simulationSizeKM}}km / {{simulationSizeAU}}AU</p>
+            <p id="daysPerTickBox">Days Per Simulation Tick: {{daysPerTick}}</p>
             <p id="daysElapsedBox">Simulation Days Elapsed: {{daysElapsed}}</p>
             <p id="focusBodyBox">Focused Body: {{focusBodyName}}</p>
             <p id="reverseBox">Simulation Iteration Reversed: {{isSimulationInReverse}}</p>
         </div>
 
-        <form class ="simulation_edit_box" action="" method="post">
+        <form class ="simulation_edit_box" action="" method="post" id="submitForm">
             <h2>Modify Simulation Values:</h2>
             {% csrf_token %}
             {{infoForm}}
-            <input type="submit" value="Confirm Changes">
+            <input id="submitFormButton" type="submit" value="Confirm Changes">
         </form>
     </body>
     <script>
@@ -219,6 +219,26 @@
 
                 error: function() {
                     alert("Error in changing focus.");
+                }
+            });
+        });
+
+        $('#submitForm').click(function(event) {
+            event.preventDefault();
+            $.ajax({
+                url: '/runForm/',
+                type: 'post',
+                cache: false,
+                data: $(this).serialize(),
+
+                success: function(data) {
+                    $("#nameBox").text("Simulation Name: " + data.simulationName);
+                    $("#displaySizeBox").text("Simulation Display Size: " + data.simulationSizeKM + "km / " + data.simulationSizeAU + "AU");
+                    $("#daysPerTickBox").text("Days Per Simulation Tick: " + data.daysPerTick);
+                },
+
+                error: function() {
+                    alert("Error in updating form.");
                 }
             });
         });
