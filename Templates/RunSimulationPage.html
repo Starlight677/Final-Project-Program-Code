@@ -83,7 +83,7 @@
 
         .simulation_image_box {
             position: absolute;
-            top: 5vh;
+            top: 0;
             left: 27vw;
             text-align: center;
         }
@@ -147,7 +147,7 @@
         </button>
 
         <div class="simulation_image_box">
-            <img src="/media/latestSimulation{{user}}.jpeg" id="simImage" alt="Test">
+            <img src="/media/latestSimulation{{user}}.png" id="simImage" alt="Test">
         </div>
 
         <div class ="simulation_information_box">
@@ -180,7 +180,7 @@
 
                 success: function(data) {
                     // Add date to the request to make the client re-request it
-                    var modifiedURL = data.updatedImageURL + '?' + Date.now();
+                    var modifiedURL = '/media/latestSimulation{{user}}.png?' + Date.now();
                     $("#simImage").attr('src', modifiedURL);
                     $("#daysElapsedBox").text("Simulation Days Elapsed: " + data.daysElapsed);
                     if (typeof(data.focusBodyName) != "undefined") { // Update the focused body's name
@@ -212,7 +212,7 @@
 
                 success: function(data) {
                     // Add date to the request to make the client re-request it
-                    var modifiedURL = data.updatedImageURL + '?' + Date.now();
+                    var modifiedURL = '/media/latestSimulation{{user}}.png?' + Date.now();
                     $("#simImage").attr('src', modifiedURL);
                     $("#focusBodyBox").text("Focused Body: " + data.focusBodyName);
                 },

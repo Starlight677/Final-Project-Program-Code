@@ -7,6 +7,7 @@ from django.shortcuts import render, redirect
 from django.utils.cache import patch_cache_control
 
 from .forms import SimulationNameForm, BodyDetailsForm, LoginForm, RegisterForm
+import matplotlib as plt
 import matplotlib.colors as mcolors
 from.models import StoredSimulation
 
@@ -23,10 +24,22 @@ def homePage(request):
     return render(request, "HomePage.html", context)
 
 @login_required(login_url="/login/")
-def settingsPage(request):
+def settingsPage(request, styleIndex = -1):
     # Backend for the Settings page
     user = getUser(request)
-    context = {}
+    styleBackgroundColours = ["black", "white", "none"]
+    styleAxisColours = ["white", "black", "white"]
+    styleDisplayNames = ["Dark Background", "Light Background", "Transparent Background"]
+
+    if styleIndex == -1:
+        # Note index of style chosen for the page
+        styleIndex = styleBackgroundColours.index(request.session["backgroundStyle"])
+    else:
+        # If the page has chosen a style update the saved style
+        request.session["backgroundStyle"] = styleBackgroundColours[styleIndex]
+        request.session["axisStyle"] = styleAxisColours[styleIndex]
+
+    context = {"graphStyles": styleDisplayNames, "styleIndex": styleIndex}
     return render(request, "SettingsPage.html", context)
 
 def loginPage(request):
@@ -36,6 +49,9 @@ def loginPage(request):
             user = authenticate(username = form.cleaned_data["username"], password = form.cleaned_data["password"])
             if user is not None:
                 login(request, user)
+                # Set default style colour
+                request.session["backgroundStyle"] = "black"
+                request.session["axisStyle"] = "white"
                 return redirect("/")
     return render(request, "LoginPage.html", {"loginForm": form, "currentUser": request.user})
 
@@ -75,7 +91,7 @@ def createPage(request, templateIndex = 0):
         simulationEngine.simulationSize = form.cleaned_data["simulationSize"]
         adjustedTimePerTick = round(form.cleaned_data["simulationTimePerUpdate"] * 86400)
         simulationEngine.ticksPerPageUpdate = adjustedTimePerTick/simulationEngine.secondsPerSimulationTick
-    simulationEngine.drawGraph(user)
+    simulationEngine.drawGraph(user, request.session["backgroundStyle"], request.session["axisStyle"])
     request.session["simulationEngine"] = simulationEngine
 
     # Wipe this field to stop previous simulation conflicts
@@ -105,7 +121,7 @@ def loadingPage(request, saveIndex = 0):
 
         selectedSimulation, simulationEngine, infoForm = makeSimulationForm(request, selectedSimulation, simulationEngine)
 
-        simulationEngine.drawGraph(user)
+        simulationEngine.drawGraph(user, request.session["backgroundStyle"], request.session["axisStyle"])
         request.session["simulationEngine"] = simulationEngine
 
         # Create variables for display in information box
@@ -211,7 +227,7 @@ def editSimulationPage(request, selectedBody = 0):
         simulationEngine.focusBody = -1
 
     # Display graph and save any edits
-    simulationEngine.drawGraph(user)
+    simulationEngine.drawGraph(user, request.session["backgroundStyle"], request.session["axisStyle"])
     request.session["simulationEngine"] = simulationEngine
     storedSim = loadValues(storedSim, simulationEngine)
     storedSim.save()
@@ -298,15 +314,15 @@ def runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, d
     user = request.user
     if (reverseSimulation == 0 or simulationEngine.simulationTime == 0) and dontRunSimulation == 0:
         # Run instance of the simulation if not initially loaded
-        simulationEngine.runSimulation(user, setTicks)
+        simulationEngine.runSimulation(user, request.session["backgroundStyle"], request.session["axisStyle"], setTicks)
         isSimulationInReverse = "No"
     elif dontRunSimulation == 0:
         # Run simulation in reverse if set to
-        simulationEngine.rollbackSimulation(user)
+        simulationEngine.rollbackSimulation(user, request.session["backgroundStyle"], request.session["axisStyle"])
         isSimulationInReverse = "Yes"
     else:
         # If simulation just being loaded, only draw graph
-        simulationEngine.drawGraph(user)
+        simulationEngine.drawGraph(user, request.session["backgroundStyle"], request.session["axisStyle"])
         isSimulationInReverse = "No" # Text description for display
 
     # Store updated simulation in session variable
@@ -374,9 +390,7 @@ def updateSimulationImage(request, reverseSimulation = 0):
         runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, 0, setTicks))
 
     daysElapsed = round((simulationEngine.simulationTime / 86400) * simulationEngine.secondsPerSimulationTick, 2)  # Simulation time in days
-    updatedImageURL = "/media/latestSimulation" + user.username + ".jpeg"
-    constructedResponse = JsonResponse({"updatedImageURL": updatedImageURL, "daysElapsed": daysElapsed,
-                                        "isSimulationInReverse": isSimulationInReverse})
+    constructedResponse = JsonResponse({"daysElapsed": daysElapsed, "isSimulationInReverse": isSimulationInReverse})
     return constructedResponse
 
 def changeSimulationFocus(request):

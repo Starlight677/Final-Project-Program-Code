@@ -133,18 +133,34 @@ class PlanetarySimulationEngine:
         else:
             pass
 
-    def drawGraph(self, user):
+    def drawGraph(self, user, backgroundColour = "black", graphColour = "white"):
         # Draw a graph using MatPlotLib
         matplotlib.use('agg') # Mode for not having issues with Django threading
+        plt.style.use("fast")
         self.updateFocusPoint() # Plot the boundaries of the graph
 
-        fig = plt.figure()
+        fig = plt.figure(figsize=(6.9, 6.9))
         ax = fig.add_subplot()
-        #ax.set_aspect('equal', adjustable='box')
+        fig.set_facecolor(backgroundColour)
+        ax.set_facecolor(backgroundColour)
+        ax.set_aspect('equal', adjustable='box')
+
+        # Change the color of the x-axis
+        ax.spines['bottom'].set_color(graphColour)
+        ax.tick_params(axis="x", colors=graphColour)
+        ax.xaxis.label.set_color(graphColour)
+
+        # Change the color of the y-axis
+        ax.spines['left'].set_color(graphColour)
+        ax.tick_params(axis="y", colors=graphColour)
+        ax.yaxis.label.set_color(graphColour)
+
+        # Fill in the top and right of the graph
+        ax.spines['top'].set_color(graphColour)
+        ax.spines['right'].set_color(graphColour)
 
         plt.xlim((-self.simulationSize)+self.focusPoint[0], self.simulationSize+self.focusPoint[0])
         plt.ylim((-self.simulationSize)+self.focusPoint[1], self.simulationSize+self.focusPoint[1])
-        plt.figure(figsize=(6.5,6.5))
         plt.xlabel("Distance (AU)")
         plt.ylabel("Distance (AU)")
         plt.grid(True)
@@ -159,7 +175,7 @@ class PlanetarySimulationEngine:
                 continue
 
         # Save graph to file
-        plt.savefig('media/latestSimulation' + user.username + '.jpeg', transparent=True)
+        plt.savefig('media/latestSimulation' + user.username + '.png')
         plt.close('all')
 
     def updateFocusPoint(self):
@@ -213,7 +229,7 @@ class PlanetarySimulationEngine:
 
         return significantCompanions, bodyCollision
 
-    def runSimulation(self, user, setTicks = -1):
+    def runSimulation(self, user, backgroundStyle, axisStyle, setTicks = -1):
         # Useful constants for defining planet parameters
         bodyCollision = False # Records whether any objects have collided
 
@@ -230,7 +246,7 @@ class PlanetarySimulationEngine:
             # Update timer
             self.simulationTime = self.simulationTime + 1
         if setTicks == self.simulationTime:
-            self.drawGraph(user)
+            self.drawGraph(user, backgroundStyle, axisStyle)
             pass
         elif bodyCollision:
             # If two planets have collided, exit simulation loop
@@ -256,7 +272,7 @@ class PlanetarySimulationEngine:
 
             self.secondsPerSimulationTick = 60
             self.simulationSize = 2  # Size of the displayed area in AU
-            self.ticksPerStorageUpdate = 3600 / self.secondsPerSimulationTick  # One course point saved every hour
+            self.ticksPerStorageUpdate = (3600*12) / self.secondsPerSimulationTick  # One course point saved every 12 hours
             self.ticksPerPageUpdate = round((86400*5)/self.secondsPerSimulationTick) # One update per 5 days
             self.simulationName = "Inner Solar System"
 
@@ -271,7 +287,7 @@ class PlanetarySimulationEngine:
 
             self.secondsPerSimulationTick = 6 # 10 simulation ticks per minute
             self.simulationSize = 0.02  # Size of the displayed area in AU
-            self.ticksPerStorageUpdate = 600 / self.secondsPerSimulationTick  # One course point saved every ten minutes
+            self.ticksPerStorageUpdate = 3600 / self.secondsPerSimulationTick  # One course point saved every hour
             self.ticksPerPageUpdate = round((86400/4) / self.secondsPerSimulationTick)  # One update per 6 hours
             self.simulationName = "Galilean Moons of Jupiter"
 
@@ -293,7 +309,7 @@ class PlanetarySimulationEngine:
             self.listOfBodies = [body1Stats, body2Stats, body3Stats, body4Stats, body5Stats, body6Stats, body7Stats]
             self.secondsPerSimulationTick = 60
             self.simulationSize = 0.5  # Size of the displayed area in AU
-            self.ticksPerStorageUpdate = 600 / self.secondsPerSimulationTick  # One course point saved every ten minutes
+            self.ticksPerStorageUpdate = (3600*3) / self.secondsPerSimulationTick  # One course point saved every 3 hours
             self.ticksPerPageUpdate = round((86400/2) / self.secondsPerSimulationTick)  # One update per 12 hours
             self.simulationName = "Ascendia Primary Star"
         elif templateNumber == 3:
@@ -303,7 +319,7 @@ class PlanetarySimulationEngine:
             self.listOfBodies = [body1Stats, body2Stats]
             self.secondsPerSimulationTick = 60
             self.simulationSize = 2  # Size of the displayed area in AU
-            self.ticksPerStorageUpdate = 3600 / self.secondsPerSimulationTick  # One course point saved every hour
+            self.ticksPerStorageUpdate = (3600*12) / self.secondsPerSimulationTick  # One course point saved every 12 hours
             self.ticksPerPageUpdate = round((86400 * 30) / self.secondsPerSimulationTick)  # One update per 30 days
             self.simulationName = "Binary Stars"
         else:
@@ -312,7 +328,7 @@ class PlanetarySimulationEngine:
             self.listOfBodies = [body1Stats]
             self.secondsPerSimulationTick = 60
             self.simulationSize = 1  # Size of the displayed area in meters
-            self.ticksPerStorageUpdate = 3600 / self.secondsPerSimulationTick  # One course point saved every hour
+            self.ticksPerStorageUpdate = (3600*12) / self.secondsPerSimulationTick  # One course point saved every 12 hours
             self.ticksPerPageUpdate = round((86400 * 5) / self.secondsPerSimulationTick)  # One update per 5 days
             self.simulationName = "Single Star"
 
@@ -321,7 +337,7 @@ class PlanetarySimulationEngine:
         for i in range(len(self.listOfBodies)):
             self.bodyPoints.append([[], [], [[],[],[]]])
 
-    def rollbackSimulation(self, user):
+    def rollbackSimulation(self, user, backgroundStyle, axisStyle):
         # Roll back the simulation
         storedValuesPerUpdate = round(self.ticksPerPageUpdate/self.ticksPerStorageUpdate)
         AU = 1.495979e11
@@ -339,5 +355,5 @@ class PlanetarySimulationEngine:
                 pass
 
         self.simulationTime = self.simulationTime - self.ticksPerPageUpdate
-        self.drawGraph(user)
+        self.drawGraph(user, backgroundStyle, axisStyle)
         pass
