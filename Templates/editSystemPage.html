@@ -117,7 +117,7 @@
         </button>
 
         <div class ="simulation_image_box">
-            <img src="/media/latestSimulation{{user}}.png" alt="This image has failed to load.">
+            <img src="/media/latestSimulation{{user}}.png" alt="This image has failed to load." id="simImage">
         </div>
 
         <div class ="simulation_information_box">
@@ -129,11 +129,32 @@
             <p>Focused Body: {{focusBodyName}}</p>
         </div>
 
-        <form class ="body_information_box" action="" method="post">
+        <form class ="body_information_box" action="" method="post" id="bodyForm">
             <h2>Body Values:</h2>
             {% csrf_token %}
             {{ detailsForm }}
             <input type="submit" value="Confirm Changes">
         </form>
     </body>
+
+    <script>
+        $('#bodyForm').click(function(event) {
+            event.preventDefault();
+            $.ajax({
+                url: '/editForm/{{selectedBody}}',
+                type: 'post',
+                cache: false,
+                data: $(this).serialize(),
+
+                success: function(data) {
+                    var modifiedURL = '/media/latestSimulation{{user}}.png?' + Date.now();
+                    $("#simImage").attr('src', modifiedURL);
+                },
+
+                error: function() {
+                    alert("Error in updating form.");
+                }
+            });
+        });
+    </script>
 {% endblock %}

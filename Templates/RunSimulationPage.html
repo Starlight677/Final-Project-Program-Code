@@ -232,6 +232,9 @@
                 data: $(this).serialize(),
 
                 success: function(data) {
+                    var modifiedURL = '/media/latestSimulation{{user}}.png?' + Date.now();
+                    $("#simImage").attr('src', modifiedURL);
+
                     $("#nameBox").text("Simulation Name: " + data.simulationName);
                     $("#displaySizeBox").text("Simulation Display Size: " + data.simulationSizeKM + "km / " + data.simulationSizeAU + "AU");
                     $("#daysPerTickBox").text("Days Per Simulation Tick: " + data.daysPerTick);

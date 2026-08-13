@@ -33,6 +33,7 @@ urlpatterns = [
     path('run/<int:dontRunSimulation>/', views.runSimulation),
     path('runForm/', views.processRunForm),
     path('edit/<int:selectedBody>', views.editSimulationPage),
+    path('editForm/<int:selectedBody>', views.processEditForm),
     path('stop/<int:reverseSimulation>', views.stopSimulation),
     path('focus/', views.changeSimulationFocus),
     path('update/', views.updateSimulationImage, name="update"),

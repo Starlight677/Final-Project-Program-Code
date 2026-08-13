@@ -103,7 +103,7 @@ def createPage(request, templateIndex = 0):
     if "selectedSimulation" in request.session:
         del request.session["selectedSimulation"]
 
-    context = {"templatesList": templatesList, "templateIndex": templateIndex, "form": form}
+    context = {"templatesList": templatesList, "templateIndex": templateIndex, "form": form, "user": user}
 
     return render(request, "NewSystemPage.html", context)
 
@@ -141,7 +141,7 @@ def loadingPage(request, saveIndex = 0):
                                        3)  # Calculates simulation diameter in Astronomical Units to 3DP
         context = {"allSimulations": allSimulations, "saveIndex": saveIndex, "name": selectedSimulation.name,
                    "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "simulationSizeKM": fStatedSimulationSize,
-                   "simulationSizeAU": AUStatedSimulationSize, "infoForm": infoForm}
+                   "simulationSizeAU": AUStatedSimulationSize, "infoForm": infoForm, "user": user}
     except:
         # If stored simulations can't be found, return blank array
         allSimulations = []
@@ -157,16 +157,6 @@ def makeSimulationForm(request, storedSim, simulationEngine):
                                                           (86400 / simulationEngine.secondsPerSimulationTick), }
     infoForm = SimulationNameForm(request.POST or None,
                                   initial=simulationDefaultValues)  # Allow configuring information
-
-    if infoForm.is_valid():
-        # Load parameters from form
-        storedSim.name = infoForm.cleaned_data["simulationName"]
-        simulationEngine.simulationSize = infoForm.cleaned_data["simulationSize"]
-        adjustedTimePerTick = round(infoForm.cleaned_data["simulationTimePerUpdate"] * 86400)
-        simulationEngine.ticksPerPageUpdate = adjustedTimePerTick / simulationEngine.secondsPerSimulationTick
-
-        storedSim = loadValues(storedSim, simulationEngine)  # Store and save everything in the database
-        storedSim.save()
 
     return storedSim, simulationEngine, infoForm
 
@@ -202,28 +192,6 @@ def editSimulationPage(request, selectedBody = 0):
                               "bodyXSpeed": round(simulationEngine.listOfBodies[selectedBody][1][0]/1000,3),
                               "bodyYSpeed": round(simulationEngine.listOfBodies[selectedBody][1][1]/1000,3),}
     detailsForm = BodyDetailsForm(request.POST or None, initial=bodyDisplayDetails)
-    if detailsForm.is_valid():
-        # Load parameters from form
-        if selectedBody == len(simulationEngine.listOfBodies):
-            # If creating new body, add empty framework to list
-            simulationEngine.listOfBodies.append([[0, 0, 0], [0, 0, 0], 0, 0, ['white', 'white'], ""])
-            simulationEngine.bodyPoints.append([[], [], [[],[],[]]])
-
-        simulationEngine.listOfBodies[selectedBody][2] = detailsForm.cleaned_data["bodyMass"]
-        simulationEngine.listOfBodies[selectedBody][3] = detailsForm.cleaned_data["bodyRadius"]
-        simulationEngine.listOfBodies[selectedBody][5] = detailsForm.cleaned_data["bodyName"]
-
-        simulationEngine.listOfBodies[selectedBody][0][0] = detailsForm.cleaned_data["bodyXPosition"]*AU
-        simulationEngine.listOfBodies[selectedBody][0][1] = detailsForm.cleaned_data["bodyYPosition"]*AU
-        simulationEngine.listOfBodies[selectedBody][1][0] = detailsForm.cleaned_data["bodyXSpeed"]*1000
-        simulationEngine.listOfBodies[selectedBody][1][1] = detailsForm.cleaned_data["bodyYSpeed"]*1000
-
-        if detailsForm.cleaned_data["bodyColour"] in mcolors.CSS4_COLORS:
-            # Only update colour if valid colour entered
-            simulationEngine.listOfBodies[selectedBody][4][0] = detailsForm.cleaned_data["bodyColour"]
-            simulationEngine.listOfBodies[selectedBody][4][1] = detailsForm.cleaned_data["bodyColour"] # Update both colour fields
-        else:
-            print("Invalid colour!")
 
     # Focus the screen on the selected body
     if selectedBody < len(simulationEngine.listOfBodies):
@@ -259,7 +227,8 @@ def editSimulationPage(request, selectedBody = 0):
     context = {"simulationSizeKM": fStatedSimulationSize, "simulationSizeAU": AUStatedSimulationSize,
                "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "selectedBody": selectedBody,
                "nextBody": nextBody, "lastBody": lastBody, "detailsForm": detailsForm,
-               "simulationName": storedSim.name, "focusBodyName": simulationEngine.focusBodyName}
+               "simulationName": storedSim.name, "focusBodyName": simulationEngine.focusBodyName,
+               "user": user}
 
     return render(request, "editSystemPage.html", context)
 
@@ -433,6 +402,9 @@ def processRunForm(request):
     else:
         raise ValueError
 
+    runSimulationTick(request, simulationEngine, storedSim, 0, 1, setTicks) #Redraw image
+
+    #Update stored simulation data
     request.session["simulationEngine"] = simulationEngine
     storedSim = loadValues(storedSim, simulationEngine)
     storedSim.user = user
@@ -447,5 +419,52 @@ def processRunForm(request):
 
     response = {"simulationName": storedSim.name, "daysPerTick": daysPerTick, "simulationSizeAU": AUStatedSimulationSize,
                 "simulationSizeKM": fStatedSimulationSize}
+    return JsonResponse(response)
+
+def processEditForm(request, selectedBody):
+    user = request.user
+    # Load/create a database entry of the simulation
+    storedSim, existingSimLoaded = loadSimulationEntry(request)
+
+    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
+    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
+
+    detailsForm = BodyDetailsForm(request.POST)
+
+    AU = 1.495979e11
+    if detailsForm.is_valid():
+        # Load parameters from form
+        if selectedBody == len(simulationEngine.listOfBodies):
+            # If creating new body, add empty framework to list
+            simulationEngine.listOfBodies.append([[0, 0, 0], [0, 0, 0], 0, 0, ['white', 'white'], ""])
+            simulationEngine.bodyPoints.append([[], [], [[],[],[]]])
+
+        simulationEngine.listOfBodies[selectedBody][2] = detailsForm.cleaned_data["bodyMass"]
+        simulationEngine.listOfBodies[selectedBody][3] = detailsForm.cleaned_data["bodyRadius"]
+        simulationEngine.listOfBodies[selectedBody][5] = detailsForm.cleaned_data["bodyName"]
+
+        simulationEngine.listOfBodies[selectedBody][0][0] = detailsForm.cleaned_data["bodyXPosition"]*AU
+        simulationEngine.listOfBodies[selectedBody][0][1] = detailsForm.cleaned_data["bodyYPosition"]*AU
+        simulationEngine.listOfBodies[selectedBody][1][0] = detailsForm.cleaned_data["bodyXSpeed"]*1000
+        simulationEngine.listOfBodies[selectedBody][1][1] = detailsForm.cleaned_data["bodyYSpeed"]*1000
+
+        if detailsForm.cleaned_data["bodyColour"] in mcolors.CSS4_COLORS:
+            # Only update colour if valid colour entered
+            simulationEngine.listOfBodies[selectedBody][4][0] = detailsForm.cleaned_data["bodyColour"]
+            simulationEngine.listOfBodies[selectedBody][4][1] = detailsForm.cleaned_data["bodyColour"] # Update both colour fields
+        else:
+            print("Invalid colour!")
+    else:
+        raise ValueError
+
+    runSimulationTick(request, simulationEngine, storedSim, 0, 1, setTicks) #Redraw image
+
+    #Update stored simulation data
+    request.session["simulationEngine"] = simulationEngine
+    storedSim = loadValues(storedSim, simulationEngine)
+    storedSim.user = user
+    storedSim.save()
+
+    response = {}
     return JsonResponse(response)
 

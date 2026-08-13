@@ -104,7 +104,7 @@
         </button>
 
         <div class ="simulation_image_box">
-            <img src="/media/latestSimulation{{user}}.png" alt="This image has failed to load.">
+            <img src="/media/latestSimulation{{user}}.png" alt="This image has failed to load."  id="simImage">
         </div>
 
         <ul class="choose_save_box">
@@ -126,7 +126,7 @@
             {% endfor %}
         </ul>
 
-        <form class ="simulation_information_box" action="" method="post">
+        <form class ="simulation_information_box" action="" method="post" id="infoForm">
             <h2>Simulation Information:</h2>
             {% csrf_token %}
             {{infoForm}}
@@ -135,6 +135,25 @@
         </form>
     </body>
 
+    <script>
+        $('#infoForm').click(function(event) {
+            event.preventDefault();
+            $.ajax({
+                url: '/runForm/',
+                type: 'post',
+                cache: false,
+                data: $(this).serialize(),
 
+                success: function(data) {
+                    var modifiedURL = '/media/latestSimulation{{user}}.png?' + Date.now();
+                    $("#simImage").attr('src', modifiedURL);
+                },
+
+                error: function() {
+                    alert("Error in updating form.");
+                }
+            });
+        });
+    </script>
 
 {% endblock %}
