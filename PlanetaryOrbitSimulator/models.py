@@ -12,3 +12,8 @@ class StoredSimulation(models.Model):
     secondsPerSimulationTick = models.IntegerField(default=0)
     name = models.TextField(default="")
     image = models.ImageField(default="")
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, default=0)
+    backgroundStylePreference = models.TextField(default="black")
+    axisStylePreference = models.TextField(default="white")

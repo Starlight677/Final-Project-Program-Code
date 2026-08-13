@@ -1,32 +1,25 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
-from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
-from django.utils.cache import patch_cache_control
 
 from .forms import SimulationNameForm, BodyDetailsForm, LoginForm, RegisterForm
-import matplotlib as plt
 import matplotlib.colors as mcolors
-from.models import StoredSimulation
+from .models import StoredSimulation, UserProfile
 
 from PlanetaryOrbitSimulator.twobodytesting import PlanetarySimulationEngine
 
-def getUser(request):
-    user = request.user
-    return user
-
 def homePage(request):
     # Backend for the homepage
-    user = getUser(request)
+    user = request.user
     context = {"user": user}
     return render(request, "HomePage.html", context)
 
 @login_required(login_url="/login/")
 def settingsPage(request, styleIndex = -1):
     # Backend for the Settings page
-    user = getUser(request)
+    user = request.user
     styleBackgroundColours = ["black", "white", "none"]
     styleAxisColours = ["white", "black", "white"]
     styleDisplayNames = ["Dark Background", "Light Background", "Transparent Background"]
@@ -39,6 +32,11 @@ def settingsPage(request, styleIndex = -1):
         request.session["backgroundStyle"] = styleBackgroundColours[styleIndex]
         request.session["axisStyle"] = styleAxisColours[styleIndex]
 
+        profile = UserProfile.objects.get(user=user)
+        profile.backgroundStylePreference = styleBackgroundColours[styleIndex]
+        profile.axisStylePreference = styleAxisColours[styleIndex]
+        profile.save()
+
     context = {"graphStyles": styleDisplayNames, "styleIndex": styleIndex}
     return render(request, "SettingsPage.html", context)
 
@@ -49,9 +47,16 @@ def loginPage(request):
             user = authenticate(username = form.cleaned_data["username"], password = form.cleaned_data["password"])
             if user is not None:
                 login(request, user)
-                # Set default style colour
-                request.session["backgroundStyle"] = "black"
-                request.session["axisStyle"] = "white"
+
+                # Get preferred style colour
+                try:
+                    profile = UserProfile.objects.get(user=user)
+                except UserProfile.DoesNotExist:
+                    profile = UserProfile(user=user)
+                    profile.save()
+                request.session["backgroundStyle"] = profile.backgroundStylePreference
+                request.session["axisStyle"] = profile.axisStylePreference
+
                 return redirect("/")
     return render(request, "LoginPage.html", {"loginForm": form, "currentUser": request.user})
 
@@ -69,7 +74,7 @@ def registerPage(request):
 @login_required(login_url="/login/")
 def createPage(request, templateIndex = 0):
     # Backend for the Create New System page
-    user = getUser(request)
+    user = request.user
     request.session["templateIndex"] = templateIndex
     templatesList = ["Inner Solar System", "Galilean Moons of Jupiter", "Ascendia Primary Star", "Binary Stars", "Single Star"]
 
@@ -105,7 +110,7 @@ def createPage(request, templateIndex = 0):
 @login_required(login_url="/login/")
 def loadingPage(request, saveIndex = 0):
     # Backend for the Load Existing System page
-    user = getUser(request)
+    user = request.user
     if "templateIndex" not in request.session:
         # Test if index can be loaded - if not, set it to default
         request.session["templateIndex"] = 0
@@ -168,7 +173,7 @@ def makeSimulationForm(request, storedSim, simulationEngine):
 @login_required(login_url="/login/")
 def editSimulationPage(request, selectedBody = 0):
     # For editing the simulation
-    user = getUser(request)
+    user = request.user
     # Load/create a database entry of the simulation
     storedSim, existingSimLoaded = loadSimulationEntry(request)
 
