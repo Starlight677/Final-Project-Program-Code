@@ -90,12 +90,6 @@ def createPage(request, templateIndex = 0):
                                "simulationTimePerUpdate": simulationTimePerTick,}
     form = SimulationNameForm(request.POST or None, initial=simulationDefaultValues)
 
-    if form.is_valid():
-        # Load parameters from form
-        simulationEngine.simulationName = form.cleaned_data["simulationName"]
-        simulationEngine.simulationSize = form.cleaned_data["simulationSize"]
-        adjustedTimePerTick = round(form.cleaned_data["simulationTimePerUpdate"] * 86400)
-        simulationEngine.ticksPerPageUpdate = adjustedTimePerTick/simulationEngine.secondsPerSimulationTick
     simulationEngine.drawGraph(user, request.session["backgroundStyle"], request.session["axisStyle"])
     request.session["simulationEngine"] = simulationEngine
 
@@ -231,6 +225,7 @@ def editSimulationPage(request, selectedBody = 0):
                "user": user}
 
     return render(request, "editSystemPage.html", context)
+
 
 def roundToSignificantFigures(number, significiantFigures):
     # Modified version of a function from IDiTect.com
@@ -384,7 +379,7 @@ def changeSimulationFocus(request):
     constructedResponse = JsonResponse({"updatedImageURL": updatedImageURL, "focusBodyName": simulationEngine.focusBodyName})
     return constructedResponse
 
-def processRunForm(request):
+def processRunForm(request, isCreating = 0):
     user = request.user
     # Load/create a database entry of the simulation
     storedSim, existingSimLoaded = loadSimulationEntry(request)
@@ -402,13 +397,14 @@ def processRunForm(request):
     else:
         raise ValueError
 
-    runSimulationTick(request, simulationEngine, storedSim, 0, 1, setTicks) #Redraw image
+    simulationEngine.drawGraph(user, request.session["backgroundStyle"], request.session["axisStyle"])
 
     #Update stored simulation data
-    request.session["simulationEngine"] = simulationEngine
-    storedSim = loadValues(storedSim, simulationEngine)
-    storedSim.user = user
-    storedSim.save()
+    if isCreating == 0:
+        request.session["simulationEngine"] = simulationEngine
+        storedSim = loadValues(storedSim, simulationEngine)
+        storedSim.user = user
+        storedSim.save()
 
     # Calculate values for display
     daysPerTick = round((simulationEngine.ticksPerPageUpdate / 86400) * simulationEngine.secondsPerSimulationTick, 2)
@@ -457,7 +453,7 @@ def processEditForm(request, selectedBody):
     else:
         raise ValueError
 
-    runSimulationTick(request, simulationEngine, storedSim, 0, 1, setTicks) #Redraw image
+    simulationEngine.drawGraph(user, request.session["backgroundStyle"], request.session["axisStyle"])
 
     #Update stored simulation data
     request.session["simulationEngine"] = simulationEngine
