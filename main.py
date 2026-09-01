@@ -1,10 +1,5 @@
-from PlanetaryOrbitSimulator.twobodytesting import PlanetarySimulationEngine
-
-
-def run_twobody():
-    planetSim = PlanetarySimulationEngine()
-    planetSim.runSimulation()
+import subprocess
 
 if __name__ == '__main__':
-    run_twobody()
+    subprocess.run('python manage.py runserver', shell=True)
 
