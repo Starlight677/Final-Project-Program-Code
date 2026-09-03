@@ -281,13 +281,14 @@ def loadSimulationEngine(request, storedSim, forceLoad=False):
 
 def runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, dontRunSimulation, setTicks):
     user = request.user
-    if (reverseSimulation == 0 or simulationEngine.simulationTime == 0) and dontRunSimulation == 0:
+    if reverseSimulation == 0 and dontRunSimulation == 0:
         # Run instance of the simulation if not initially loaded
         simulationEngine.runSimulation(user, request.session["backgroundStyle"], request.session["axisStyle"], setTicks)
         isSimulationInReverse = "No"
     elif dontRunSimulation == 0:
-        # Run simulation in reverse if set to
-        simulationEngine.rollbackSimulation(user, request.session["backgroundStyle"], request.session["axisStyle"])
+        # Run simulation in reverse if set to (but not before the start of the simulation)
+        if simulationEngine.simulationTime > 0:
+            simulationEngine.rollbackSimulation(user, request.session["backgroundStyle"], request.session["axisStyle"])
         isSimulationInReverse = "Yes"
     else:
         # If simulation just being loaded, only draw graph

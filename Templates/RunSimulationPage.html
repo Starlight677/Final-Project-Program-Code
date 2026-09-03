@@ -183,6 +183,7 @@
                     var modifiedURL = '/media/latestSimulation{{user}}.png?' + Date.now();
                     $("#simImage").attr('src', modifiedURL);
                     $("#daysElapsedBox").text("Simulation Days Elapsed: " + data.daysElapsed);
+                    $("#reverseBox").text("Simulation Iteration Reversed: " + data.isSimulationInReverse);
                     if (typeof(data.focusBodyName) != "undefined") { // Update the focused body's name
                         $("#focusBodyBox").text("Focused Body: " + data.focusBodyName);
                     }
