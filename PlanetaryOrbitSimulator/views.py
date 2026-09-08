@@ -269,13 +269,14 @@ def loadValues(objectToLoad, objectLoadFrom):
     return objectToLoad
 
 def loadSimulationEntry(request):
+    user = request.user
     #Load an entry from the simulation
     if "selectedSimulation" in request.session:
         # Use existing save if found
         existingSimLoaded = True
     elif "simulationEngine" in request.session:
         # If not, create new save
-        request.session["selectedSimulation"] = StoredSimulation(name=request.session["simulationEngine"].simulationName)
+        request.session["selectedSimulation"] = StoredSimulation(name=request.session["simulationEngine"].simulationName, user=user)
         existingSimLoaded = False
     else:
         # If no name for new save, use placeholder
