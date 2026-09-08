@@ -275,11 +275,12 @@ def loadSimulationEntry(request):
         existingSimLoaded = True
     elif "simulationEngine" in request.session:
         # If not, create new save
-        request.session["selectedSimulation"] = StoredSimulation(name=request.session["simulationEngine"].simulationName)
+        request.session["selectedSimulation"] = StoredSimulation(
+            name=request.session["simulationEngine"].simulationName, user=request.user)
         existingSimLoaded = False
     else:
         # If no name for new save, use placeholder
-        request.session["selectedSimulation"] = StoredSimulation(name="No name found")
+        request.session["selectedSimulation"] = StoredSimulation(name="No name found", user=request.user)
         existingSimLoaded = False
     # Load save
     storedSim = request.session["selectedSimulation"]
