@@ -103,6 +103,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 CSRF_TRUSTED_ORIGINS = [
     'https://*.railway.app',
+    'https://*.railway.app/*',
 ]
 
 # Internationalization
