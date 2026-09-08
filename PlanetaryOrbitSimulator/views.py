@@ -72,6 +72,15 @@ def registerPage(request):
                 user.save()
                 login(request, user)
 
+                # Get preferred style colour
+                try:
+                    profile = UserProfile.objects.get(user=user)
+                except UserProfile.DoesNotExist:
+                    profile = UserProfile(user=user)
+                    profile.save()
+                request.session["backgroundStyle"] = profile.backgroundStylePreference
+                request.session["axisStyle"] = profile.axisStylePreference
+
     return render(request, "RegisterPage.html",
                   {"registerForm": form, "currentUser": request.user})
 
