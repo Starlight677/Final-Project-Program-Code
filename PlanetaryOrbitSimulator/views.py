@@ -352,7 +352,7 @@ def runSimulation(request, dontRunSimulation = 0, reverseSimulation = 0):
                "simulationName": storedSim.name, "focusBodyName": simulationEngine.focusBodyName,
                "infoForm": infoForm,}
 
-    constructedResponse = render(request, "runSimulationPage.html", context)
+    constructedResponse = render(request, "RunSimulationPage.html", context)
     return constructedResponse
 
 @login_required(login_url="/login/")
