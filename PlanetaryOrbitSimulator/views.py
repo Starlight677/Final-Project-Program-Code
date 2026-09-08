@@ -10,6 +10,16 @@ from .models import StoredSimulation, UserProfile
 
 from PlanetaryOrbitSimulator.twobodytesting import PlanetarySimulationEngine
 
+def initializeUserSession(request, user):
+    """Initialize session variables for a logged-in user"""
+    try:
+        profile = UserProfile.objects.get(user=user)
+    except UserProfile.DoesNotExist:
+        profile = UserProfile(user=user)
+        profile.save()
+    request.session["backgroundStyle"] = profile.backgroundStylePreference
+    request.session["axisStyle"] = profile.axisStylePreference
+
 def homePage(request):
     # Backend for the homepage
     user = request.user
@@ -20,6 +30,11 @@ def homePage(request):
 def settingsPage(request, styleIndex = -1):
     # Backend for the Settings page
     user = request.user
+    
+    # Initialize session if needed
+    if "backgroundStyle" not in request.session:
+        initializeUserSession(request, user)
+    
     styleBackgroundColours = ["black", "white", "none"]
     styleAxisColours = ["white", "black", "white"]
     styleDisplayNames = ["Dark Background", "Light Background", "Transparent Background"]
@@ -48,16 +63,7 @@ def loginPage(request):
                 form.cleaned_data["password"])
             if user is not None:
                 login(request, user)
-
-                # Get preferred style colour
-                try:
-                    profile = UserProfile.objects.get(user=user)
-                except UserProfile.DoesNotExist:
-                    profile = UserProfile(user=user)
-                    profile.save()
-                request.session["backgroundStyle"] = profile.backgroundStylePreference
-                request.session["axisStyle"] = profile.axisStylePreference
-
+                initializeUserSession(request, user)
                 return redirect("/")
     return render(request, "LoginPage.html",
                   {"loginForm": form, "currentUser": request.user})
@@ -71,6 +77,7 @@ def registerPage(request):
                                                 password=form.cleaned_data["password"])
                 user.save()
                 login(request, user)
+                initializeUserSession(request, user)
 
     return render(request, "RegisterPage.html",
                   {"registerForm": form, "currentUser": request.user})
@@ -79,6 +86,11 @@ def registerPage(request):
 def createPage(request, templateIndex = 0):
     # Backend for the Create New System page
     user = request.user
+    
+    # Initialize session if needed
+    if "backgroundStyle" not in request.session:
+        initializeUserSession(request, user)
+    
     request.session["templateIndex"] = templateIndex
     templatesList = ["Inner Solar System", "Galilean Moons of Jupiter", "Ascendia Primary Star", "Binary Stars", "Single Star"]
 
@@ -109,6 +121,11 @@ def createPage(request, templateIndex = 0):
 def loadingPage(request, saveIndex = 0):
     # Backend for the Load Existing System page
     user = request.user
+    
+    # Initialize session if needed
+    if "backgroundStyle" not in request.session:
+        initializeUserSession(request, user)
+    
     if "templateIndex" not in request.session:
         # Test if index can be loaded - if not, set it to default
         request.session["templateIndex"] = 0
@@ -163,6 +180,11 @@ def makeSimulationForm(request, storedSim, simulationEngine):
 def editSimulationPage(request, selectedBody = 0):
     # For editing the simulation
     user = request.user
+    
+    # Initialize session if needed
+    if "backgroundStyle" not in request.session:
+        initializeUserSession(request, user)
+    
     # Load/create a database entry of the simulation
     storedSim, existingSimLoaded = loadSimulationEntry(request)
 
