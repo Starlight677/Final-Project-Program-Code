@@ -59,7 +59,7 @@ ROOT_URLCONF = 'PlanetaryOrbitSimulator.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, '/Templates'), 'C:/Users/mcleo/OneDrive/Documents/ARU Year 4/Final Project/Final Project Program/Templates'],
+        'DIRS': [os.path.join(BASE_DIR, 'Templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
