@@ -4,14 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Added migration support.">
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Attempted to change the database.">
       <change afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Templates/RunSimulationPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/RunSimulationPage.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Templates/page_template.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/page_template.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/media/BackgroundTestImage.png" beforeDir="false" afterPath="$PROJECT_DIR$/media/GasGiantMoons.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/LoadSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/LoadSystemPage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/NewSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/NewSystemPage.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -462,7 +462,15 @@
       <option name="project" value="LOCAL" />
       <updated>1788258924531</updated>
     </task>
-    <option name="localTasksCounter" value="48" />
+    <task id="LOCAL-00048" summary="Attempted to change the database.">
+      <option name="closed" value="true" />
+      <created>1788422772903</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1788422772903</updated>
+    </task>
+    <option name="localTasksCounter" value="49" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -477,7 +485,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Modified data being shown in the edit screen to remove unnecessary precision." />
     <MESSAGE value="Added ability to customise pre-existing saves in the Load Simulation screen." />
     <MESSAGE value="Added display to the Load and Create pages showing an image of the simulation." />
     <MESSAGE value="Added ability to create new bodies." />
@@ -502,6 +509,7 @@
     <MESSAGE value="Added requirements.txt." />
     <MESSAGE value="Added system start in main.py." />
     <MESSAGE value="Added migration support." />
-    <option name="LAST_COMMIT_MESSAGE" value="Added migration support." />
+    <MESSAGE value="Attempted to change the database." />
+    <option name="LAST_COMMIT_MESSAGE" value="Attempted to change the database." />
   </component>
 </project>

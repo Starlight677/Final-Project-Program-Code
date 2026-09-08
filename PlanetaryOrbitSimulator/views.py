@@ -44,7 +44,8 @@ def loginPage(request):
     form = LoginForm(request.POST or None)
     if form.is_valid():
         if User.objects.filter(username=form.cleaned_data["username"]).exists():
-            user = authenticate(username = form.cleaned_data["username"], password = form.cleaned_data["password"])
+            user = authenticate(username = form.cleaned_data["username"], password =
+                form.cleaned_data["password"])
             if user is not None:
                 login(request, user)
 
@@ -58,18 +59,21 @@ def loginPage(request):
                 request.session["axisStyle"] = profile.axisStylePreference
 
                 return redirect("/")
-    return render(request, "LoginPage.html", {"loginForm": form, "currentUser": request.user})
+    return render(request, "LoginPage.html",
+                  {"loginForm": form, "currentUser": request.user})
 
 def registerPage(request):
     form = RegisterForm(request.POST or None)
     if form.is_valid():
         if not User.objects.filter(username=form.cleaned_data["username"]).exists():
             if form.cleaned_data["password"] == form.cleaned_data["passwordRepeated"]:
-                user = User.objects.create_user(username=form.cleaned_data["username"], password=form.cleaned_data["password"])
+                user = User.objects.create_user(username=form.cleaned_data["username"],
+                                                password=form.cleaned_data["password"])
                 user.save()
                 login(request, user)
 
-    return render(request, "RegisterPage.html", {"registerForm": form, "currentUser": request.user})
+    return render(request, "RegisterPage.html",
+                  {"registerForm": form, "currentUser": request.user})
 
 @login_required(login_url="/login/")
 def createPage(request, templateIndex = 0):
@@ -118,14 +122,15 @@ def loadingPage(request, saveIndex = 0):
 
         simulationEngine, setTicks = loadSimulationEngine(request, selectedSimulation, True)
 
-        selectedSimulation, simulationEngine, infoForm = makeSimulationForm(request, selectedSimulation, simulationEngine)
+        selectedSimulation, simulationEngine, infoForm = makeSimulationForm(request, selectedSimulation,
+                                                                            simulationEngine)
 
         simulationEngine.drawGraph(user, request.session["backgroundStyle"], request.session["axisStyle"])
         request.session["simulationEngine"] = simulationEngine
 
         # Create variables for display in information box
-        daysElapsed = round((selectedSimulation.simulationTime / 86400) * selectedSimulation.secondsPerSimulationTick,
-                            2)  # Simulation time in days
+        daysElapsed = round((selectedSimulation.simulationTime / 86400) *
+                            selectedSimulation.secondsPerSimulationTick, 2)  # Simulation time in days
         daysPerTick = round(
             (selectedSimulation.ticksPerPageUpdate / 86400) * selectedSimulation.secondsPerSimulationTick, 2)
         statedSimulationSize = round(
@@ -177,12 +182,15 @@ def editSimulationPage(request, selectedBody = 0):
                               "bodyYSpeed": 0, }
     else:
         # Round unnecessary precision before displaying to the user
-        bodyDisplayDetails = {"bodyMass": roundToSignificantFigures(simulationEngine.listOfBodies[selectedBody][2],4),
+        bodyDisplayDetails = {"bodyMass": roundToSignificantFigures(
+                                  simulationEngine.listOfBodies[selectedBody][2],4),
                               "bodyColour": simulationEngine.listOfBodies[selectedBody][4][0],
                               "bodyName": simulationEngine.listOfBodies[selectedBody][5],
                               "bodyRadius": round(simulationEngine.listOfBodies[selectedBody][3]/1000,3),
-                              "bodyXPosition": roundToSignificantFigures(simulationEngine.listOfBodies[selectedBody][0][0]/AU,6),
-                              "bodyYPosition": roundToSignificantFigures(simulationEngine.listOfBodies[selectedBody][0][1]/AU,6),
+                              "bodyXPosition": roundToSignificantFigures(
+                                  simulationEngine.listOfBodies[selectedBody][0][0]/AU,6),
+                              "bodyYPosition": roundToSignificantFigures(
+                                  simulationEngine.listOfBodies[selectedBody][0][1]/AU,6),
                               "bodyXSpeed": round(simulationEngine.listOfBodies[selectedBody][1][0]/1000,3),
                               "bodyYSpeed": round(simulationEngine.listOfBodies[selectedBody][1][1]/1000,3),}
     detailsForm = BodyDetailsForm(request.POST or None, initial=bodyDisplayDetails)
@@ -200,8 +208,10 @@ def editSimulationPage(request, selectedBody = 0):
     storedSim.save()
 
     # Calculate values for display
-    daysElapsed = round((simulationEngine.simulationTime / 86400) * simulationEngine.secondsPerSimulationTick,2)  # Simulation time in days
-    daysPerTick = round((simulationEngine.ticksPerPageUpdate / 86400) * simulationEngine.secondsPerSimulationTick, 2)
+    daysElapsed = round((simulationEngine.simulationTime / 86400) *
+                        simulationEngine.secondsPerSimulationTick,2)  # Simulation time in days
+    daysPerTick = round((simulationEngine.ticksPerPageUpdate / 86400) *
+                        simulationEngine.secondsPerSimulationTick, 2)
     statedSimulationSize = round(simulationEngine.simulationSize * 1.495979e8)  # Simulation diameter in kilometers
     fStatedSimulationSize = f"{statedSimulationSize:,}"  # Adds commas to the number
     AUStatedSimulationSize = round(simulationEngine.simulationSize,3)  # Calculates simulation diameter in Astronomical Units to 3DP

@@ -57,7 +57,8 @@ class PlanetarySimulationEngine:
         # Calculates the distances (per-axis and total) between the two bodies
         bodyDistances = [body1Coords[0] - body2Coords[0], body1Coords[1] - body2Coords[1],
                          body1Coords[2] - body2Coords[2]]
-        bodyTotalDistance = Math.sqrt((bodyDistances[0] ** 2) + (bodyDistances[1] ** 2) + (bodyDistances[2] ** 2))
+        bodyTotalDistance = Math.sqrt((bodyDistances[0] ** 2) + (bodyDistances[1] ** 2) +
+                                      (bodyDistances[2] ** 2))
         return bodyDistances, bodyTotalDistance
 
     def checkGravityMotionChange(self, targetBodyCoords, pullingBodyCoords, pullingBodyMass,
@@ -278,11 +279,16 @@ class PlanetarySimulationEngine:
 
         elif templateNumber == 1:
             # Moons of Jupiter
-            body1Stats = [[0, 0, 0], [0, 0, 0], earthMass * 318, 6.989e7, ['darkorange', 'darkorange'], "Jupiter"]  # Jupiter
-            body2Stats = [[4.217e8, 0, 0], [0, -17334, 0], moonMass * 1.05, 3.643e6, ['gold', 'gold'], "Io"]  # Io
-            body3Stats = [[-6.71e8, 0, 0], [0, 13703, 0], moonMass * 0.9, 3.122e6, ['lightsteelblue', 'lightsteelblue'], "Europa"]  # Europa
-            body4Stats = [[0, 1.07e9, 0], [10880, 0, 0], moonMass * 2, 5.262e6, ['silver', 'silver'], "Ganymede"]  # Ganymede
-            body5Stats = [[0, -1.883e9, 0], [-8204, 0, 0], moonMass * 1.5, 4.821e6, ['grey', 'grey'], "Callisto"]  # Callisto
+            body1Stats = [[0, 0, 0], [0, 0, 0], earthMass * 318, 6.989e7,
+                          ['darkorange', 'darkorange'], "Jupiter"]  # Jupiter
+            body2Stats = [[4.217e8, 0, 0], [0, -17334, 0], moonMass * 1.05, 3.643e6,
+                          ['gold', 'gold'], "Io"]  # Io
+            body3Stats = [[-6.71e8, 0, 0], [0, 13703, 0], moonMass * 0.9, 3.122e6,
+                          ['lightsteelblue', 'lightsteelblue'], "Europa"]  # Europa
+            body4Stats = [[0, 1.07e9, 0], [10880, 0, 0], moonMass * 2, 5.262e6,
+                          ['silver', 'silver'], "Ganymede"]  # Ganymede
+            body5Stats = [[0, -1.883e9, 0], [-8204, 0, 0], moonMass * 1.5, 4.821e6,
+                          ['grey', 'grey'], "Callisto"]  # Callisto
             self.listOfBodies = [body1Stats, body2Stats, body3Stats, body4Stats, body5Stats]
 
             self.secondsPerSimulationTick = 6 # 10 simulation ticks per minute
@@ -293,7 +299,8 @@ class PlanetarySimulationEngine:
 
         elif templateNumber == 2:
             # Ascendia system (A star)
-            body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 0.2656, 7e7*0.474, ['orange', 'orange'], "Col 285 Sector ZX-R b5-0 A"] # Primary star
+            body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 0.2656, 7e7*0.474,
+                          ['orange', 'orange'], "Col 285 Sector ZX-R b5-0 A"] # Primary star
             body2Stats = [[-3.3e9, 0, 0], [0, 103364, 0], earthMass * 0.0908, 2.887e6,
                           ['grey', 'grey'], "Col 285 Sector ZX-R b5-0 A 1"]  # A 1
             body3Stats = [[6e9, 0, 0], [0, -76657, 0], earthMass * 0.1077, 3.049e6,
@@ -314,8 +321,10 @@ class PlanetarySimulationEngine:
             self.simulationName = "Ascendia Primary Star"
         elif templateNumber == 3:
             # Binary Stars
-            body1Stats = [[-7.51e10, 0, 0], [0, 11000, 0], solarMass * 1, 7e7, ['yellow', 'yellow'], "Primary Star"] # Primary star
-            body2Stats = [[1.521e11, 0, 0], [0, -22000, 0], solarMass * 0.5, 5e7, ['orange', 'orange'], "Secondary Star"] # Secondary star
+            body1Stats = [[-7.51e10, 0, 0], [0, 11000, 0], solarMass * 1, 7e7,
+                          ['yellow', 'yellow'], "Primary Star"] # Primary star
+            body2Stats = [[1.521e11, 0, 0], [0, -22000, 0], solarMass * 0.5, 5e7,
+                          ['orange', 'orange'], "Secondary Star"] # Secondary star
             self.listOfBodies = [body1Stats, body2Stats]
             self.secondsPerSimulationTick = 60
             self.simulationSize = 2  # Size of the displayed area in AU
