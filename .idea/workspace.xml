@@ -4,14 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Attempted to change the database.">
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Corrected spelling mistake in run page.">
       <change afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Templates/LoadSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/LoadSystemPage.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Templates/NewSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/NewSystemPage.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -85,70 +80,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1779351571015</updated>
-    </task>
-    <task id="LOCAL-00001" summary="Added simple mathematical calculations for a two-body system.">
-      <option name="closed" value="true" />
-      <created>1779356486214</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1779356486214</updated>
-    </task>
-    <task id="LOCAL-00002" summary="Improved simulation to add basic graphical interface via Matplotlib, and significantly improved readability for code structuring.">
-      <option name="closed" value="true" />
-      <created>1779369826423</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1779369826423</updated>
-    </task>
-    <task id="LOCAL-00003" summary="Expanded the simulation to handle more than two bodies, and added functionality to handle ticking the simulation in increments other than a second.">
-      <option name="closed" value="true" />
-      <created>1779886344657</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
-      <option name="project" value="LOCAL" />
-      <updated>1779886344657</updated>
-    </task>
-    <task id="LOCAL-00004" summary="Modified the simulation to update minor influences on bodies less often.">
-      <option name="closed" value="true" />
-      <created>1780478830094</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
-      <option name="project" value="LOCAL" />
-      <updated>1780478830094</updated>
-    </task>
-    <task id="LOCAL-00005" summary="Fixed the significant-influence accounting so it actually works.">
-      <option name="closed" value="true" />
-      <created>1780998662241</created>
-      <option name="number" value="00005" />
-      <option name="presentableId" value="LOCAL-00005" />
-      <option name="project" value="LOCAL" />
-      <updated>1780998662241</updated>
-    </task>
-    <task id="LOCAL-00006" summary="Set up Django.">
-      <option name="closed" value="true" />
-      <created>1780999784839</created>
-      <option name="number" value="00006" />
-      <option name="presentableId" value="LOCAL-00006" />
-      <option name="project" value="LOCAL" />
-      <updated>1780999784839</updated>
-    </task>
-    <task id="LOCAL-00007" summary="Created framework for the pages in the application.">
-      <option name="closed" value="true" />
-      <created>1781599042642</created>
-      <option name="number" value="00007" />
-      <option name="presentableId" value="LOCAL-00007" />
-      <option name="project" value="LOCAL" />
-      <updated>1781599042642</updated>
-    </task>
-    <task id="LOCAL-00008" summary="Condensed the simulation loop + added more website stuff.">
-      <option name="closed" value="true" />
-      <created>1781612559244</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1781612559244</updated>
     </task>
     <task id="LOCAL-00009" summary="Some progress on making the simulation work with the web interface.">
       <option name="closed" value="true" />
@@ -470,7 +401,79 @@
       <option name="project" value="LOCAL" />
       <updated>1788422772903</updated>
     </task>
-    <option name="localTasksCounter" value="49" />
+    <task id="LOCAL-00049" summary="Reset back to working configuration.">
+      <option name="closed" value="true" />
+      <created>1788861554293</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1788861554293</updated>
+    </task>
+    <task id="LOCAL-00050" summary="Modified port.">
+      <option name="closed" value="true" />
+      <created>1788861857113</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+      <option name="project" value="LOCAL" />
+      <updated>1788861857115</updated>
+    </task>
+    <task id="LOCAL-00051" summary="Corrected directory pointing to static project.">
+      <option name="closed" value="true" />
+      <created>1788862307829</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1788862307829</updated>
+    </task>
+    <task id="LOCAL-00052" summary="Added Railway to the project's trusted domains.">
+      <option name="closed" value="true" />
+      <created>1788862768963</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1788862768963</updated>
+    </task>
+    <task id="LOCAL-00053" summary="Attempting to expand trusted domains.">
+      <option name="closed" value="true" />
+      <created>1788862939784</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1788862939784</updated>
+    </task>
+    <task id="LOCAL-00054" summary="Added colour settings into the Registration page.">
+      <option name="closed" value="true" />
+      <created>1788863533894</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1788863533894</updated>
+    </task>
+    <task id="LOCAL-00055" summary="Added the user to the simulation saves.">
+      <option name="closed" value="true" />
+      <created>1788863930648</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1788863930648</updated>
+    </task>
+    <task id="LOCAL-00056" summary="Re-enabled Debug to allow bug fixing.">
+      <option name="closed" value="true" />
+      <created>1788864087469</created>
+      <option name="number" value="00056" />
+      <option name="presentableId" value="LOCAL-00056" />
+      <option name="project" value="LOCAL" />
+      <updated>1788864087469</updated>
+    </task>
+    <task id="LOCAL-00057" summary="Corrected spelling mistake in run page.">
+      <option name="closed" value="true" />
+      <created>1788864308278</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1788864308278</updated>
+    </task>
+    <option name="localTasksCounter" value="58" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -485,15 +488,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Added ability to customise pre-existing saves in the Load Simulation screen." />
-    <MESSAGE value="Added display to the Load and Create pages showing an image of the simulation." />
-    <MESSAGE value="Added ability to create new bodies." />
-    <MESSAGE value="Added login system, and users can only access simulations they created." />
-    <MESSAGE value="Added functional login and register system." />
-    <MESSAGE value="Added functionality to focus view on body." />
-    <MESSAGE value="Fixed bugs in the body focusing feature, and created a separate redirect page for stopping the simulation." />
-    <MESSAGE value="Found a more efficient way to stop the simulation without needing a redirect." />
-    <MESSAGE value="Squared the generated simulation image." />
     <MESSAGE value="Got AJAX partially working." />
     <MESSAGE value="AJAX implementation of running the simulation fully implemented." />
     <MESSAGE value="AJAX for switching focused body added." />
@@ -510,6 +504,15 @@
     <MESSAGE value="Added system start in main.py." />
     <MESSAGE value="Added migration support." />
     <MESSAGE value="Attempted to change the database." />
-    <option name="LAST_COMMIT_MESSAGE" value="Attempted to change the database." />
+    <MESSAGE value="Reset back to working configuration." />
+    <MESSAGE value="Modified port." />
+    <MESSAGE value="Corrected directory pointing to static project." />
+    <MESSAGE value="Added Railway to the project's trusted domains." />
+    <MESSAGE value="Attempting to expand trusted domains." />
+    <MESSAGE value="Added colour settings into the Registration page." />
+    <MESSAGE value="Added the user to the simulation saves." />
+    <MESSAGE value="Re-enabled Debug to allow bug fixing." />
+    <MESSAGE value="Corrected spelling mistake in run page." />
+    <option name="LAST_COMMIT_MESSAGE" value="Corrected spelling mistake in run page." />
   </component>
 </project>
