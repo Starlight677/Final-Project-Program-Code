@@ -421,10 +421,11 @@ def processRunForm(request, isCreating = 0):
     simulationEngine.drawGraph(user, request.session["backgroundStyle"], request.session["axisStyle"])
 
     #Update stored simulation data
+    request.session["simulationEngine"] = simulationEngine
+    storedSim = loadValues(storedSim, simulationEngine)
+    storedSim.user = user
+
     if isCreating == 0:
-        request.session["simulationEngine"] = simulationEngine
-        storedSim = loadValues(storedSim, simulationEngine)
-        storedSim.user = user
         storedSim.save()
 
     # Calculate values for display
