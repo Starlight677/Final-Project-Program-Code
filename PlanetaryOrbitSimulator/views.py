@@ -156,7 +156,7 @@ def loadingPage(request, saveIndex = 0):
     except:
         # If stored simulations can't be found, return to home page
         context = {"user": user}
-        return render(request, "HomePage.html", {})
+        return render(request, "HomePage.html", context)
 
     return render(request, "LoadSystemPage.html", context)
 
