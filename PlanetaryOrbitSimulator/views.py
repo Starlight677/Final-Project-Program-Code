@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
+from numpy.f2py.auxfuncs import throw_error
 
 from .forms import SimulationNameForm, BodyDetailsForm, LoginForm, RegisterForm
 import matplotlib.colors as mcolors
@@ -127,6 +128,8 @@ def loadingPage(request, saveIndex = 0):
         allSimulations = StoredSimulation.objects.filter(user=user)
         allSimulations.order_by("pk")
         selectedSimulation = allSimulations[saveIndex]
+        if allSimulations == []:
+            raise IndexError
         request.session["selectedSimulation"] = selectedSimulation
 
         simulationEngine, setTicks = loadSimulationEngine(request, selectedSimulation, True)
@@ -151,10 +154,9 @@ def loadingPage(request, saveIndex = 0):
                    "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "simulationSizeKM": fStatedSimulationSize,
                    "simulationSizeAU": AUStatedSimulationSize, "infoForm": infoForm, "user": user}
     except:
-        # If stored simulations can't be found, return blank array
-        allSimulations = []
-        selectedSimulation = []
-        context = {"allSimulations": allSimulations, "selectedSimulation": selectedSimulation}
+        # If stored simulations can't be found, return to home page
+        context = {"user": user}
+        return render(request, "HomePage.html", {})
 
     return render(request, "LoadSystemPage.html", context)
 
