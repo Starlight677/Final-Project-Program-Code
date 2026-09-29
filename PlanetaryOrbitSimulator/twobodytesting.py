@@ -279,6 +279,16 @@ class PlanetarySimulationEngine:
                     return i, j
         return None, None
 
+    def updateStoredPath(self):
+        AU = 1.495979e11
+        for bodyNumber, body in enumerate(
+            self.listOfBodies):  # Add current points of planets (in AU) to list for display
+            self.bodyPoints[bodyNumber][0].append(body[0][0] / AU)
+            self.bodyPoints[bodyNumber][1].append(body[0][1] / AU)
+            self.bodyPoints[bodyNumber][2][0].append(body[1][0])  # Add velocity for reload storage purposes
+            self.bodyPoints[bodyNumber][2][1].append(body[1][1])
+            self.bodyPoints[bodyNumber][2][2].append(body[1][2])
+
     def tickSimulation(self, significantCompanions):
         bodyCollision = False
         if self.simulationTime % self.ticksPerStorageUpdate == 0:
@@ -305,13 +315,7 @@ class PlanetarySimulationEngine:
                         print("Body Collision — could not identify pair, halting.")
                         break
 
-            AU = 1.495979e11
-            for bodyNumber, body in enumerate(self.listOfBodies):  # Add current points of planets (in AU) to list for display
-                self.bodyPoints[bodyNumber][0].append(body[0][0]/AU)
-                self.bodyPoints[bodyNumber][1].append(body[0][1]/AU)
-                self.bodyPoints[bodyNumber][2][0].append(body[1][0]) # Add velocity for reload storage purposes
-                self.bodyPoints[bodyNumber][2][1].append(body[1][1])
-                self.bodyPoints[bodyNumber][2][2].append(body[1][2])
+            self.updateStoredPath() # Save the current locations of the planets for path plotting
 
         else:
             # Run the simulation for a tick
@@ -350,11 +354,16 @@ class PlanetarySimulationEngine:
                 companionsEntry.append([])
             significantCompanions.append(companionsEntry)
 
+        timePassed = False
         while not bodyCollision and not setTicks == self.simulationTime:
             significantCompanions, bodyCollision = self.tickSimulation(significantCompanions)
             # Update timer
             self.simulationTime = self.simulationTime + 1
+            timePassed = True
+
         if setTicks == self.simulationTime:
+            if timePassed:
+                self.updateStoredPath() # Add current position to simulation time period if simulation has moved
             self.drawGraph(user, backgroundStyle, axisStyle)
             pass
         elif bodyCollision:
