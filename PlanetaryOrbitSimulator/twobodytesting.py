@@ -134,6 +134,80 @@ class PlanetarySimulationEngine:
         else:
             pass
 
+    def PlanetaryCollisionHandling(self, body1Index, body2Index, significantCompanions):
+        """
+        Merges two colliding bodies into one, conserving momentum and volume.
+
+        The surviving body (body1Index) absorbs body2Index:
+          - Position   : centre of mass of the two bodies
+          - Velocity   : conserved momentum  (m1*v1 + m2*v2) / (m1 + m2)
+          - Mass       : m1 + m2
+          - Radius     : volume-conserving   (r1^3 + r2^3)^(1/3)
+          - Colour     : kept from the more-massive body
+          - Name       : kept from the more-massive body
+
+        The absorbed body (body2Index) is then removed from listOfBodies,
+        bodyPoints, and significantCompanions.
+
+        Returns the updated significantCompanions list (now one entry shorter).
+        """
+        body1Stats = self.listOfBodies[body1Index]
+        body2Stats = self.listOfBodies[body2Index]
+
+        m1 = body1Stats[2]
+        m2 = body2Stats[2]
+        totalMass = m1 + m2
+
+        # Centre-of-mass position
+        mergedCoords = [
+            (m1 * body1Stats[0][i] + m2 * body2Stats[0][i]) / totalMass
+            for i in range(3)
+        ]
+
+        # Conservation of momentum → merged velocity
+        mergedMotion = [
+            (m1 * body1Stats[1][i] + m2 * body2Stats[1][i]) / totalMass
+            for i in range(3)
+        ]
+
+        # Volume-conserving radius  r = (r1³ + r2³)^(1/3)
+        mergedRadius = (body1Stats[3] ** 3 + body2Stats[3] ** 3) ** (1 / 3)
+
+        # Keep the appearance/name of the more-massive body
+        if m1 >= m2:
+            mergedColour = body1Stats[4]
+            mergedName   = body1Stats[5]
+        else:
+            mergedColour = body2Stats[4]
+            mergedName   = body2Stats[5]
+
+        # Build the merged body and write it back into the survivor slot
+        mergedBody = [mergedCoords, mergedMotion, totalMass, mergedRadius,
+                      mergedColour, mergedName]
+        self.listOfBodies[body1Index] = mergedBody
+
+        # Remove the absorbed body from every tracking structure
+        self.listOfBodies.pop(body2Index)
+        self.bodyPoints.pop(body2Index)
+
+        # Rebuild significantCompanions to match the new body count
+        updatedCompanions = []
+        for i, row in enumerate(significantCompanions):
+            if i == body2Index:
+                continue  # Drop the absorbed body's row entirely
+            newRow = [entry for j, entry in enumerate(row) if j != body2Index]
+            updatedCompanions.append(newRow)
+
+        # If the focus body was the absorbed one, clear focus; if it was above
+        # the removed index, shift the index down by one to stay on target.
+        if self.focusBody == body2Index:
+            self.focusBody = -1
+            self.focusBodyName = "None"
+        elif self.focusBody > body2Index:
+            self.focusBody -= 1
+
+        return updatedCompanions
+
     def drawGraph(self, user, backgroundColour = "black", graphColour = "white"):
         # Draw a graph using MatPlotLib
         matplotlib.use('agg') # Mode for not having issues with Django threading
@@ -190,22 +264,46 @@ class PlanetarySimulationEngine:
             self.focusPoint = [chosenFocusBody[0][0]/AU, chosenFocusBody[0][1]/AU]
             self.focusBodyName = chosenFocusBody[5]
 
+    def detectCollidingPair(self):
+        """
+        Scans all body pairs and returns the indices (i, j) of the first pair
+        whose separation is less than or equal to the sum of their radii.
+        Returns (None, None) if no collision is currently detected.
+        """
+        for i in range(len(self.listOfBodies)):
+            for j in range(i + 1, len(self.listOfBodies)):
+                bodyA = self.listOfBodies[i]
+                bodyB = self.listOfBodies[j]
+                _, dist = self.determineDistances(bodyA[0], bodyB[0])
+                if dist <= bodyA[3] + bodyB[3]:
+                    return i, j
+        return None, None
+
     def tickSimulation(self, significantCompanions):
         bodyCollision = False
         if self.simulationTime % self.ticksPerStorageUpdate == 0:
             # Add current point to list of positions
-            try:
-                bodyNumber = 0
-                while bodyNumber < len(self.listOfBodies):
+            bodyNumber = 0
+            while bodyNumber < len(self.listOfBodies):
+                try:
                     # Iterate through every combination of bodies once
                     bodySignificantCompanions = self.cycleBody(bodyNumber, significantCompanions[bodyNumber], significantCompanions, True)
                     significantCompanions[bodyNumber] = bodySignificantCompanions
                     bodyNumber = bodyNumber + 1
-            except:
-                # Stop simulation if planets have collided
-                bodyCollision = True
-                self.collidedPlanets.append(bodyNumber)
-                print("Body Collision")
+                except:
+                    # A collision was detected inside cycleBody — find and merge the pair
+                    i, j = self.detectCollidingPair()
+                    if i is not None:
+                        self.collidedPlanets.append((i, j))
+                        significantCompanions = self.PlanetaryCollisionHandling(i, j, significantCompanions)
+                        print(f"Body Collision resolved between body {i} and body {j}.")
+                        # Restart the loop from the beginning with the updated body list
+                        bodyNumber = 0
+                    else:
+                        # Collision pair not found; halt as a fallback
+                        bodyCollision = True
+                        print("Body Collision — could not identify pair, halting.")
+                        break
 
             AU = 1.495979e11
             for bodyNumber, body in enumerate(self.listOfBodies):  # Add current points of planets (in AU) to list for display
@@ -217,16 +315,26 @@ class PlanetarySimulationEngine:
 
         else:
             # Run the simulation for a tick
-            try:
-                bodyNumber = 0
-                while bodyNumber < len(self.listOfBodies):
+            bodyNumber = 0
+            while bodyNumber < len(self.listOfBodies):
+                try:
                     # Iterate through every combination of bodies once
                     self.cycleBody(bodyNumber, significantCompanions[bodyNumber], significantCompanions)
                     bodyNumber = bodyNumber + 1
-            except:
-                # Stop simulation if planets have collided
-                bodyCollision = True
-                print("Simulation Terminated upon Body Collision")
+                except:
+                    # A collision was detected inside cycleBody — find and merge the pair
+                    i, j = self.detectCollidingPair()
+                    if i is not None:
+                        self.collidedPlanets.append((i, j))
+                        significantCompanions = self.PlanetaryCollisionHandling(i, j, significantCompanions)
+                        print(f"Body Collision resolved between body {i} and body {j}.")
+                        # Restart the loop from the beginning with the updated body list
+                        bodyNumber = 0
+                    else:
+                        # Collision pair not found; halt as a fallback
+                        bodyCollision = True
+                        print("Body Collision — could not identify pair, halting.")
+                        break
 
         return significantCompanions, bodyCollision
 
