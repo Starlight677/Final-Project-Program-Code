@@ -15,50 +15,6 @@ from .models import StoredSimulation, UserProfile
 
 from PlanetaryOrbitSimulator.twobodytesting import PlanetarySimulationEngine
 
-_simulation_locks_guard = threading.Lock()
-_simulation_locks = {}
-
-
-def _simulation_lock_key(request):
-    # Generate a lock key for each user
-    if request.user.is_authenticated:
-        return f"user-{request.user.pk}"
-    if not request.session.session_key:
-        request.session.save()
-    return f"session-{request.session.session_key}"
-
-
-@contextmanager
-def user_simulation_lock(request):
-    # Serialize mutating simulation requests for this user so session, DB, and PNG stay consistent.
-    key = _simulation_lock_key(request)
-    with _simulation_locks_guard:
-        lock = _simulation_locks.setdefault(key, threading.Lock())
-    lock.acquire()
-    try:
-        # Re-read session after waiting; otherwise this request keeps a stale engine snapshot.
-        session = request.session
-        cache = getattr(session, "_cache", None)
-        if cache is not None and session.session_key:
-            stored = cache.get(session.cache_key)
-            if stored is not None:
-                session._session_cache = stored
-        elif hasattr(session, "_session_cache"):
-            del session._session_cache
-        yield
-        request.session.modified = True
-        request.session.save()
-    finally:
-        lock.release()
-
-
-def with_simulation_lock(view_func):
-    @wraps(view_func)
-    def wrapped(request, *args, **kwargs):
-        with user_simulation_lock(request):
-            return view_func(request, *args, **kwargs)
-    return wrapped
-
 def homePage(request):
     # Backend for the homepage
     user = request.user
@@ -377,7 +333,6 @@ def runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, d
 
 # The backend main loop for running the simulation - runs on every simulation page refresh
 @login_required(login_url="/login/")
-@with_simulation_lock
 def runSimulation(request, dontRunSimulation = 0, reverseSimulation = 0):
     # Load/create a database entry of the simulation
     storedSim, existingSimLoaded = loadSimulationEntry(request)
@@ -407,7 +362,6 @@ def runSimulation(request, dontRunSimulation = 0, reverseSimulation = 0):
     return constructedResponse
 
 @login_required(login_url="/login/")
-@with_simulation_lock
 def stopSimulation(request, reverseSimulation):
     # Load/create a database entry of the simulation
     storedSim, existingSimLoaded = loadSimulationEntry(request)
@@ -420,7 +374,6 @@ def stopSimulation(request, reverseSimulation):
     context = {"reverseSimulation": reverseSimulation}
     return render(request, "stopSimulationPage.html", context)
 
-@with_simulation_lock
 def updateSimulationImage(request, reverseSimulation = 0):
     user = request.user
     # Load/create a database entry of the simulation
@@ -436,7 +389,6 @@ def updateSimulationImage(request, reverseSimulation = 0):
     constructedResponse = JsonResponse({"daysElapsed": daysElapsed, "isSimulationInReverse": isSimulationInReverse})
     return constructedResponse
 
-@with_simulation_lock
 def changeSimulationFocus(request):
     user = request.user
     # Load/create a database entry of the simulation
@@ -454,7 +406,6 @@ def changeSimulationFocus(request):
     constructedResponse = JsonResponse({"updatedImageURL": updatedImageURL, "focusBodyName": simulationEngine.focusBodyName})
     return constructedResponse
 
-@with_simulation_lock
 def processRunForm(request, isCreating = 0):
     user = request.user
     # Load/create a database entry of the simulation

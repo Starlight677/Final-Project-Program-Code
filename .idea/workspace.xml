@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Added and optimised request collision handling.">
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Fixed bug where the end of the path lags behind the body.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -80,14 +80,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1779351571015</updated>
-    </task>
-    <task id="LOCAL-00012" summary="Added visual improvements and the ability to automatically tick the simulation.">
-      <option name="closed" value="true" />
-      <created>1782229699409</created>
-      <option name="number" value="00012" />
-      <option name="presentableId" value="LOCAL-00012" />
-      <option name="project" value="LOCAL" />
-      <updated>1782229699409</updated>
     </task>
     <task id="LOCAL-00013" summary="Added the ability to pick from starting templates.">
       <option name="closed" value="true" />
@@ -473,7 +465,15 @@
       <option name="project" value="LOCAL" />
       <updated>1790685707068</updated>
     </task>
-    <option name="localTasksCounter" value="61" />
+    <task id="LOCAL-00061" summary="Fixed bug where the end of the path lags behind the body.">
+      <option name="closed" value="true" />
+      <created>1790686895951</created>
+      <option name="number" value="00061" />
+      <option name="presentableId" value="LOCAL-00061" />
+      <option name="project" value="LOCAL" />
+      <updated>1790686895951</updated>
+    </task>
+    <option name="localTasksCounter" value="62" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -488,7 +488,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Set the DEBUG state to False in preparation for hosting the site." />
     <MESSAGE value="Extended AJAX." />
     <MESSAGE value="Extended AJAX to work on reversing the simulation." />
     <MESSAGE value="Standardised the UI design across the pages." />
@@ -513,6 +512,7 @@
     <MESSAGE value="Test commit." />
     <MESSAGE value="Added planetary collision handling." />
     <MESSAGE value="Added and optimised request collision handling." />
-    <option name="LAST_COMMIT_MESSAGE" value="Added and optimised request collision handling." />
+    <MESSAGE value="Fixed bug where the end of the path lags behind the body." />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed bug where the end of the path lags behind the body." />
   </component>
 </project>
