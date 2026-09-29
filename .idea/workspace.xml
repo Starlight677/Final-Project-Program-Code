@@ -4,9 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Test commit.">
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Added planetary collision handling.">
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/RunSimulationPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/RunSimulationPage.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -80,14 +81,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1779351571015</updated>
-    </task>
-    <task id="LOCAL-00010" summary="Allowed simulation graph to display and be ticked by the website.">
-      <option name="closed" value="true" />
-      <created>1782207037961</created>
-      <option name="number" value="00010" />
-      <option name="presentableId" value="LOCAL-00010" />
-      <option name="project" value="LOCAL" />
-      <updated>1782207037961</updated>
     </task>
     <task id="LOCAL-00011" summary="Updated program to store data in the session, rather than a global variable.">
       <option name="closed" value="true" />
@@ -473,7 +466,15 @@
       <option name="project" value="LOCAL" />
       <updated>1790671879807</updated>
     </task>
-    <option name="localTasksCounter" value="59" />
+    <task id="LOCAL-00059" summary="Added planetary collision handling.">
+      <option name="closed" value="true" />
+      <created>1790673348597</created>
+      <option name="number" value="00059" />
+      <option name="presentableId" value="LOCAL-00059" />
+      <option name="project" value="LOCAL" />
+      <updated>1790673348597</updated>
+    </task>
+    <option name="localTasksCounter" value="60" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -488,7 +489,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="AJAX implementation of running the simulation fully implemented." />
     <MESSAGE value="AJAX for switching focused body added." />
     <MESSAGE value="Set the DEBUG state to False in preparation for hosting the site." />
     <MESSAGE value="Extended AJAX." />
@@ -513,6 +513,7 @@
     <MESSAGE value="Re-enabled Debug to allow bug fixing." />
     <MESSAGE value="Corrected spelling mistake in run page." />
     <MESSAGE value="Test commit." />
-    <option name="LAST_COMMIT_MESSAGE" value="Test commit." />
+    <MESSAGE value="Added planetary collision handling." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added planetary collision handling." />
   </component>
 </project>

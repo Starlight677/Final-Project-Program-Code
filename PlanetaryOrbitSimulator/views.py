@@ -398,7 +398,7 @@ def changeSimulationFocus(request):
 
     runSimulationTick(request, simulationEngine, storedSim, 0, 1, setTicks)
 
-    updatedImageURL = "/media/latestSimulation" + user.username + ".jpeg"
+    updatedImageURL = "/media/latestSimulation" + user.username + ".png"
     constructedResponse = JsonResponse({"updatedImageURL": updatedImageURL, "focusBodyName": simulationEngine.focusBodyName})
     return constructedResponse
 
