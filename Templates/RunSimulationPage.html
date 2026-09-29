@@ -168,73 +168,116 @@
         </form>
     </body>
     <script>
-        let isSimulationRunning = 0
-        let isSimulationReversing = 0
+        let isSimulationRunning = 0;
+        let isSimulationReversing = 0;
+        let requestInFlight = false;
+        let pendingActions = [];
+        let tickTimer = null;
         $("#stopButton").css('background','grey');
 
-        function simulationImageUpdate(){
+        function simulationImageURL() {
+            return '/media/latestSimulation{{user}}.png?' + Date.now();
+        }
+
+        function enqueueAction(action) {
+            pendingActions.push(action);
+            dispatchNextAction();
+        }
+
+        function onActionFinished() {
+            requestInFlight = false;
+            if (pendingActions.length > 0) {
+                dispatchNextAction();
+                return;
+            }
+            if (isSimulationRunning === 1) {
+                clearTimeout(tickTimer);
+                tickTimer = setTimeout(function() {
+                    tickTimer = null;
+                    enqueueAction({ type: 'tick' });
+                }, 50);
+            } else {
+                $("#startButton").css('background','');
+            }
+        }
+
+        function dispatchNextAction() {
+            if (requestInFlight || pendingActions.length === 0) {
+                return;
+            }
+            requestInFlight = true;
+            var action = pendingActions.shift();
+            if (action.type === 'tick') {
+                sendTickRequest();
+            } else if (action.type === 'focus') {
+                sendFocusRequest();
+            } else if (action.type === 'form') {
+                sendFormRequest(action.data);
+            } else {
+                onActionFinished();
+            }
+        }
+
+        function sendTickRequest() {
             $.ajax({
                 url: '/update/' + isSimulationReversing,
                 type: 'get',
                 cache: false,
 
                 success: function(data) {
-                    // Add date to the request to make the client re-request it
-                    var modifiedURL = '/media/latestSimulation{{user}}.png?' + Date.now();
-                    $("#simImage").attr('src', modifiedURL);
+                    $("#simImage").attr('src', simulationImageURL());
                     $("#daysElapsedBox").text("Simulation Days Elapsed: " + data.daysElapsed);
-                    if (typeof(data.focusBodyName) != "undefined") { // Update the focused body's name
+                    $("#reverseBox").text("Simulation Iteration Reversed: " + data.isSimulationInReverse);
+                    if (typeof(data.focusBodyName) != "undefined") {
                         $("#focusBodyBox").text("Focused Body: " + data.focusBodyName);
-                    }
-                    if (isSimulationRunning == 1) {
-                        // Call another simulation update after a quarter second if the simulation is still running
-                        setTimeout(simulationImageUpdate, 250);
-                    }
-                    else {
-                        // Set colour of the start simulation button once simulation stops running
-                        $("#startButton").css('background','');
                     }
                 },
 
                 error: function() {
+                    isSimulationRunning = 0;
+                    pendingActions = [];
+                    clearTimeout(tickTimer);
+                    tickTimer = null;
                     alert("Error in updating simulation.");
-                    window.location.href = '/stop/0'
+                    window.location.href = '/stop/0';
+                },
+
+                complete: function() {
+                    onActionFinished();
                 }
             });
         }
 
-        $('#focusButton').click(function(event) {
-            event.preventDefault();
+        function sendFocusRequest() {
             $.ajax({
                 url: '/focus/',
                 type: 'get',
                 cache: false,
 
                 success: function(data) {
-                    // Add date to the request to make the client re-request it
-                    var modifiedURL = '/media/latestSimulation{{user}}.png?' + Date.now();
-                    $("#simImage").attr('src', modifiedURL);
+                    $("#simImage").attr('src', simulationImageURL());
                     $("#focusBodyBox").text("Focused Body: " + data.focusBodyName);
                 },
 
                 error: function() {
                     alert("Error in changing focus.");
+                },
+
+                complete: function() {
+                    onActionFinished();
                 }
             });
-        });
+        }
 
-        $('#submitForm').click(function(event) {
-            event.preventDefault();
+        function sendFormRequest(formData) {
             $.ajax({
                 url: '/runForm/',
                 type: 'post',
                 cache: false,
-                data: $(this).serialize(),
+                data: formData,
 
                 success: function(data) {
-                    var modifiedURL = '/media/latestSimulation{{user}}.png?' + Date.now();
-                    $("#simImage").attr('src', modifiedURL);
-
+                    $("#simImage").attr('src', simulationImageURL());
                     $("#nameBox").text("Simulation Name: " + data.simulationName);
                     $("#displaySizeBox").text("Simulation Display Size: " + data.simulationSizeKM + "km / " + data.simulationSizeAU + "AU");
                     $("#daysPerTickBox").text("Days Per Simulation Tick: " + data.daysPerTick);
@@ -242,22 +285,46 @@
 
                 error: function() {
                     alert("Error in updating form.");
+                },
+
+                complete: function() {
+                    onActionFinished();
                 }
             });
+        }
+
+        $('#focusButton').click(function(event) {
+            event.preventDefault();
+            enqueueAction({ type: 'focus' });
+        });
+
+        $('#submitForm').on('submit', function(event) {
+            event.preventDefault();
+            enqueueAction({ type: 'form', data: $(this).serialize() });
         });
 
         $('#stopButton').click(function(event) {
             event.preventDefault();
             isSimulationRunning = 0;
+            clearTimeout(tickTimer);
+            tickTimer = null;
             $("#stopButton").css('background','grey');
+            if (!requestInFlight) {
+                $("#startButton").css('background','');
+            }
         });
 
         $('#startButton').click(function(event) {
             event.preventDefault();
+            if (isSimulationRunning === 1) {
+                return;
+            }
             isSimulationRunning = 1;
-            simulationImageUpdate();
+            clearTimeout(tickTimer);
+            tickTimer = null;
             $("#stopButton").css('background','');
             $("#startButton").css('background','grey');
+            enqueueAction({ type: 'tick' });
         });
 
         $('#reverseButton').click(function(event) {
@@ -267,7 +334,6 @@
             } else {
                 isSimulationReversing = 0;
             }
-            // Update display entry
             if (isSimulationReversing == 0) {
                 $("#reverseBox").text("Simulation Iteration Reversed: No");
             } else {
