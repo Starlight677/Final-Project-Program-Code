@@ -26,12 +26,11 @@ class PlanetarySimulationEngine:
         if bodyIndex < 0 or bodyIndex >= len(self.listOfBodies):
             return -1
         body = self.listOfBodies[bodyIndex]
-        if len(body) > 6 and isinstance(body[6], int):
-            ref = body[6]
-            if ref >= len(self.listOfBodies) or ref == bodyIndex:
-                return -1
-            return ref
-        return -1
+        ref = body[6]
+        if ref >= len(self.listOfBodies) or ref == bodyIndex:
+            # Return no reference body if error
+            return -1
+        return ref
 
     def getBodyReferenceName(self, bodyIndex):
         """Returns the display name of the reference body for bodyIndex."""
@@ -45,26 +44,10 @@ class PlanetarySimulationEngine:
         if bodyIndex < 0 or bodyIndex >= len(self.listOfBodies):
             return
         body = self.listOfBodies[bodyIndex]
-        while len(body) < 7:
-            body.append(-1)
         if refIndex < -1 or refIndex >= len(self.listOfBodies) or refIndex == bodyIndex:
             refIndex = -1
         body[6] = refIndex
         self.listOfBodies[bodyIndex] = body
-
-    def cycleBodyReference(self, bodyIndex):
-        """Cycles through valid reference bodies for bodyIndex, returning new ref index."""
-        if bodyIndex < 0 or bodyIndex >= len(self.listOfBodies):
-            return -1
-        currentRef = self.getBodyReference(bodyIndex)
-        validOptions = [-1] + [j for j in range(len(self.listOfBodies)) if j != bodyIndex]
-        try:
-            currentIdx = validOptions.index(currentRef)
-            nextRef = validOptions[(currentIdx + 1) % len(validOptions)]
-        except ValueError:
-            nextRef = -1
-        self.setBodyReference(bodyIndex, nextRef)
-        return nextRef
 
     def tickBodyPair(self, body1Coords, body2Coords, body1Motion, body2Motion, body1Mass,
                        body2Mass, body1Radius, body2Radius, secondsMultiplier):
@@ -299,40 +282,47 @@ class PlanetarySimulationEngine:
         for i, body in enumerate(reversed(self.listOfBodies)):
             try:
                 bodyIndex = len(self.listOfBodies) - (i + 1)
-                trailX = self.bodyPoints[bodyIndex][0]  # Already in AU
-                trailY = self.bodyPoints[bodyIndex][1]
-                currentX = body[0][0] / AU
-                currentY = body[0][1] / AU
-
-                refBodyIndex = self.getBodyReference(bodyIndex)
-                useRelativeFrame = (
-                    refBodyIndex != -1
-                    and refBodyIndex < len(self.listOfBodies)
-                    and refBodyIndex != bodyIndex
-                    and len(self.bodyPoints[refBodyIndex][0]) > 0
-                )
-
-                if useRelativeFrame:
-                    refXPoints = self.bodyPoints[refBodyIndex][0]
-                    refYPoints = self.bodyPoints[refBodyIndex][1]
-                    refCurrentX = self.listOfBodies[refBodyIndex][0][0] / AU
-                    refCurrentY = self.listOfBodies[refBodyIndex][0][1] / AU
-
-                    minLen = min(len(trailX), len(refXPoints))
-                    if minLen > 0:
-                        offsetTrailX = [refCurrentX + (trailX[k] - refXPoints[k]) for k in range(minLen)]
-                        offsetTrailY = [refCurrentY + (trailY[k] - refYPoints[k]) for k in range(minLen)]
-                        plt.plot(offsetTrailX, offsetTrailY, color=body[4][0])
-                    plt.plot(currentX, currentY, 'o', color=body[4][1])
-                else:
-                    plt.plot(trailX, trailY, color=body[4][0])
-                    plt.plot(currentX, currentY, 'o', color=body[4][1])
+                self.plotBodyPoints(plt, body, bodyIndex)
             except IndexError:  # If point not found for body, continue
                 continue
 
         # Save graph to file
         plt.savefig('media/latestSimulation' + user.username + '.png')
         plt.close('all')
+
+    def plotBodyPoints(self, plt, body, bodyIndex):
+        # Plot the points for a specific body on the graph
+        trailX = self.bodyPoints[bodyIndex][0]  # Already in AU
+        trailY = self.bodyPoints[bodyIndex][1]
+        AU = 1.495979e11
+        currentX = body[0][0] / AU
+        currentY = body[0][1] / AU
+
+        refBodyIndex = self.getBodyReference(bodyIndex) # Get index fo body to draw around
+        useRelativeFrame = (
+                refBodyIndex != -1
+                and refBodyIndex < len(self.listOfBodies)
+                and refBodyIndex != bodyIndex
+                and len(self.bodyPoints[refBodyIndex][0]) > 0
+        )
+
+        if useRelativeFrame: # Draw orbit lines around reference body
+            refXPoints = self.bodyPoints[refBodyIndex][0]
+            refYPoints = self.bodyPoints[refBodyIndex][1]
+            refCurrentX = self.listOfBodies[refBodyIndex][0][0] / AU
+            refCurrentY = self.listOfBodies[refBodyIndex][0][1] / AU
+
+            minLen = min(len(trailX), len(refXPoints))
+            if minLen > 0:
+                offsetTrailX = [refCurrentX + (trailX[k] - refXPoints[k]) for k in range(minLen)]
+                offsetTrailY = [refCurrentY + (trailY[k] - refYPoints[k]) for k in range(minLen)]
+                plt.plot(offsetTrailX, offsetTrailY, color=body[4][0])
+            plt.plot(currentX, currentY, 'o', color=body[4][1])
+        else:
+            # Draw flat orbit lines
+            plt.plot(trailX, trailY, color=body[4][0])
+            plt.plot(currentX, currentY, 'o', color=body[4][1])
+        return plt
 
     def updateFocusPoint(self):
         if self.focusBody == -1 or self.focusBody >= len(self.listOfBodies):
@@ -520,9 +510,9 @@ class PlanetarySimulationEngine:
         elif templateNumber == 3:
             # Binary Stars
             body1Stats = [[-7.51e10, 0, 0], [0, 11000, 0], solarMass * 1, 7e7,
-                          ['yellow', 'yellow'], "Primary Star"] # Primary star
+                          ['yellow', 'yellow'], "Primary Star", -1] # Primary star
             body2Stats = [[1.521e11, 0, 0], [0, -22000, 0], solarMass * 0.5, 5e7,
-                          ['orange', 'orange'], "Secondary Star"] # Secondary star
+                          ['orange', 'orange'], "Secondary Star", -1] # Secondary star
             self.listOfBodies = [body1Stats, body2Stats]
             self.secondsPerSimulationTick = 60
             self.simulationSize = 2  # Size of the displayed area in AU
@@ -581,7 +571,7 @@ class PlanetarySimulationEngine:
             self.simulationName = "Madman's Halo"
         else:
             # Display only a star if error in choosing starter configuration
-            body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 1, 7e7, ['yellow', 'yellow'], "Primary Star"]
+            body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 1, 7e7, ['yellow', 'yellow'], "Primary Star", -1]
             self.listOfBodies = [body1Stats]
             self.secondsPerSimulationTick = 60
             self.simulationSize = 1  # Size of the displayed area in meters

@@ -415,32 +415,6 @@ def changeSimulationFocus(request):
                                         "relativeBodyName": relativeBodyName})
     return constructedResponse
 
-def changeRelativeBody(request):
-    user = request.user
-    # Load/create a database entry of the simulation
-    storedSim, existingSimLoaded = loadSimulationEntry(request)
-
-    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
-    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
-
-    # If a body is focused, cycle its reference body; otherwise cycle body 0's reference
-    if simulationEngine.focusBody != -1:
-        simulationEngine.cycleBodyReference(simulationEngine.focusBody)
-        relativeBodyName = simulationEngine.getBodyReferenceName(simulationEngine.focusBody)
-    elif len(simulationEngine.listOfBodies) > 0:
-        simulationEngine.cycleBodyReference(0)
-        relativeBodyName = f"{simulationEngine.getBodyReferenceName(0)} (for {simulationEngine.listOfBodies[0][5]})"
-    else:
-        relativeBodyName = "None (Static Grid)"
-
-    runSimulationTick(request, simulationEngine, storedSim, 0, 1, setTicks)
-
-    updatedImageURL = "/media/latestSimulation" + user.username + ".png"
-    constructedResponse = JsonResponse({"updatedImageURL": updatedImageURL,
-                                        "relativeBodyName": relativeBodyName,
-                                        "focusBodyName": simulationEngine.focusBodyName})
-    return constructedResponse
-
 def processRunForm(request, isCreating = 0):
     user = request.user
     # Load/create a database entry of the simulation
