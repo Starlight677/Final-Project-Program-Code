@@ -94,7 +94,7 @@ def createPage(request, templateIndex = 0):
     # Backend for the Create New System page
     user = request.user
     request.session["templateIndex"] = templateIndex
-    templatesList = ["Inner Solar System", "Galilean Moons of Jupiter", "Ascendia Primary Star", "Binary Stars", "Single Star"]
+    templatesList = ["Inner Solar System", "Galilean Moons of Jupiter", "Ascendia Primary Star", "Binary Stars", "Madman's Halo System", "Single Star"]
 
     # Load a Planetary Simulation Engine for accessing parameters
     simulationEngine = PlanetarySimulationEngine()
@@ -464,7 +464,7 @@ def processEditForm(request, selectedBody):
             simulationEngine.bodyPoints.append([[], [], [[],[],[]]])
 
         simulationEngine.listOfBodies[selectedBody][2] = detailsForm.cleaned_data["bodyMass"]
-        simulationEngine.listOfBodies[selectedBody][3] = detailsForm.cleaned_data["bodyRadius"]
+        simulationEngine.listOfBodies[selectedBody][3] = detailsForm.cleaned_data["bodyRadius"] * 1000
         simulationEngine.listOfBodies[selectedBody][5] = detailsForm.cleaned_data["bodyName"]
 
         simulationEngine.listOfBodies[selectedBody][0][0] = detailsForm.cleaned_data["bodyXPosition"]*AU
