@@ -22,7 +22,7 @@ class PlanetarySimulationEngine:
         pass
 
     def tickBodyPair(self, body1Coords, body2Coords, body1Motion, body2Motion, body1Mass,
-                       body2Mass, body1Radius, body2Radius, secondsPerSimulationTick = 1):
+                       body2Mass, body1Radius, body2Radius, secondsMultiplier):
         # Get acceleration of bodies from each other's gravity
         body1Acceleration = self.checkGravityMotionChange(body1Coords, body2Coords,
                                                           body2Mass, body1Radius, body2Radius)
@@ -35,14 +35,14 @@ class PlanetarySimulationEngine:
             return False
 
         # Used for checking if a body's influence is significant or not
-        if sum(np.abs(body1Acceleration)) >= 1e-6 or sum(np.abs(body2Acceleration)) >= 1e-6:
+        if sum(np.abs(body1Acceleration)) >= 0.01 or sum(np.abs(body2Acceleration)) >= 0.01:
             exceedsThreshold = True
         else:
             exceedsThreshold = False
 
         # Add existing motion to new motion from gravity
-        body1Motion = self.addAcceleration(body1Motion, body1Acceleration, secondsPerSimulationTick)
-        body2Motion = self.addAcceleration(body2Motion, body2Acceleration, secondsPerSimulationTick)
+        body1Motion = self.addAcceleration(body1Motion, body1Acceleration, secondsMultiplier)
+        body2Motion = self.addAcceleration(body2Motion, body2Acceleration, secondsMultiplier)
 
         return body1Motion, body2Motion, exceedsThreshold
 
@@ -106,7 +106,7 @@ class PlanetarySimulationEngine:
                     body1Stats[1], body2Stats[1], isOverThreshold = (
                             self.tickBodyPair(body1Stats[0], body2Stats[0], body1Stats[1], body2Stats[1],
                                     body1Stats[2], body2Stats[2], body1Stats[3], body2Stats[3],
-                                    self.secondsPerSimulationTick*60))
+                                    self.secondsPerSimulationTick * self.ticksPerStorageUpdate))
                 else:
                     body1Stats[1], body2Stats[1], isOverThreshold = (
                         self.tickBodyPair(body1Stats[0], body2Stats[0], body1Stats[1], body2Stats[1],
