@@ -38,6 +38,7 @@ urlpatterns = [
     #path('editFocus/<int:focusChange>', views.updateEditFocus),
     path('stop/<int:reverseSimulation>', views.stopSimulation),
     path('focus/', views.changeSimulationFocus),
+    path('relative/', views.changeRelativeBody),
     path('update/', views.updateSimulationImage, name="update"),
     path('update/<int:reverseSimulation>/', views.updateSimulationImage),
     path('login/', views.loginPage),

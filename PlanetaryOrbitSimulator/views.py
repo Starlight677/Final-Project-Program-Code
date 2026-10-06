@@ -186,11 +186,15 @@ def editSimulationPage(request, selectedBody = 0):
 
     #Generate useful context variables
     AU = 1.495979e11
+    body_choices = [(-1, "None (Static Grid)")] + [
+        (i, b[5]) for i, b in enumerate(simulationEngine.listOfBodies) if i != selectedBody
+    ]
     if selectedBody == len(simulationEngine.listOfBodies):
         bodyDisplayDetails = {"bodyMass": 0,
                               "bodyColour": "White",
                               "bodyName": "Add New Body",
                               "bodyRadius": 0,
+                              "bodyReference": -1,
                               "bodyXPosition": 0,
                               "bodyYPosition": 0,
                               "bodyXSpeed": 0,
@@ -202,13 +206,14 @@ def editSimulationPage(request, selectedBody = 0):
                               "bodyColour": simulationEngine.listOfBodies[selectedBody][4][0],
                               "bodyName": simulationEngine.listOfBodies[selectedBody][5],
                               "bodyRadius": round(simulationEngine.listOfBodies[selectedBody][3]/1000,3),
+                              "bodyReference": simulationEngine.getBodyReference(selectedBody),
                               "bodyXPosition": roundToSignificantFigures(
                                   simulationEngine.listOfBodies[selectedBody][0][0]/AU,6),
                               "bodyYPosition": roundToSignificantFigures(
                                   simulationEngine.listOfBodies[selectedBody][0][1]/AU,6),
                               "bodyXSpeed": round(simulationEngine.listOfBodies[selectedBody][1][0]/1000,3),
                               "bodyYSpeed": round(simulationEngine.listOfBodies[selectedBody][1][1]/1000,3),}
-    detailsForm = BodyDetailsForm(request.POST or None, initial=bodyDisplayDetails)
+    detailsForm = BodyDetailsForm(request.POST or None, initial=bodyDisplayDetails, body_choices=body_choices)
 
     # Focus the screen on the selected body
     if selectedBody < len(simulationEngine.listOfBodies):
@@ -402,8 +407,38 @@ def changeSimulationFocus(request):
 
     runSimulationTick(request, simulationEngine, storedSim, 0, 1, setTicks)
 
+    relativeBodyName = (simulationEngine.getBodyReferenceName(simulationEngine.focusBody)
+                        if simulationEngine.focusBody != -1 else "None (Static Grid)")
     updatedImageURL = "/media/latestSimulation" + user.username + ".png"
-    constructedResponse = JsonResponse({"updatedImageURL": updatedImageURL, "focusBodyName": simulationEngine.focusBodyName})
+    constructedResponse = JsonResponse({"updatedImageURL": updatedImageURL,
+                                        "focusBodyName": simulationEngine.focusBodyName,
+                                        "relativeBodyName": relativeBodyName})
+    return constructedResponse
+
+def changeRelativeBody(request):
+    user = request.user
+    # Load/create a database entry of the simulation
+    storedSim, existingSimLoaded = loadSimulationEntry(request)
+
+    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
+    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
+
+    # If a body is focused, cycle its reference body; otherwise cycle body 0's reference
+    if simulationEngine.focusBody != -1:
+        simulationEngine.cycleBodyReference(simulationEngine.focusBody)
+        relativeBodyName = simulationEngine.getBodyReferenceName(simulationEngine.focusBody)
+    elif len(simulationEngine.listOfBodies) > 0:
+        simulationEngine.cycleBodyReference(0)
+        relativeBodyName = f"{simulationEngine.getBodyReferenceName(0)} (for {simulationEngine.listOfBodies[0][5]})"
+    else:
+        relativeBodyName = "None (Static Grid)"
+
+    runSimulationTick(request, simulationEngine, storedSim, 0, 1, setTicks)
+
+    updatedImageURL = "/media/latestSimulation" + user.username + ".png"
+    constructedResponse = JsonResponse({"updatedImageURL": updatedImageURL,
+                                        "relativeBodyName": relativeBodyName,
+                                        "focusBodyName": simulationEngine.focusBodyName})
     return constructedResponse
 
 def processRunForm(request, isCreating = 0):
@@ -453,14 +488,17 @@ def processEditForm(request, selectedBody):
     # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
     simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
 
-    detailsForm = BodyDetailsForm(request.POST)
+    body_choices = [(-1, "None (Static Grid)")] + [
+        (i, b[5]) for i, b in enumerate(simulationEngine.listOfBodies) if i != selectedBody
+    ]
+    detailsForm = BodyDetailsForm(request.POST, body_choices=body_choices)
 
     AU = 1.495979e11
     if detailsForm.is_valid():
         # Load parameters from form
         if selectedBody == len(simulationEngine.listOfBodies):
             # If creating new body, add empty framework to list
-            simulationEngine.listOfBodies.append([[0, 0, 0], [0, 0, 0], 0, 0, ['white', 'white'], ""])
+            simulationEngine.listOfBodies.append([[0, 0, 0], [0, 0, 0], 0, 0, ['white', 'white'], "", -1])
             simulationEngine.bodyPoints.append([[], [], [[],[],[]]])
 
         simulationEngine.listOfBodies[selectedBody][2] = detailsForm.cleaned_data["bodyMass"]
@@ -471,6 +509,9 @@ def processEditForm(request, selectedBody):
         simulationEngine.listOfBodies[selectedBody][0][1] = detailsForm.cleaned_data["bodyYPosition"]*AU
         simulationEngine.listOfBodies[selectedBody][1][0] = detailsForm.cleaned_data["bodyXSpeed"]*1000
         simulationEngine.listOfBodies[selectedBody][1][1] = detailsForm.cleaned_data["bodyYSpeed"]*1000
+
+        ref_val = int(detailsForm.cleaned_data.get("bodyReference", -1))
+        simulationEngine.setBodyReference(selectedBody, ref_val)
 
         if detailsForm.cleaned_data["bodyColour"] in mcolors.CSS4_COLORS:
             # Only update colour if valid colour entered

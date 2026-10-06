@@ -21,6 +21,51 @@ class PlanetarySimulationEngine:
         self.collidedPlanets = []
         pass
 
+    def getBodyReference(self, bodyIndex):
+        """Returns the reference body index for bodyIndex (-1 for static grid)."""
+        if bodyIndex < 0 or bodyIndex >= len(self.listOfBodies):
+            return -1
+        body = self.listOfBodies[bodyIndex]
+        if len(body) > 6 and isinstance(body[6], int):
+            ref = body[6]
+            if ref >= len(self.listOfBodies) or ref == bodyIndex:
+                return -1
+            return ref
+        return -1
+
+    def getBodyReferenceName(self, bodyIndex):
+        """Returns the display name of the reference body for bodyIndex."""
+        ref = self.getBodyReference(bodyIndex)
+        if ref == -1:
+            return "None (Static Grid)"
+        return self.listOfBodies[ref][5]
+
+    def setBodyReference(self, bodyIndex, refIndex):
+        """Sets the reference body index for bodyIndex."""
+        if bodyIndex < 0 or bodyIndex >= len(self.listOfBodies):
+            return
+        body = self.listOfBodies[bodyIndex]
+        while len(body) < 7:
+            body.append(-1)
+        if refIndex < -1 or refIndex >= len(self.listOfBodies) or refIndex == bodyIndex:
+            refIndex = -1
+        body[6] = refIndex
+        self.listOfBodies[bodyIndex] = body
+
+    def cycleBodyReference(self, bodyIndex):
+        """Cycles through valid reference bodies for bodyIndex, returning new ref index."""
+        if bodyIndex < 0 or bodyIndex >= len(self.listOfBodies):
+            return -1
+        currentRef = self.getBodyReference(bodyIndex)
+        validOptions = [-1] + [j for j in range(len(self.listOfBodies)) if j != bodyIndex]
+        try:
+            currentIdx = validOptions.index(currentRef)
+            nextRef = validOptions[(currentIdx + 1) % len(validOptions)]
+        except ValueError:
+            nextRef = -1
+        self.setBodyReference(bodyIndex, nextRef)
+        return nextRef
+
     def tickBodyPair(self, body1Coords, body2Coords, body1Motion, body2Motion, body1Mass,
                        body2Mass, body1Radius, body2Radius, secondsMultiplier):
         # Get acceleration of bodies from each other's gravity
@@ -206,6 +251,14 @@ class PlanetarySimulationEngine:
         elif self.focusBody > body2Index:
             self.focusBody -= 1
 
+        # Clean up per-body references across surviving bodies
+        for b in self.listOfBodies:
+            if len(b) > 6 and isinstance(b[6], int):
+                if b[6] == body2Index:
+                    b[6] = -1
+                elif b[6] > body2Index:
+                    b[6] -= 1
+
         return updatedCompanions
 
     def drawGraph(self, user, backgroundColour = "black", graphColour = "white"):
@@ -240,14 +293,41 @@ class PlanetarySimulationEngine:
         plt.ylabel("Distance (AU)")
         plt.grid(True)
 
-        # For each body, draw both the line of previous path and marker of current position
         AU = 1.495979e11
-        for i,body in enumerate(reversed(self.listOfBodies)):
+        # For each body, draw both the line of previous path and marker of current position.
+        # Each body can have its orbit path drawn relative to another body's position.
+        for i, body in enumerate(reversed(self.listOfBodies)):
             try:
                 bodyIndex = len(self.listOfBodies) - (i + 1)
-                plt.plot((self.bodyPoints[bodyIndex][0]), (self.bodyPoints[bodyIndex][1]), color=body[4][0]) #BodyPoints already converted
-                plt.plot((body[0][0])/AU, (body[0][1])/AU, 'o', color=body[4][1])
-            except IndexError: # If point not found for body, continue
+                trailX = self.bodyPoints[bodyIndex][0]  # Already in AU
+                trailY = self.bodyPoints[bodyIndex][1]
+                currentX = body[0][0] / AU
+                currentY = body[0][1] / AU
+
+                refBodyIndex = self.getBodyReference(bodyIndex)
+                useRelativeFrame = (
+                    refBodyIndex != -1
+                    and refBodyIndex < len(self.listOfBodies)
+                    and refBodyIndex != bodyIndex
+                    and len(self.bodyPoints[refBodyIndex][0]) > 0
+                )
+
+                if useRelativeFrame:
+                    refXPoints = self.bodyPoints[refBodyIndex][0]
+                    refYPoints = self.bodyPoints[refBodyIndex][1]
+                    refCurrentX = self.listOfBodies[refBodyIndex][0][0] / AU
+                    refCurrentY = self.listOfBodies[refBodyIndex][0][1] / AU
+
+                    minLen = min(len(trailX), len(refXPoints))
+                    if minLen > 0:
+                        offsetTrailX = [refCurrentX + (trailX[k] - refXPoints[k]) for k in range(minLen)]
+                        offsetTrailY = [refCurrentY + (trailY[k] - refYPoints[k]) for k in range(minLen)]
+                        plt.plot(offsetTrailX, offsetTrailY, color=body[4][0])
+                    plt.plot(currentX, currentY, 'o', color=body[4][1])
+                else:
+                    plt.plot(trailX, trailY, color=body[4][0])
+                    plt.plot(currentX, currentY, 'o', color=body[4][1])
+            except IndexError:  # If point not found for body, continue
                 continue
 
         # Save graph to file
@@ -376,17 +456,17 @@ class PlanetarySimulationEngine:
         earthMass = 5.972e24
         moonMass = earthMass * 0.0123
         if templateNumber == 0: # Inner Solar System planets
-            body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 1, 7e8, ['yellow', 'yellow'],"The Sun"]
+            body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 1, 7e8, ['yellow', 'yellow'], "The Sun", -1]
             body2Stats = [[0, -6.982e10, 0], [-38900, 0, 0], earthMass * 0.055, 2.439e6,
-                          ['darkgrey', 'darkgrey'], "Mercury"]  # Mercury (at aphelion)
+                          ['darkgrey', 'darkgrey'], "Mercury", 0]  # Mercury (at aphelion)
             body3Stats = [[1.082e11, 0, 0], [0, -35000, 0], earthMass * 0.815, 6.05e6,
-                          ['orange', 'orange'], "Venus"]  # Venus
+                          ['orange', 'orange'], "Venus", 0]  # Venus
             body4Stats = [[-1.521e11, 0, 0], [0, 29290, 0], earthMass * 1, 6.3e6,
-                          ['blue', 'blue'], "The Earth"]  # The Earth (at aphelion)
+                          ['blue', 'blue'], "The Earth", 0]  # The Earth (at aphelion)
             body5Stats = [[-1.521e11, 3.84e8, 0], [1022, 29290, 0], moonMass * 1, 1.738e6,
-                          ['silver', 'silver'], "The Moon"]  # The Moon
+                          ['silver', 'silver'], "The Moon", 3]  # The Moon (relative to Earth)
             body6Stats = [[0, 2.064e11, 0], [26490, 0, 0], earthMass * 0.107, 3.396e6,
-                          ['red', 'red'], "Mars"]  # Mars (at perihelion)
+                          ['red', 'red'], "Mars", 0]  # Mars (at perihelion)
             self.listOfBodies = [body1Stats, body2Stats, body3Stats, body4Stats, body5Stats, body6Stats]
 
             self.secondsPerSimulationTick = 60
@@ -398,15 +478,15 @@ class PlanetarySimulationEngine:
         elif templateNumber == 1:
             # Moons of Jupiter
             body1Stats = [[0, 0, 0], [0, 0, 0], earthMass * 318, 6.989e7,
-                          ['darkorange', 'darkorange'], "Jupiter"]  # Jupiter
+                          ['darkorange', 'darkorange'], "Jupiter", -1]  # Jupiter
             body2Stats = [[4.217e8, 0, 0], [0, -17334, 0], moonMass * 1.05, 3.643e6,
-                          ['gold', 'gold'], "Io"]  # Io
+                          ['gold', 'gold'], "Io", 0]  # Io (relative to Jupiter)
             body3Stats = [[-6.71e8, 0, 0], [0, 13703, 0], moonMass * 0.9, 3.122e6,
-                          ['lightsteelblue', 'lightsteelblue'], "Europa"]  # Europa
+                          ['lightsteelblue', 'lightsteelblue'], "Europa", 0]  # Europa (relative to Jupiter)
             body4Stats = [[0, 1.07e9, 0], [10880, 0, 0], moonMass * 2, 5.262e6,
-                          ['silver', 'silver'], "Ganymede"]  # Ganymede
+                          ['silver', 'silver'], "Ganymede", 0]  # Ganymede (relative to Jupiter)
             body5Stats = [[0, -1.883e9, 0], [-8204, 0, 0], moonMass * 1.5, 4.821e6,
-                          ['grey', 'grey'], "Callisto"]  # Callisto
+                          ['grey', 'grey'], "Callisto", 0]  # Callisto (relative to Jupiter)
             self.listOfBodies = [body1Stats, body2Stats, body3Stats, body4Stats, body5Stats]
 
             self.secondsPerSimulationTick = 6 # 10 simulation ticks per minute
@@ -418,19 +498,19 @@ class PlanetarySimulationEngine:
         elif templateNumber == 2:
             # Ascendia system (A star)
             body1Stats = [[0, 0, 0], [0, 0, 0], solarMass * 0.2656, 7e7*0.474,
-                          ['orange', 'orange'], "Col 285 Sector ZX-R b5-0 A"] # Primary star
+                          ['orange', 'orange'], "Col 285 Sector ZX-R b5-0 A", -1] # Primary star
             body2Stats = [[-3.3e9, 0, 0], [0, 103364, 0], earthMass * 0.0908, 2.887e6,
-                          ['grey', 'grey'], "Col 285 Sector ZX-R b5-0 A 1"]  # A 1
+                          ['grey', 'grey'], "Col 285 Sector ZX-R b5-0 A 1", 0]  # A 1
             body3Stats = [[6e9, 0, 0], [0, -76657, 0], earthMass * 0.1077, 3.049e6,
-                          ['darkgrey', 'darkgrey'], "Stephenson's Rock"]  # Stephenson's Rock
+                          ['darkgrey', 'darkgrey'], "Stephenson's Rock", 0]  # Stephenson's Rock
             body4Stats = [[0,-1.04e10, 0], [-58225, 0, 0], earthMass * 0.0965, 2.944e6,
-                          ['orangered', 'orangered'], "Col 285 Sector ZX-R b5-0 A 3"]  # A 3
+                          ['orangered', 'orangered'], "Col 285 Sector ZX-R b5-0 A 3", 0]  # A 3
             body5Stats = [[0, 1.9e10, 0], [43077, 0, 0], earthMass * 0.1623, 4.434e6,
-                          ['lightskyblue', 'lightskyblue'], "Ascendia"]  # Ascendia
+                          ['lightskyblue', 'lightskyblue'], "Ascendia", 0]  # Ascendia
             body6Stats = [[0, -3.5e10, 0], [-31739, 0, 0], earthMass * 0.3876, 5.802e6,
-                          ['silver', 'silver'], "Col 285 Sector ZX-R b5-0 A 5"]  # A 5
+                          ['silver', 'silver'], "Col 285 Sector ZX-R b5-0 A 5", 0]  # A 5
             body7Stats = [[-6.44e10, 0, 0], [0, 23398, 0], earthMass * 0.2808, 5.27e6,
-                          ['silver', 'silver'], "Col 285 Sector ZX-R b5-0 A 6"]  # A 6
+                          ['silver', 'silver'], "Col 285 Sector ZX-R b5-0 A 6", 0]  # A 6
             self.listOfBodies = [body1Stats, body2Stats, body3Stats, body4Stats, body5Stats, body6Stats, body7Stats]
             self.secondsPerSimulationTick = 60
             self.simulationSize = 0.5  # Size of the displayed area in AU
@@ -451,43 +531,43 @@ class PlanetarySimulationEngine:
             self.simulationName = "Binary Stars"
         elif templateNumber == 4:
             # Madman's Halo system (Complete system with all planets and moons)
-            body1Stats = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], solarMass * 1.320313, 7e7 * 1.2902, ['white', 'white'], "Pyroifoi RD-Z d1-223"]  # F (White) Star
-            body2Stats = [[-3300000000.0, 0.0, 0.0], [0.0, 230543.0, 0.0], earthMass * 15.172054, 1.27e+07, ['saddlebrown', 'saddlebrown'], "Pyroifoi RD-Z d1-223 1"]  # High metal content world
-            body3Stats = [[5700000000.0, 0.0, 0.0], [0.0, -175417.0, 0.0], earthMass * 5.797106, 1.00e+07, ['maroon', 'maroon'], "Pyroifoi RD-Z d1-223 2"]  # High metal content world
+            body1Stats = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], solarMass * 1.320313, 7e7 * 1.2902, ['white', 'white'], "Pyroifoi RD-Z d1-223", -1]  # F (White) Star
+            body2Stats = [[-3300000000.0, 0.0, 0.0], [0.0, 230543.0, 0.0], earthMass * 15.172054, 1.27e+07, ['saddlebrown', 'saddlebrown'], "Pyroifoi RD-Z d1-223 1", 0]  # High metal content world
+            body3Stats = [[5700000000.0, 0.0, 0.0], [0.0, -175417.0, 0.0], earthMass * 5.797106, 1.00e+07, ['maroon', 'maroon'], "Pyroifoi RD-Z d1-223 2", 0]  # High metal content world
             # Binary Pair 1: Planets 3 & 4
-            body4Stats = [[0.0, -399010000000.0, 0.0], [20968.0, 0.0, 0.0], earthMass * 1342.156738, 7.60e+07, ['mediumblue', 'mediumblue'], "Pyroifoi RD-Z d1-223 3"]  # Class III gas giant
-            body5Stats = [[643399138.1, -399010000000.0, 0.0], [20968.0, 28835.3, 0.0], earthMass * 0.011476, 1.57e+06, ['gold', 'gold'], "Pyroifoi RD-Z d1-223 3 a"]  # Rocky body
-            body6Stats = [[1044040809.0, -399010000000.0, 0.0], [20968.0, 23063.4, 0.0], earthMass * 0.010893, 1.55e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 3 b"]  # Rocky body
-            body7Stats = [[1051164498.5, -399010000000.0, 0.0], [20968.0, 22018.8, 0.0], earthMass * 0.008608, 1.43e+06, ['sandybrown', 'sandybrown'], "Pyroifoi RD-Z d1-223 3 c"]  # Rocky body
-            body8Stats = [[0.0, -408850000000.0, 0.0], [13591.0, 0.0, 0.0], earthMass * 1.773461, 7.20e+06, ['deepskyblue', 'deepskyblue'], "Madman's Halo"]  # Earth-like world
-            body9Stats = [[0.0, -408700401992.1, 0.0], [11417.2, 0.0, 0.0], earthMass * 0.000172, 3.93e+05, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 4 a"]  # Rocky body
+            body4Stats = [[0.0, -399010000000.0, 0.0], [20968.0, 0.0, 0.0], earthMass * 1342.156738, 7.60e+07, ['mediumblue', 'mediumblue'], "Pyroifoi RD-Z d1-223 3", 0]  # Class III gas giant
+            body5Stats = [[643399138.1, -399010000000.0, 0.0], [20968.0, 28835.3, 0.0], earthMass * 0.011476, 1.57e+06, ['gold', 'gold'], "Pyroifoi RD-Z d1-223 3 a", 3]  # Rocky body
+            body6Stats = [[1044040809.0, -399010000000.0, 0.0], [20968.0, 23063.4, 0.0], earthMass * 0.010893, 1.55e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 3 b", 3]  # Rocky body
+            body7Stats = [[1051164498.5, -399010000000.0, 0.0], [20968.0, 22018.8, 0.0], earthMass * 0.008608, 1.43e+06, ['sandybrown', 'sandybrown'], "Pyroifoi RD-Z d1-223 3 c", 3]  # Rocky body
+            body8Stats = [[0.0, -408850000000.0, 0.0], [13591.0, 0.0, 0.0], earthMass * 1.773461, 7.20e+06, ['deepskyblue', 'deepskyblue'], "Madman's Halo", 0]  # Earth-like world
+            body9Stats = [[0.0, -408700401992.1, 0.0], [11417.2, 0.0, 0.0], earthMass * 0.000172, 3.93e+05, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 4 a", 7]  # Rocky body
             # Binary Pair 2: Planets 5 & 6
-            body10Stats = [[-583690000000.0, 0.0, 0.0], [0.0, -17475.0, 0.0], earthMass * 1308.151978, 7.59e+07, ['mediumblue', 'mediumblue'], "Pyroifoi RD-Z d1-223 5"]  # Class III gas giant
-            body11Stats = [[-582865087111.6, 0.0, 0.0], [0.0, 7666.3, 0.0], earthMass * 0.004294, 1.14e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 5 a"]  # Rocky body
-            body12Stats = [[-582862561374.6, 0.0, 0.0], [0.0, 8489.5, 0.0], earthMass * 0.000213, 4.28e+05, ['grey', 'grey'], "Pyroifoi RD-Z d1-223 5 a a"]  # Rocky body
-            body13Stats = [[-583690000000.0, 1070105762.3, 0.0], [-22073.9, -17475.0, 0.0], earthMass * 0.001776, 8.51e+05, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 5 b"]  # Rocky body
-            body14Stats = [[-585759554317.0, 0.0, 0.0], [-0.0, -33347.8, 0.0], earthMass * 0.006879, 1.33e+06, ['sandybrown', 'sandybrown'], "Pyroifoi RD-Z d1-223 5 c"]  # Rocky body
-            body15Stats = [[-583690000000.0, -2694282701.8, 0.0], [13911.4, -17475.0, 0.0], earthMass * 0.006498, 1.31e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 5 d"]  # Rocky body
-            body16Stats = [[-596630000000.0, 0.0, 0.0], [0.0, -11052.0, 0.0], earthMass * 31.564976, 3.41e+07, ['whitesmoke', 'whitesmoke'], "Pyroifoi RD-Z d1-223 6"]  # Class II gas giant
-            body17Stats = [[-596411065182.7, 0.0, 0.0], [0.0, -3471.3, 0.0], earthMass * 0.00018, 3.98e+05, ['gold', 'gold'], "Pyroifoi RD-Z d1-223 6 a"]  # Rocky body
+            body10Stats = [[-583690000000.0, 0.0, 0.0], [0.0, -17475.0, 0.0], earthMass * 1308.151978, 7.59e+07, ['mediumblue', 'mediumblue'], "Pyroifoi RD-Z d1-223 5", 0]  # Class III gas giant
+            body11Stats = [[-582865087111.6, 0.0, 0.0], [0.0, 7666.3, 0.0], earthMass * 0.004294, 1.14e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 5 a", 9]  # Rocky body
+            body12Stats = [[-582862561374.6, 0.0, 0.0], [0.0, 8489.5, 0.0], earthMass * 0.000213, 4.28e+05, ['grey', 'grey'], "Pyroifoi RD-Z d1-223 5 a a", 9]  # Rocky body
+            body13Stats = [[-583690000000.0, 1070105762.3, 0.0], [-22073.9, -17475.0, 0.0], earthMass * 0.001776, 8.51e+05, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 5 b", 9]  # Rocky body
+            body14Stats = [[-585759554317.0, 0.0, 0.0], [-0.0, -33347.8, 0.0], earthMass * 0.006879, 1.33e+06, ['sandybrown', 'sandybrown'], "Pyroifoi RD-Z d1-223 5 c", 9]  # Rocky body
+            body15Stats = [[-583690000000.0, -2694282701.8, 0.0], [13911.4, -17475.0, 0.0], earthMass * 0.006498, 1.31e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 5 d", 9]  # Rocky body
+            body16Stats = [[-596630000000.0, 0.0, 0.0], [0.0, -11052.0, 0.0], earthMass * 31.564976, 3.41e+07, ['whitesmoke', 'whitesmoke'], "Pyroifoi RD-Z d1-223 6", 0]  # Class II gas giant
+            body17Stats = [[-596411065182.7, 0.0, 0.0], [0.0, -3471.3, 0.0], earthMass * 0.00018, 3.98e+05, ['gold', 'gold'], "Pyroifoi RD-Z d1-223 6 a", 15]  # Rocky body
             # Binary Pair 3: Bodies 7 & 8
-            body18Stats = [[0.0, 950720000000.0, 0.0], [-13675.0, 0.0, 0.0], solarMass * 0.011719, 7e7 * 0.0603, ['darkmagenta', 'darkmagenta'], "Pyroifoi RD-Z d1-223 7"]  # Y (Brown dwarf) Star
-            body19Stats = [[1937555573.4, 950720000000.0, 0.0], [-13675.0, 28336.0, 0.0], earthMass * 0.006953, 1.33e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 7 a"]  # Rocky body
-            body20Stats = [[0.0, 953432368185.1, 0.0], [-37624.2, 0.0, 0.0], earthMass * 0.006178, 1.28e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 7 b"]  # Rocky body
-            body21Stats = [[-3458488009.2, 950720000000.0, 0.0], [-13675.0, -21209.1, 0.0], earthMass * 0.005175, 1.21e+06, ['sandybrown', 'sandybrown'], "Pyroifoi RD-Z d1-223 7 c"]  # Rocky body
-            body22Stats = [[-0.0, 945995000660.1, 0.0], [4470.3, -0.0, 0.0], earthMass * 0.004555, 1.16e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 7 d"]  # Rocky body
-            body23Stats = [[4509413714.8, 955229413714.8, 0.0], [-24719.2, 11044.2, 0.0], earthMass * 0.003913, 1.10e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 7 e"]  # Rocky body
-            body24Stats = [[-6672850099.7, 957392850099.7, 0.0], [-22754.0, -9079.0, 0.0], earthMass * 0.02264, 1.96e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 7 f"]  # Rocky body
-            body25Stats = [[0.0, 997120000000.0, 0.0], [-7836.0, 0.0, 0.0], earthMass * 69.959572, 4.04e+07, ['peru', 'peru'], "Pyroifoi RD-Z d1-223 8"]  # Gas giant with ammonia-based life
+            body18Stats = [[0.0, 950720000000.0, 0.0], [-13675.0, 0.0, 0.0], solarMass * 0.011719, 7e7 * 0.0603, ['darkmagenta', 'darkmagenta'], "Pyroifoi RD-Z d1-223 7", 0]  # Y (Brown dwarf) Star
+            body19Stats = [[1937555573.4, 950720000000.0, 0.0], [-13675.0, 28336.0, 0.0], earthMass * 0.006953, 1.33e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 7 a", 17]  # Rocky body
+            body20Stats = [[0.0, 953432368185.1, 0.0], [-37624.2, 0.0, 0.0], earthMass * 0.006178, 1.28e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 7 b", 17]  # Rocky body
+            body21Stats = [[-3458488009.2, 950720000000.0, 0.0], [-13675.0, -21209.1, 0.0], earthMass * 0.005175, 1.21e+06, ['sandybrown', 'sandybrown'], "Pyroifoi RD-Z d1-223 7 c", 17]  # Rocky body
+            body22Stats = [[-0.0, 945995000660.1, 0.0], [4470.3, -0.0, 0.0], earthMass * 0.004555, 1.16e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 7 d", 17]  # Rocky body
+            body23Stats = [[4509413714.8, 955229413714.8, 0.0], [-24719.2, 11044.2, 0.0], earthMass * 0.003913, 1.10e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 7 e", 17]  # Rocky body
+            body24Stats = [[-6672850099.7, 957392850099.7, 0.0], [-22754.0, -9079.0, 0.0], earthMass * 0.02264, 1.96e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 7 f", 17]  # Rocky body
+            body25Stats = [[0.0, 997120000000.0, 0.0], [-7836.0, 0.0, 0.0], earthMass * 69.959572, 4.04e+07, ['peru', 'peru'], "Pyroifoi RD-Z d1-223 8", 0]  # Gas giant with ammonia-based life
             # Binary Pair 4: Planets 9 & 10
-            body26Stats = [[1403700000000.0, 0.0, 0.0], [0.0, 11209.0, 0.0], earthMass * 2188.751709, 7.08e+07, ['mediumblue', 'mediumblue'], "Pyroifoi RD-Z d1-223 9"]  # Class III gas giant
-            body27Stats = [[1404319433363.4, 0.0, 0.0], [0.0, 48737.7, 0.0], earthMass * 0.16297, 3.48e+06, ['lightsteelblue', "lightsteelblue"], "Pyroifoi RD-Z d1-223 9 a"]  # High metal content world
-            body28Stats = [[1403700000000.0, 1106238462.6, 0.0], [-28082.6, 11209.0, 0.0], earthMass * 0.202102, 3.73e+06, ['sandybrown', 'sandybrown'], "Pyroifoi RD-Z d1-223 9 b"]  # High metal content world
-            body29Stats = [[1401586677626.1, 0.0, 0.0], [-0.0, -9108.9, 0.0], earthMass * 0.787346, 5.67e+06, ['orangered', 'orangered'], "Pyroifoi RD-Z d1-223 9 c"]  # High metal content world
-            body30Stats = [[1403700000000.0, -4934228254.2, 0.0], [13296.9, 11209.0, 0.0], earthMass * 12.583962, 3.20e+07, ['peru', 'peru'], "Pyroifoi RD-Z d1-223 9 d"]  # Gas giant with ammonia-based life
-            body31Stats = [[1409717486834.0, 6017486834.0, 0.0], [-7159.5, 18368.5, 0.0], earthMass * 42.22065, 4.55e+07, ['whitesmoke', 'whitesmoke'], "Pyroifoi RD-Z d1-223 9 e"]  # Class I gas giant
-            body32Stats = [[1409977787956.3, 6017486834.0, 0.0], [-7159.5, 26409.0, 0.0], earthMass * 0.03382, 2.82e+06, ['snow', 'snow'], "Pyroifoi RD-Z d1-223 9 e a"]  # Icy body
-            body33Stats = [[1460000000000.0, 0.0, 0.0], [0.0, 7253.0, 0.0], earthMass * 20.416899, 1.76e+07, ['snow', 'snow'], "Pyroifoi RD-Z d1-223 10"]  # Icy body
+            body26Stats = [[1403700000000.0, 0.0, 0.0], [0.0, 11209.0, 0.0], earthMass * 2188.751709, 7.08e+07, ['mediumblue', 'mediumblue'], "Pyroifoi RD-Z d1-223 9", 0]  # Class III gas giant
+            body27Stats = [[1404319433363.4, 0.0, 0.0], [0.0, 48737.7, 0.0], earthMass * 0.16297, 3.48e+06, ['lightsteelblue', "lightsteelblue"], "Pyroifoi RD-Z d1-223 9 a", 25]  # High metal content world
+            body28Stats = [[1403700000000.0, 1106238462.6, 0.0], [-28082.6, 11209.0, 0.0], earthMass * 0.202102, 3.73e+06, ['sandybrown', 'sandybrown'], "Pyroifoi RD-Z d1-223 9 b", 25]  # High metal content world
+            body29Stats = [[1401586677626.1, 0.0, 0.0], [-0.0, -9108.9, 0.0], earthMass * 0.787346, 5.67e+06, ['orangered', 'orangered'], "Pyroifoi RD-Z d1-223 9 c", 25]  # High metal content world
+            body30Stats = [[1403700000000.0, -4934228254.2, 0.0], [13296.9, 11209.0, 0.0], earthMass * 12.583962, 3.20e+07, ['peru', 'peru'], "Pyroifoi RD-Z d1-223 9 d", 25]  # Gas giant with ammonia-based life
+            body31Stats = [[1409717486834.0, 6017486834.0, 0.0], [-7159.5, 18368.5, 0.0], earthMass * 42.22065, 4.55e+07, ['whitesmoke', 'whitesmoke'], "Pyroifoi RD-Z d1-223 9 e", 25]  # Class I gas giant
+            body32Stats = [[1409977787956.3, 6017486834.0, 0.0], [-7159.5, 26409.0, 0.0], earthMass * 0.03382, 2.82e+06, ['snow', 'snow'], "Pyroifoi RD-Z d1-223 9 e a", 30]  # Icy body
+            body33Stats = [[1460000000000.0, 0.0, 0.0], [0.0, 7253.0, 0.0], earthMass * 20.416899, 1.76e+07, ['snow', 'snow'], "Pyroifoi RD-Z d1-223 10", 0]  # Icy body
             self.listOfBodies = [body1Stats, body2Stats, body3Stats, body4Stats, body5Stats, body6Stats,
                                  body7Stats, body8Stats, body9Stats, body10Stats, body11Stats, body12Stats,
                                  body13Stats, body14Stats, body15Stats, body16Stats, body17Stats, body18Stats,
