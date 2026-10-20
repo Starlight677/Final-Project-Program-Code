@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Added a simplification system to the graph drawing.">
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Graph display code optimised for fast display on long-running simulations. NOTE: Significantly increases code complexity.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/RunSimulationPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/RunSimulationPage.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -80,14 +82,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1779351571015</updated>
-    </task>
-    <task id="LOCAL-00019" summary="Added window to Load System page displaying information about the selected simulation.">
-      <option name="closed" value="true" />
-      <created>1783004127226</created>
-      <option name="number" value="00019" />
-      <option name="presentableId" value="LOCAL-00019" />
-      <option name="project" value="LOCAL" />
-      <updated>1783004127226</updated>
     </task>
     <task id="LOCAL-00020" summary="Added the Binary Stars preset.">
       <option name="closed" value="true" />
@@ -473,7 +467,15 @@
       <option name="project" value="LOCAL" />
       <updated>1792492448061</updated>
     </task>
-    <option name="localTasksCounter" value="68" />
+    <task id="LOCAL-00068" summary="Graph display code optimised for fast display on long-running simulations. NOTE: Significantly increases code complexity.">
+      <option name="closed" value="true" />
+      <created>1792507959710</created>
+      <option name="number" value="00068" />
+      <option name="presentableId" value="LOCAL-00068" />
+      <option name="project" value="LOCAL" />
+      <updated>1792507959710</updated>
+    </task>
+    <option name="localTasksCounter" value="69" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -488,7 +490,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Added AJAX to the rest of the forms." />
     <MESSAGE value="Prepared for production." />
     <MESSAGE value="Added requirements.txt." />
     <MESSAGE value="Added system start in main.py." />
@@ -513,6 +514,7 @@
     <MESSAGE value="Deployed functional system for tracking paths relative to a body." />
     <MESSAGE value="Cleaned up the path tracking system." />
     <MESSAGE value="Added a simplification system to the graph drawing." />
-    <option name="LAST_COMMIT_MESSAGE" value="Added a simplification system to the graph drawing." />
+    <MESSAGE value="Graph display code optimised for fast display on long-running simulations. NOTE: Significantly increases code complexity." />
+    <option name="LAST_COMMIT_MESSAGE" value="Graph display code optimised for fast display on long-running simulations. NOTE: Significantly increases code complexity." />
   </component>
 </project>

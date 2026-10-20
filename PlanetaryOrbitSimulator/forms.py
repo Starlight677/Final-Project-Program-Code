@@ -5,6 +5,14 @@ class SimulationNameForm(forms.Form):
     simulationName = forms.CharField(label="Simulation Save Name", max_length=100, required=False)
     simulationSize = forms.FloatField(label="View Window Size (AU)", required=False)
     simulationTimePerUpdate = forms.FloatField(label="Days per Simulation Update", required=False)
+    focusedBody = forms.ChoiceField(label="Focused Body", required=False)
+
+    def __init__(self, *args, body_choices=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if body_choices is not None:
+            self.fields['focusedBody'].choices = body_choices
+        else:
+            del self.fields['focusedBody']
 
 class BodyDetailsForm(forms.Form):
     # Used for editing a body in the simulation

@@ -159,13 +159,20 @@ def loadingPage(request, saveIndex = 0):
 
     return render(request, "LoadSystemPage.html", context)
 
-def makeSimulationForm(request, storedSim, simulationEngine):
+def makeSimulationForm(request, storedSim, simulationEngine, includeFocusBody=False):
     simulationDefaultValues = {"simulationName": storedSim.name,
                                "simulationSize": simulationEngine.simulationSize,
                                "simulationTimePerUpdate": simulationEngine.ticksPerPageUpdate /
                                                           (86400 / simulationEngine.secondsPerSimulationTick), }
+    body_choices = None
+    if includeFocusBody:
+        body_choices = [(-1, "None")] + [
+            (i, b[5]) for i, b in enumerate(simulationEngine.listOfBodies)
+        ]
+        simulationDefaultValues["focusedBody"] = simulationEngine.focusBody
     infoForm = SimulationNameForm(request.POST or None,
-                                  initial=simulationDefaultValues)  # Allow configuring information
+                                  initial=simulationDefaultValues,
+                                  body_choices=body_choices)  # Allow configuring information
 
     return storedSim, simulationEngine, infoForm
 
@@ -340,10 +347,10 @@ def runSimulation(request, dontRunSimulation = 0, reverseSimulation = 0):
     # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
     simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
 
-    storedSim, simulationEngine, infoForm = makeSimulationForm(request, storedSim, simulationEngine)
-
     storedSim, simulationEngine, isSimulationInReverse, = (
         runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, dontRunSimulation, setTicks))
+
+    storedSim, simulationEngine, infoForm = makeSimulationForm(request, storedSim, simulationEngine, includeFocusBody=True)
 
     # Calculate values for display
     daysElapsed = round((simulationEngine.simulationTime/86400)*simulationEngine.secondsPerSimulationTick, 2) # Simulation time in days
@@ -386,7 +393,14 @@ def updateSimulationImage(request, reverseSimulation = 0):
         runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, 0, setTicks))
 
     daysElapsed = round((simulationEngine.simulationTime / 86400) * simulationEngine.secondsPerSimulationTick, 2)  # Simulation time in days
-    constructedResponse = JsonResponse({"daysElapsed": daysElapsed, "isSimulationInReverse": isSimulationInReverse})
+    focusChoices = [[-1, "None"]] + [[i, b[5]] for i, b in enumerate(simulationEngine.listOfBodies)]
+    constructedResponse = JsonResponse({
+        "daysElapsed": daysElapsed,
+        "isSimulationInReverse": isSimulationInReverse,
+        "focusBody": simulationEngine.focusBody,
+        "focusBodyName": simulationEngine.focusBodyName,
+        "focusChoices": focusChoices,
+    })
     return constructedResponse
 
 def changeSimulationFocus(request):
@@ -406,6 +420,7 @@ def changeSimulationFocus(request):
                         if simulationEngine.focusBody != -1 else "None (Static Grid)")
     updatedImageURL = "/media/latestSimulation" + user.username + ".png"
     constructedResponse = JsonResponse({"updatedImageURL": updatedImageURL,
+                                        "focusBody": simulationEngine.focusBody,
                                         "focusBodyName": simulationEngine.focusBodyName,
                                         "relativeBodyName": relativeBodyName})
     return constructedResponse
@@ -418,13 +433,20 @@ def processRunForm(request, isCreating = 0):
     # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
     simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
 
-    runForm = SimulationNameForm(request.POST)
+    body_choices = [(-1, "None")] + [
+        (i, b[5]) for i, b in enumerate(simulationEngine.listOfBodies)
+    ]
+    runForm = SimulationNameForm(request.POST, body_choices=body_choices)
 
     if runForm.is_valid():
         storedSim.name = runForm.cleaned_data["simulationName"]
         simulationEngine.simulationSize = runForm.cleaned_data["simulationSize"]
         adjustedTimePerTick =  round(runForm.cleaned_data["simulationTimePerUpdate"] * 86400)
         simulationEngine.ticksPerPageUpdate = adjustedTimePerTick  / simulationEngine.secondsPerSimulationTick
+        focusedBodyVal = runForm.cleaned_data.get("focusedBody")
+        if focusedBodyVal not in (None, ""):
+            simulationEngine.focusBody = int(focusedBodyVal)
+            simulationEngine.updateFocusPoint()
     else:
         raise ValueError
 
@@ -446,7 +468,8 @@ def processRunForm(request, isCreating = 0):
                                    3)  # Calculates simulation diameter in Astronomical Units to 3DP
 
     response = {"simulationName": storedSim.name, "daysPerTick": daysPerTick, "simulationSizeAU": AUStatedSimulationSize,
-                "simulationSizeKM": fStatedSimulationSize}
+                "simulationSizeKM": fStatedSimulationSize, "focusBody": simulationEngine.focusBody,
+                "focusBodyName": simulationEngine.focusBodyName}
     return JsonResponse(response)
 
 def processEditForm(request, selectedBody):

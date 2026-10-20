@@ -231,6 +231,21 @@
                     if (typeof(data.focusBodyName) != "undefined") {
                         $("#focusBodyBox").text("Focused Body: " + data.focusBodyName);
                     }
+                    if (typeof(data.focusChoices) != "undefined") {
+                        var $select = $("#id_focusedBody");
+                        if ($select.find("option").length !== data.focusChoices.length) {
+                            $select.empty();
+                            $.each(data.focusChoices, function(index, item) {
+                                $select.append($('<option>', {
+                                    value: item[0],
+                                    text: item[1]
+                                }));
+                            });
+                        }
+                        if (typeof(data.focusBody) != "undefined") {
+                            $select.val(String(data.focusBody));
+                        }
+                    }
                 },
 
                 error: function() {
@@ -257,6 +272,9 @@
                 success: function(data) {
                     $("#simImage").attr('src', simulationImageURL());
                     $("#focusBodyBox").text("Focused Body: " + data.focusBodyName);
+                    if (typeof(data.focusBody) != "undefined") {
+                        $("#id_focusedBody").val(String(data.focusBody));
+                    }
                 },
 
                 error: function() {
@@ -281,6 +299,12 @@
                     $("#nameBox").text("Simulation Name: " + data.simulationName);
                     $("#displaySizeBox").text("Simulation Display Size: " + data.simulationSizeKM + "km / " + data.simulationSizeAU + "AU");
                     $("#daysPerTickBox").text("Days Per Simulation Tick: " + data.daysPerTick);
+                    if (typeof(data.focusBodyName) != "undefined") {
+                        $("#focusBodyBox").text("Focused Body: " + data.focusBodyName);
+                    }
+                    if (typeof(data.focusBody) != "undefined") {
+                        $("#id_focusedBody").val(String(data.focusBody));
+                    }
                 },
 
                 error: function() {
