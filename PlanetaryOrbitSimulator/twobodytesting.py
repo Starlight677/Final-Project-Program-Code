@@ -63,7 +63,7 @@ class PlanetarySimulationEngine:
             return False
 
         # Used for checking if a body's influence is significant or not
-        if sum(np.abs(body1Acceleration)) >= 1e-5 or sum(np.abs(body2Acceleration)) >= 1e-5:
+        if sum(np.abs(body1Acceleration)) >= 1e-6 or sum(np.abs(body2Acceleration)) >= 1e-6:
             exceedsThreshold = True
         else:
             exceedsThreshold = False
@@ -249,7 +249,7 @@ class PlanetarySimulationEngine:
         matplotlib.use('agg') # Mode for not having issues with Django threading
         plt.style.use("fast")
         matplotlib.rcParams['path.simplify'] = True
-        matplotlib.rcParams['path.simplify_threshold'] = 1.0
+        matplotlib.rcParams['path.simplify_threshold'] = 0.2
         self.updateFocusPoint() # Plot the boundaries of the graph
 
         fig = plt.figure(figsize=(6.9, 6.9))
@@ -278,15 +278,19 @@ class PlanetarySimulationEngine:
         plt.ylabel("Distance (AU)")
         plt.grid(True)
 
-        AU = 1.495979e11
-        # For each body, draw both the line of previous path and marker of current position.
-        # Each body can have its orbit path drawn relative to another body's position.
-        for i, body in enumerate(reversed(self.listOfBodies)):
-            try:
-                bodyIndex = len(self.listOfBodies) - (i + 1)
-                self.plotBodyPoints(plt, body, bodyIndex)
-            except IndexError:  # If point not found for body, continue
-                continue
+        # Per-frame cache for reference body slices to avoid repeated list->ndarray conversions
+        self._refSliceCache = {}
+        try:
+            # For each body, draw both the line of previous path and marker of current position.
+            # Each body can have its orbit path drawn relative to another body's position.
+            for i, body in enumerate(reversed(self.listOfBodies)):
+                try:
+                    bodyIndex = len(self.listOfBodies) - (i + 1)
+                    self.plotBodyPoints(ax, body, bodyIndex)
+                except IndexError:  # If point not found for body, continue
+                    continue
+        finally:
+            self._refSliceCache = None
 
         # Save graph to file
         plt.savefig('media/latestSimulation' + user.username + '.png')
@@ -306,6 +310,254 @@ class PlanetarySimulationEngine:
         stride = max(1, olderLen // maxOlderPoints)
         sampledList = points[:olderLen:stride] + points[olderLen:totalLen]
         return np.asarray(sampledList, dtype=float)
+
+    def _smoothOrbitPoints(self, x, y, targetPoints=120):
+        """
+        Vectorized centripetal Catmull-Rom spline interpolation for sparse orbital arcs.
+        Precomputes shared barycentric basis weights across X and Y to minimize
+        temporary array allocations and divisions.
+        """
+        n = x.size
+        if n < 4 or n >= targetPoints:
+            return x, y
+
+        subdivisions = max(2, min(8, int(np.ceil(targetPoints / max(1, n - 1)))))
+
+        # Second-order quadratic extrapolation for phantom boundary control points
+        xExt = np.empty(n + 2, dtype=float)
+        yExt = np.empty(n + 2, dtype=float)
+        xExt[1:-1] = x
+        yExt[1:-1] = y
+        xExt[0] = 3.0 * x[0] - 3.0 * x[1] + x[2]
+        yExt[0] = 3.0 * y[0] - 3.0 * y[1] + y[2]
+        xExt[-1] = 3.0 * x[-1] - 3.0 * x[-2] + x[-3]
+        yExt[-1] = 3.0 * y[-1] - 3.0 * y[-2] + y[-3]
+
+        # Centripetal knot spacing (alpha = 0.5) prevents cusps on uneven end steps
+        dx = np.diff(xExt)
+        dy = np.diff(yExt)
+        dt = np.sqrt(np.maximum(np.hypot(dx, dy), 1e-12))
+        t = np.zeros(n + 2, dtype=float)
+        t[1:] = np.cumsum(dt)
+
+        t0, t1, t2, t3 = t[:-3, None], t[1:-2, None], t[2:-1, None], t[3:, None]
+        x0, x1, x2, x3 = xExt[:-3, None], xExt[1:-2, None], xExt[2:-1, None], xExt[3:, None]
+        y0, y1, y2, y3 = yExt[:-3, None], yExt[1:-2, None], yExt[2:-1, None], yExt[3:, None]
+
+        frac = np.linspace(0.0, 1.0, subdivisions, endpoint=False)[None, :]
+        ti = t1 + frac * (t2 - t1)
+
+        # Shared normalized interpolation weights (5 divisions instead of 24)
+        w10 = (ti - t0) / np.maximum(t1 - t0, 1e-12)
+        w21 = (ti - t1) / np.maximum(t2 - t1, 1e-12)
+        w32 = (ti - t2) / np.maximum(t3 - t2, 1e-12)
+        w20 = (ti - t0) / np.maximum(t2 - t0, 1e-12)
+        w31 = (ti - t1) / np.maximum(t3 - t1, 1e-12)
+
+        om10 = 1.0 - w10
+        om21 = 1.0 - w21
+        om32 = 1.0 - w32
+        om20 = 1.0 - w20
+        om31 = 1.0 - w31
+
+        a1x = om10 * x0 + w10 * x1
+        a2x = om21 * x1 + w21 * x2
+        a3x = om32 * x2 + w32 * x3
+        b1x = om20 * a1x + w20 * a2x
+        b2x = om31 * a2x + w31 * a3x
+        cx = om21 * b1x + w21 * b2x
+
+        a1y = om10 * y0 + w10 * y1
+        a2y = om21 * y1 + w21 * y2
+        a3y = om32 * y2 + w32 * y3
+        b1y = om20 * a1y + w20 * a2y
+        b2y = om31 * a2y + w31 * a3y
+        cy = om21 * b1y + w21 * b2y
+
+        return np.append(cx.ravel(), x[-1]), np.append(cy.ravel(), y[-1])
+
+    def _trimToSingleRevolution(self, dx, dy, cumTheta, revIdx):
+        """
+        Trims a relative trajectory array `(dx, dy)` at the exact interpolated point
+        where the backward-swept angle reaches 2*pi radians.
+        """
+        segStart = (dx.size - 2) - revIdx
+        segEnd = segStart + 1
+        prevTheta = float(cumTheta[revIdx - 1]) if revIdx > 0 else 0.0
+        currTheta = float(cumTheta[revIdx])
+        alpha = (2.0 * np.pi - prevTheta) / max(currTheta - prevTheta, 1e-12)
+        alpha = float(np.clip(alpha, 0.0, 1.0))
+
+        startX = dx[segEnd] + alpha * (dx[segStart] - dx[segEnd])
+        startY = dy[segEnd] + alpha * (dy[segStart] - dy[segEnd])
+        return np.concatenate(([startX], dx[segEnd:])), np.concatenate(([startY], dy[segEnd:]))
+
+    def _getWindowArrays(self, trailX, trailY, startIdx, totalLen, stride,
+                         refBodyIndex=-1, refXPoints=None, refYPoints=None):
+        """
+        Slices `(trailX, trailY)` and subtracts cached reference body slices when
+        `refXPoints` is provided.
+        """
+        tx = np.asarray(trailX[startIdx:totalLen:stride], dtype=float)
+        ty = np.asarray(trailY[startIdx:totalLen:stride], dtype=float)
+        if refXPoints is None or refYPoints is None:
+            return tx, ty
+
+        cache = getattr(self, '_refSliceCache', None)
+        cacheKey = (refBodyIndex, startIdx, totalLen, stride)
+        if cache is not None and cacheKey in cache:
+            rx, ry = cache[cacheKey]
+        else:
+            rx = np.asarray(refXPoints[startIdx:totalLen:stride], dtype=float)
+            ry = np.asarray(refYPoints[startIdx:totalLen:stride], dtype=float)
+            if cache is not None:
+                cache[cacheKey] = (rx, ry)
+
+        return tx - rx, ty - ry
+
+    def _extractOrbitTrail(self, trailX, trailY, currentX, currentY,
+                           refXPoints=None, refYPoints=None, refCurrentX=0.0, refCurrentY=0.0,
+                           refBodyIndex=-1, minViewX=None, maxViewX=None,
+                           minViewY=None, maxViewY=None, pixelSizeAU=0.0):
+        """
+        Extracts a clean, single-revolution orbital trail in world coordinates.
+        Uses angular-rate guided tail windows so any orbital period is extracted in
+        O(1) time independent of total simulation length, with early viewport/sub-pixel
+        culling prior to spline interpolation.
+        """
+        useRelative = refXPoints is not None and refYPoints is not None
+        totalLen = min(len(trailX), len(refXPoints)) if useRelative else len(trailX)
+        if totalLen == 0:
+            return None, None
+
+        currDX = (currentX - refCurrentX) if useRelative else currentX
+        currDY = (currentY - refCurrentY) if useRelative else currentY
+        originX = refCurrentX if useRelative else 0.0
+        originY = refCurrentY if useRelative else 0.0
+
+        dx = None
+        dy = None
+        cumTheta = None
+        revHits = None
+
+        winSize = min(128, totalLen)
+        visitedTotal = False
+
+        while True:
+            if winSize >= totalLen:
+                winSize = totalLen
+                visitedTotal = True
+
+            stride = max(1, winSize // 1500)
+            # Align startIdx so the slice ends on `totalLen - 1`
+            stepsBack = (winSize - 1) // stride
+            startIdx = max(0, (totalLen - 1) - stepsBack * stride)
+
+            dx, dy = self._getWindowArrays(
+                trailX, trailY, startIdx, totalLen, stride,
+                refBodyIndex, refXPoints if useRelative else None, refYPoints if useRelative else None
+            )
+
+            # Append live body position so the trail connects directly to the marker
+            dx = np.append(dx, currDX)
+            dy = np.append(dy, currDY)
+
+            # Remove consecutive identical points to keep tangents and angles well-defined
+            if dx.size > 1:
+                stepSq = np.diff(dx) ** 2 + np.diff(dy) ** 2
+                keep = np.concatenate(([True], stepSq > 1e-24))
+                dx = dx[keep]
+                dy = dy[keep]
+
+            if dx.size >= 2:
+                cross = dx[:-1] * dy[1:] - dy[:-1] * dx[1:]
+                dot = dx[:-1] * dx[1:] + dy[:-1] * dy[1:]
+                dTheta = np.arctan2(cross, dot)
+                cumTheta = np.abs(np.cumsum(dTheta[::-1]))
+                revHits = np.flatnonzero(cumTheta >= 2.0 * np.pi)
+                if revHits.size > 0 or visitedTotal:
+                    break
+
+                # Estimate window size needed for 1 full revolution from measured angular rate
+                swept = float(cumTheta[-1])
+                if swept > 1e-3:
+                    estWin = int(np.ceil(winSize * (2.0 * np.pi / swept) * 1.75))
+                    nextWin = max(winSize * 4, min(totalLen, max(1024, estWin)))
+                else:
+                    nextWin = max(winSize * 8, 1024)
+                winSize = min(totalLen, nextWin)
+            else:
+                if visitedTotal:
+                    break
+                winSize = min(totalLen, max(1024, winSize * 8))
+
+        if dx is None or dx.size == 0:
+            return None, None
+
+        if revHits is not None and revHits.size > 0:
+            revIdx = int(revHits[0])
+            segStart = (dx.size - 2) - revIdx
+            orbitPointsCount = dx.size - segStart
+            guardStart = max(0, segStart - 1)
+
+            # Early viewport and sub-pixel culling on the single revolution before spline work
+            revDX = dx[guardStart:]
+            revDY = dy[guardStart:]
+            xSpan = float(revDX.max() - revDX.min())
+            ySpan = float(revDY.max() - revDY.min())
+
+            if pixelSizeAU > 0.0 and xSpan < pixelSizeAU and ySpan < pixelSizeAU:
+                return None, None
+
+            if minViewX is not None:
+                marginX = 0.05 * xSpan
+                marginY = 0.05 * ySpan
+                if (originX + float(revDX.max()) + marginX < minViewX or
+                        originX + float(revDX.min()) - marginX > maxViewX or
+                        originY + float(revDY.max()) + marginY < minViewY or
+                        originY + float(revDY.min()) - marginY > maxViewY):
+                    return None, None
+
+            # Scale spline target points to on-screen orbit size (capped between 36 and 120)
+            if pixelSizeAU > 0.0:
+                screenDiamPx = max(xSpan, ySpan) / pixelSizeAU
+                targetPts = int(np.clip(np.ceil(screenDiamPx * 2.5), 36, 120))
+            else:
+                targetPts = 120
+
+            if orbitPointsCount < targetPts and revDX.size >= 4:
+                dx, dy = self._smoothOrbitPoints(revDX, revDY, targetPoints=targetPts)
+                cross = dx[:-1] * dy[1:] - dy[:-1] * dx[1:]
+                dot = dx[:-1] * dx[1:] + dy[:-1] * dy[1:]
+                cumTheta = np.abs(np.cumsum(np.arctan2(cross, dot)[::-1]))
+                revHits = np.flatnonzero(cumTheta >= 2.0 * np.pi)
+                if revHits.size > 0:
+                    dx, dy = self._trimToSingleRevolution(dx, dy, cumTheta, int(revHits[0]))
+            else:
+                dx, dy = self._trimToSingleRevolution(dx, dy, cumTheta, revIdx)
+        else:
+            # Partial orbit (< 2*pi): early cull before smoothing
+            xSpan = float(dx.max() - dx.min())
+            ySpan = float(dy.max() - dy.min())
+            if pixelSizeAU > 0.0 and xSpan < pixelSizeAU and ySpan < pixelSizeAU:
+                return None, None
+            if minViewX is not None:
+                marginX = 0.05 * xSpan
+                marginY = 0.05 * ySpan
+                if (originX + float(dx.max()) + marginX < minViewX or
+                        originX + float(dx.min()) - marginX > maxViewX or
+                        originY + float(dy.max()) + marginY < minViewY or
+                        originY + float(dy.min()) - marginY > maxViewY):
+                    return None, None
+
+            if dx.size >= 4 and dx.size < 120 and cumTheta is not None and cumTheta.size > 0:
+                totalSweep = float(cumTheta[-1])
+                meanStepAngle = totalSweep / dx.size
+                if meanStepAngle > (2.0 * np.pi / 90.0):
+                    targetPts = max(int(np.ceil(totalSweep / (2.0 * np.pi / 120.0))), dx.size + 4)
+                    dx, dy = self._smoothOrbitPoints(dx, dy, targetPoints=min(120, targetPts))
+
+        return originX + dx, originY + dy
 
     def plotBodyPoints(self, plt, body, bodyIndex):
         # Plot the points for a specific body on the graph
@@ -330,30 +582,24 @@ class PlanetarySimulationEngine:
                 and len(self.bodyPoints[refBodyIndex][0]) > 0
         )
 
-        plotX = None
-        plotY = None
-
         if useRelativeFrame: # Draw orbit lines around reference body
             refXPoints = self.bodyPoints[refBodyIndex][0]
             refYPoints = self.bodyPoints[refBodyIndex][1]
             refCurrentX = self.listOfBodies[refBodyIndex][0][0] / AU
             refCurrentY = self.listOfBodies[refBodyIndex][0][1] / AU
 
-            minLen = min(len(trailX), len(refXPoints))
-            if minLen > 0:
-                sampledTrailX = self._sampleTrailPoints(trailX, minLen)
-                sampledTrailY = self._sampleTrailPoints(trailY, minLen)
-                sampledRefX = self._sampleTrailPoints(refXPoints, minLen)
-                sampledRefY = self._sampleTrailPoints(refYPoints, minLen)
-
-                plotX = refCurrentX + (sampledTrailX - sampledRefX)
-                plotY = refCurrentY + (sampledTrailY - sampledRefY)
+            plotX, plotY = self._extractOrbitTrail(
+                trailX, trailY, currentX, currentY,
+                refXPoints, refYPoints, refCurrentX, refCurrentY,
+                refBodyIndex, minViewX, maxViewX, minViewY, maxViewY, pixelSizeAU
+            )
         else:
             # Draw flat orbit lines
-            totalLen = len(trailX)
-            if totalLen > 0:
-                plotX = self._sampleTrailPoints(trailX, totalLen)
-                plotY = self._sampleTrailPoints(trailY, totalLen)
+            plotX, plotY = self._extractOrbitTrail(
+                trailX, trailY, currentX, currentY,
+                minViewX=minViewX, maxViewX=maxViewX,
+                minViewY=minViewY, maxViewY=maxViewY, pixelSizeAU=pixelSizeAU
+            )
 
         if plotX is not None and plotX.size > 0:
             # Check if point is worth plotting
@@ -366,7 +612,11 @@ class PlanetarySimulationEngine:
             if inViewport and not isSubPixel:
                 plt.plot(plotX, plotY, color=body[4][0])
 
-        plt.plot(currentX, currentY, 'o', color=body[4][1])
+        # Only plot body marker if within padded viewport bounds
+        markerMargin = 0.05 * self.simulationSize if self.simulationSize > 0 else 0.0
+        if (minViewX - markerMargin <= currentX <= maxViewX + markerMargin and
+                minViewY - markerMargin <= currentY <= maxViewY + markerMargin):
+            plt.plot(currentX, currentY, 'o', color=body[4][1])
         return plt
 
     def updateFocusPoint(self):
@@ -478,8 +728,8 @@ class PlanetarySimulationEngine:
             timePassed = True
 
         if setTicks == self.simulationTime:
-            if timePassed:
-                self.updateStoredPath() # Add current position to simulation time period if simulation has moved
+            if timePassed and self.ticksPerPageUpdate < self.ticksPerStorageUpdate:
+                self.updateStoredPath() # Add current position if update interval is smaller than storage interval
             self.drawGraph(user, backgroundStyle, axisStyle)
             pass
         elif bodyCollision:
@@ -579,7 +829,7 @@ class PlanetarySimulationEngine:
             # Binary Pair 2: Planets 5 & 6
             body10Stats = [[-583690000000.0, 0.0, 0.0], [0.0, -17475.0, 0.0], earthMass * 1308.151978, 7.59e+07, ['mediumblue', 'mediumblue'], "Pyroifoi RD-Z d1-223 5", 0]  # Class III gas giant
             body11Stats = [[-582865087111.6, 0.0, 0.0], [0.0, 7666.3, 0.0], earthMass * 0.004294, 1.14e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 5 a", 9]  # Rocky body
-            body12Stats = [[-582862561374.6, 0.0, 0.0], [0.0, 8489.5, 0.0], earthMass * 0.000213, 4.28e+05, ['grey', 'grey'], "Pyroifoi RD-Z d1-223 5 a a", 9]  # Rocky body
+            #body12Stats = [[-582862561374.6, 0.0, 0.0], [0.0, 8489.5, 0.0], earthMass * 0.000213, 4.28e+05, ['grey', 'grey'], "Pyroifoi RD-Z d1-223 5 a a", 10]  # Removed from simulation due to precision issues
             body13Stats = [[-583690000000.0, 1070105762.3, 0.0], [-22073.9, -17475.0, 0.0], earthMass * 0.001776, 8.51e+05, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 5 b", 9]  # Rocky body
             body14Stats = [[-585759554317.0, 0.0, 0.0], [-0.0, -33347.8, 0.0], earthMass * 0.006879, 1.33e+06, ['sandybrown', 'sandybrown'], "Pyroifoi RD-Z d1-223 5 c", 9]  # Rocky body
             body15Stats = [[-583690000000.0, -2694282701.8, 0.0], [13911.4, -17475.0, 0.0], earthMass * 0.006498, 1.31e+06, ['silver', 'silver'], "Pyroifoi RD-Z d1-223 5 d", 9]  # Rocky body
@@ -604,14 +854,14 @@ class PlanetarySimulationEngine:
             body32Stats = [[1409977787956.3, 6017486834.0, 0.0], [-7159.5, 26409.0, 0.0], earthMass * 0.03382, 2.82e+06, ['snow', 'snow'], "Pyroifoi RD-Z d1-223 9 e a", 30]  # Icy body
             body33Stats = [[1460000000000.0, 0.0, 0.0], [0.0, 7253.0, 0.0], earthMass * 20.416899, 1.76e+07, ['snow', 'snow'], "Pyroifoi RD-Z d1-223 10", 0]  # Icy body
             self.listOfBodies = [body1Stats, body2Stats, body3Stats, body4Stats, body5Stats, body6Stats,
-                                 body7Stats, body8Stats, body9Stats, body10Stats, body11Stats, body12Stats,
+                                 body7Stats, body8Stats, body9Stats, body10Stats, body11Stats,
                                  body13Stats, body14Stats, body15Stats, body16Stats, body17Stats, body18Stats,
                                  body19Stats, body20Stats, body21Stats, body22Stats, body23Stats, body24Stats,
                                  body25Stats, body26Stats, body27Stats, body28Stats, body29Stats, body30Stats,
                                  body31Stats, body32Stats, body33Stats]
-            self.secondsPerSimulationTick = 600 # One simulation tick per 10 minutes
+            self.secondsPerSimulationTick = 1800 # One simulation tick per 30 minutes
             self.simulationSize = 11  # Size of the displayed area in AU
-            self.ticksPerStorageUpdate = 3600 / self.secondsPerSimulationTick  # One course point saved every hour
+            self.ticksPerStorageUpdate = 7200 / self.secondsPerSimulationTick  # One course point saved every 2 hours
             self.ticksPerPageUpdate = round((86400 * 30) / self.secondsPerSimulationTick)  # One update per 30 days
             self.simulationName = "Madman's Halo"
         else:

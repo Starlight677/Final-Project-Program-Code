@@ -4,11 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Cleaned up the path tracking system.">
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Added a simplification system to the graph drawing.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/forms.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -82,14 +80,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1779351571015</updated>
-    </task>
-    <task id="LOCAL-00018" summary="Added ability for user to modify simulation size and update speed.">
-      <option name="closed" value="true" />
-      <created>1782999907657</created>
-      <option name="number" value="00018" />
-      <option name="presentableId" value="LOCAL-00018" />
-      <option name="project" value="LOCAL" />
-      <updated>1782999907657</updated>
     </task>
     <task id="LOCAL-00019" summary="Added window to Load System page displaying information about the selected simulation.">
       <option name="closed" value="true" />
@@ -475,7 +465,15 @@
       <option name="project" value="LOCAL" />
       <updated>1791291723939</updated>
     </task>
-    <option name="localTasksCounter" value="67" />
+    <task id="LOCAL-00067" summary="Added a simplification system to the graph drawing.">
+      <option name="closed" value="true" />
+      <created>1792492448061</created>
+      <option name="number" value="00067" />
+      <option name="presentableId" value="LOCAL-00067" />
+      <option name="project" value="LOCAL" />
+      <updated>1792492448061</updated>
+    </task>
+    <option name="localTasksCounter" value="68" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -490,7 +488,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Added the Run Simulation form to the database." />
     <MESSAGE value="Added AJAX to the rest of the forms." />
     <MESSAGE value="Prepared for production." />
     <MESSAGE value="Added requirements.txt." />
@@ -515,6 +512,7 @@
     <MESSAGE value="Fixed the calculation of non-significant bodies." />
     <MESSAGE value="Deployed functional system for tracking paths relative to a body." />
     <MESSAGE value="Cleaned up the path tracking system." />
-    <option name="LAST_COMMIT_MESSAGE" value="Cleaned up the path tracking system." />
+    <MESSAGE value="Added a simplification system to the graph drawing." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added a simplification system to the graph drawing." />
   </component>
 </project>
