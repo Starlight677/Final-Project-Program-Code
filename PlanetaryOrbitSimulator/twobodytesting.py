@@ -63,7 +63,7 @@ class PlanetarySimulationEngine:
             return False
 
         # Used for checking if a body's influence is significant or not
-        if sum(np.abs(body1Acceleration)) >= 0.01 or sum(np.abs(body2Acceleration)) >= 0.01:
+        if sum(np.abs(body1Acceleration)) >= 1e-5 or sum(np.abs(body2Acceleration)) >= 1e-5:
             exceedsThreshold = True
         else:
             exceedsThreshold = False
@@ -111,7 +111,7 @@ class PlanetarySimulationEngine:
     def cycleBody(self, bodyNumber, filterMask, fullCompanions, filterTick = False):
         #Calculate gravitational interaction for possible pairs of bodies
         significantCompanions = []
-        if filterTick == True:
+        if filterTick:
             #Iterate through the already processed pairs - mirror the filter mask check
             secondBodyNumber = 0
             while secondBodyNumber < bodyNumber:
@@ -124,22 +124,22 @@ class PlanetarySimulationEngine:
             secondBodyNumber = bodyNumber + 1
 
         while secondBodyNumber < len(self.listOfBodies):
-            if filterTick == True or filterMask[secondBodyNumber] == True:
+            if filterTick or filterMask[secondBodyNumber]:
                 # Pull stats of both bodies out of the list
                 body1Stats = self.listOfBodies[bodyNumber]
                 body2Stats = self.listOfBodies[secondBodyNumber]
 
-                if filterTick == True and filterMask[secondBodyNumber] == False:
-                    # Process body pair for overall time if below significance threshold
-                    body1Stats[1], body2Stats[1], isOverThreshold = (
-                            self.tickBodyPair(body1Stats[0], body2Stats[0], body1Stats[1], body2Stats[1],
-                                    body1Stats[2], body2Stats[2], body1Stats[3], body2Stats[3],
-                                    self.secondsPerSimulationTick * self.ticksPerStorageUpdate))
-                else:
-                    body1Stats[1], body2Stats[1], isOverThreshold = (
+                body1Stats[1], body2Stats[1], isOverThreshold = (
+                    self.tickBodyPair(body1Stats[0], body2Stats[0], body1Stats[1], body2Stats[1],
+                                      body1Stats[2], body2Stats[2], body1Stats[3], body2Stats[3],
+                                      self.secondsPerSimulationTick))
+
+                if filterTick and not isOverThreshold and self.ticksPerStorageUpdate > 1:
+                    # Process remaining ticks of storage interval for pairs below significance threshold
+                    body1Stats[1], body2Stats[1], _ = (
                         self.tickBodyPair(body1Stats[0], body2Stats[0], body1Stats[1], body2Stats[1],
                                           body1Stats[2], body2Stats[2], body1Stats[3], body2Stats[3],
-                                          self.secondsPerSimulationTick))
+                                          self.secondsPerSimulationTick * (self.ticksPerStorageUpdate - 1)))
 
                 if filterTick and isOverThreshold:
                     significantCompanions.append(True)
@@ -248,6 +248,8 @@ class PlanetarySimulationEngine:
         # Draw a graph using MatPlotLib
         matplotlib.use('agg') # Mode for not having issues with Django threading
         plt.style.use("fast")
+        matplotlib.rcParams['path.simplify'] = True
+        matplotlib.rcParams['path.simplify_threshold'] = 1.0
         self.updateFocusPoint() # Plot the boundaries of the graph
 
         fig = plt.figure(figsize=(6.9, 6.9))
@@ -290,6 +292,21 @@ class PlanetarySimulationEngine:
         plt.savefig('media/latestSimulation' + user.username + '.png')
         plt.close('all')
 
+    def _sampleTrailPoints(self, points, totalLen, recentPointsCount=500, maxOlderPoints=1000):
+        """
+        Hybrid trail downsampling (Option C):
+        Preserves full resolution for the most recent `recentPointsCount` points
+        and applies uniform stride downsampling to older history while keeping
+        `self.bodyPoints` untouched for full rollback support.
+        """
+        if totalLen <= recentPointsCount + maxOlderPoints:
+            return np.asarray(points[:totalLen], dtype=float)
+
+        olderLen = totalLen - recentPointsCount
+        stride = max(1, olderLen // maxOlderPoints)
+        sampledList = points[:olderLen:stride] + points[olderLen:totalLen]
+        return np.asarray(sampledList, dtype=float)
+
     def plotBodyPoints(self, plt, body, bodyIndex):
         # Plot the points for a specific body on the graph
         trailX = self.bodyPoints[bodyIndex][0]  # Already in AU
@@ -297,6 +314,13 @@ class PlanetarySimulationEngine:
         AU = 1.495979e11
         currentX = body[0][0] / AU
         currentY = body[0][1] / AU
+
+        # Viewport bounds and sub-pixel threshold for culling invisible work
+        minViewX = -self.simulationSize + self.focusPoint[0]
+        maxViewX = self.simulationSize + self.focusPoint[0]
+        minViewY = -self.simulationSize + self.focusPoint[1]
+        maxViewY = self.simulationSize + self.focusPoint[1]
+        pixelSizeAU = (2.0 * self.simulationSize) / 550.0 if self.simulationSize > 0 else 0.0
 
         refBodyIndex = self.getBodyReference(bodyIndex) # Get index fo body to draw around
         useRelativeFrame = (
@@ -306,6 +330,9 @@ class PlanetarySimulationEngine:
                 and len(self.bodyPoints[refBodyIndex][0]) > 0
         )
 
+        plotX = None
+        plotY = None
+
         if useRelativeFrame: # Draw orbit lines around reference body
             refXPoints = self.bodyPoints[refBodyIndex][0]
             refYPoints = self.bodyPoints[refBodyIndex][1]
@@ -314,14 +341,32 @@ class PlanetarySimulationEngine:
 
             minLen = min(len(trailX), len(refXPoints))
             if minLen > 0:
-                offsetTrailX = [refCurrentX + (trailX[k] - refXPoints[k]) for k in range(minLen)]
-                offsetTrailY = [refCurrentY + (trailY[k] - refYPoints[k]) for k in range(minLen)]
-                plt.plot(offsetTrailX, offsetTrailY, color=body[4][0])
-            plt.plot(currentX, currentY, 'o', color=body[4][1])
+                sampledTrailX = self._sampleTrailPoints(trailX, minLen)
+                sampledTrailY = self._sampleTrailPoints(trailY, minLen)
+                sampledRefX = self._sampleTrailPoints(refXPoints, minLen)
+                sampledRefY = self._sampleTrailPoints(refYPoints, minLen)
+
+                plotX = refCurrentX + (sampledTrailX - sampledRefX)
+                plotY = refCurrentY + (sampledTrailY - sampledRefY)
         else:
             # Draw flat orbit lines
-            plt.plot(trailX, trailY, color=body[4][0])
-            plt.plot(currentX, currentY, 'o', color=body[4][1])
+            totalLen = len(trailX)
+            if totalLen > 0:
+                plotX = self._sampleTrailPoints(trailX, totalLen)
+                plotY = self._sampleTrailPoints(trailY, totalLen)
+
+        if plotX is not None and plotX.size > 0:
+            # Check if point is worth plotting
+            xMin, xMax = float(plotX.min()), float(plotX.max())
+            yMin, yMax = float(plotY.min()), float(plotY.max())
+
+            inViewport = not (xMax < minViewX or xMin > maxViewX or yMax < minViewY or yMin > maxViewY)
+            isSubPixel = (xMax - xMin) < pixelSizeAU and (yMax - yMin) < pixelSizeAU
+
+            if inViewport and not isSubPixel:
+                plt.plot(plotX, plotY, color=body[4][0])
+
+        plt.plot(currentX, currentY, 'o', color=body[4][1])
         return plt
 
     def updateFocusPoint(self):

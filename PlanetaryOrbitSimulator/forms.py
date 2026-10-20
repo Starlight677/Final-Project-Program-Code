@@ -1,6 +1,5 @@
 from django import forms
 
-
 class SimulationNameForm(forms.Form):
     # Used for editing the simulation during creation
     simulationName = forms.CharField(label="Simulation Save Name", max_length=100, required=False)

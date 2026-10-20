@@ -1,13 +1,8 @@
-from contextlib import contextmanager
-from functools import wraps
-import threading
-
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
-from numpy.f2py.auxfuncs import throw_error
 
 from .forms import SimulationNameForm, BodyDetailsForm, LoginForm, RegisterForm
 import matplotlib.colors as mcolors
