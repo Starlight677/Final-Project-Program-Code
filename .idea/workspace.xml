@@ -4,11 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Graph display code optimised for fast display on long-running simulations. NOTE: Significantly increases code complexity.">
-      <change beforePath="$PROJECT_DIR$/.idea/Final Project Program.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Final Project Program.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Cleaned up some of the generated methods, and disabled Madman's Halo template due to complexity.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/twobodytesting.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/planetarySimulationEngine.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/HomePage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/HomePage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/LoadSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/LoadSystemPage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/LoginPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/LoginPage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/NewSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/NewSystemPage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/RegisterPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/RegisterPage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/RunSimulationPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/RunSimulationPage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/SettingsPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/SettingsPage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/StopSimulationPage.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/editSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/editSystemPage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/page_template.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/page_template.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,7 +35,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="master" />
+        <entry key="$PROJECT_DIR$" value="Post-Project-Development" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -45,23 +54,23 @@
 }</component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.3207099957192154" />
-      <entry key="MS500" value="2.6277745381682758" />
-      <entry key="S2" value="5.942255177749564" />
-      <entry key="S5" value="10.083277756130391" />
-      <entry key="S10" value="15.43750721226125" />
-      <entry key="S30" value="26.110152635373606" />
-      <entry key="S60" value="31.66837891013567" />
-      <entry key="M2" value="37.405213788168005" />
-      <entry key="M5" value="49.18295833660766" />
-      <entry key="M10" value="59.341081258560806" />
-      <entry key="M15" value="64.31582119311506" />
-      <entry key="M30" value="70.43627909363597" />
-      <entry key="H1" value="74.01622875709717" />
-      <entry key="H2" value="75.95465908150959" />
-      <entry key="H4" value="76.96357371446211" />
-      <entry key="D1" value="77.8253175176222" />
-      <entry key="W1" value="77.97499727959396" />
+      <entry key="MS100" value="2.1330030455875226" />
+      <entry key="MS500" value="4.795070184682759" />
+      <entry key="S2" value="11.181455363656259" />
+      <entry key="S5" value="15.43875499392289" />
+      <entry key="S10" value="17.673854743204874" />
+      <entry key="S30" value="20.089831706553117" />
+      <entry key="S60" value="21.696998720628788" />
+      <entry key="M2" value="24.555110598785895" />
+      <entry key="M5" value="33.97909941710657" />
+      <entry key="M10" value="51.50541282030558" />
+      <entry key="M15" value="66.77722562777139" />
+      <entry key="M30" value="99.85431907676681" />
+      <entry key="H1" value="133.72928844374292" />
+      <entry key="H2" value="159.62098920927002" />
+      <entry key="H4" value="175.89904940044747" />
+      <entry key="D1" value="191.59755853941047" />
+      <entry key="W1" value="194.50824652587505" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -83,23 +92,23 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="1.2434316029466324" />
-      <entry key="MS500" value="2.5926259334063726" />
-      <entry key="S2" value="5.919611355075194" />
-      <entry key="S5" value="10.067294235176798" />
-      <entry key="S10" value="15.425198133379341" />
-      <entry key="S30" value="26.103161335087737" />
-      <entry key="S60" value="31.664043543242094" />
-      <entry key="M2" value="37.40218537264375" />
-      <entry key="M5" value="49.18064277848943" />
-      <entry key="M10" value="59.3394343330744" />
-      <entry key="M15" value="64.31456672353094" />
-      <entry key="M30" value="70.43555704653204" />
-      <entry key="H1" value="74.01584035637917" />
-      <entry key="H2" value="75.95445751989968" />
-      <entry key="H4" value="76.96347102474216" />
-      <entry key="D1" value="77.825300131524" />
-      <entry key="W1" value="77.97499478914555" />
+      <entry key="MS100" value="2.0835481949692287" />
+      <entry key="MS500" value="4.7717655226278515" />
+      <entry key="S2" value="11.118803240641814" />
+      <entry key="S5" value="15.365868136453672" />
+      <entry key="S10" value="17.620669849255258" />
+      <entry key="S30" value="20.06677430013833" />
+      <entry key="S60" value="21.683955018785568" />
+      <entry key="M2" value="24.547203052431794" />
+      <entry key="M5" value="33.97496455437693" />
+      <entry key="M10" value="51.50293764956868" />
+      <entry key="M15" value="66.77537721085669" />
+      <entry key="M30" value="99.85315817964133" />
+      <entry key="H1" value="133.72856988993357" />
+      <entry key="H2" value="159.6205732670791" />
+      <entry key="H4" value="175.89882299545053" />
+      <entry key="D1" value="191.5975177814091" />
+      <entry key="W1" value="194.50824062237749" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -121,11 +130,13 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "git-widget-placeholder": "Post-Project-Development",
+    "git-widget-placeholder": "Extensive-Overwrite",
     "last_opened_file_path": "C:/Users/mcleo/OneDrive/Documents/ARU Year 4/Final Project/Final Project Program",
     "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.jshint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.jshint": "",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "python.packages.toolwindow.project.migrated.to.right.top.v2": "true"
@@ -183,15 +194,8 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1779351571015</updated>
-      <workItem from="1795527874169" duration="1576000" />
-    </task>
-    <task id="LOCAL-00020" summary="Added the Binary Stars preset.">
-      <option name="closed" value="true" />
-      <created>1783326822248</created>
-      <option name="number" value="00020" />
-      <option name="presentableId" value="LOCAL-00020" />
-      <option name="project" value="LOCAL" />
-      <updated>1783326822248</updated>
+      <workItem from="1795527874169" duration="3591000" />
+      <workItem from="1795532497904" duration="2487000" />
     </task>
     <task id="LOCAL-00021" summary="Added an interface to modify the bodies in a simulation.">
       <option name="closed" value="true" />
@@ -577,7 +581,15 @@
       <option name="project" value="LOCAL" />
       <updated>1792507959710</updated>
     </task>
-    <option name="localTasksCounter" value="69" />
+    <task id="LOCAL-00069" summary="Cleaned up some of the generated methods, and disabled Madman's Halo template due to complexity.">
+      <option name="closed" value="true" />
+      <created>1795530731734</created>
+      <option name="number" value="00069" />
+      <option name="presentableId" value="LOCAL-00069" />
+      <option name="project" value="LOCAL" />
+      <updated>1795530731735</updated>
+    </task>
+    <option name="localTasksCounter" value="70" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -595,7 +607,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Prepared for production." />
     <MESSAGE value="Added requirements.txt." />
     <MESSAGE value="Added system start in main.py." />
     <MESSAGE value="Added migration support." />
@@ -620,6 +631,7 @@
     <MESSAGE value="Cleaned up the path tracking system." />
     <MESSAGE value="Added a simplification system to the graph drawing." />
     <MESSAGE value="Graph display code optimised for fast display on long-running simulations. NOTE: Significantly increases code complexity." />
-    <option name="LAST_COMMIT_MESSAGE" value="Graph display code optimised for fast display on long-running simulations. NOTE: Significantly increases code complexity." />
+    <MESSAGE value="Cleaned up some of the generated methods, and disabled Madman's Halo template due to complexity." />
+    <option name="LAST_COMMIT_MESSAGE" value="Cleaned up some of the generated methods, and disabled Madman's Halo template due to complexity." />
   </component>
 </project>

@@ -1,7 +1,9 @@
 from django import forms
 
+
 class SimulationNameForm(forms.Form):
-    # Used for editing the simulation during creation
+    """Form for configuring simulation metadata, viewport size, and focus."""
+
     simulationName = forms.CharField(label="Simulation Save Name", max_length=100, required=False)
     simulationSize = forms.FloatField(label="View Window Size (AU)", required=False)
     simulationTimePerUpdate = forms.FloatField(label="Days per Simulation Update", required=False)
@@ -14,8 +16,10 @@ class SimulationNameForm(forms.Form):
         else:
             del self.fields['focusedBody']
 
+
 class BodyDetailsForm(forms.Form):
-    # Used for editing a body in the simulation
+    """Form for editing a single celestial body's properties and orbit reference."""
+
     bodyName = forms.CharField(label="Body Name", max_length=100, required=False)
     bodyMass = forms.FloatField(label="Body Mass (kg)", required=False)
     bodyRadius = forms.FloatField(label="Body Radius (KM)", required=False)
@@ -30,20 +34,17 @@ class BodyDetailsForm(forms.Form):
 
     def __init__(self, *args, body_choices=None, **kwargs):
         super().__init__(*args, **kwargs)
-        if body_choices is not None:
-            self.fields['bodyReference'].choices = body_choices
-        else:
-            self.fields['bodyReference'].choices = [(-1, "None (Static Grid)")]
+        self.fields['bodyReference'].choices = (
+            body_choices if body_choices is not None else [(-1, "None (Static Grid)")]
+        )
+
 
 class LoginForm(forms.Form):
     username = forms.CharField(label="Username", max_length=100, required=True)
     password = forms.CharField(label="Password", max_length=100, required=True, widget=forms.PasswordInput)
 
-class RegisterForm(forms.Form):
-    username = forms.CharField(label="Username", max_length=100, required=True)
-    password = forms.CharField(label="Password", max_length=100, required=True, widget=forms.PasswordInput)
-    passwordRepeated = forms.CharField(label="Repeat Password", max_length=100, required=True, widget=forms.PasswordInput)
 
-class ConfigureSimulationForm(forms.Form):
-    simulationSize = forms.FloatField(label="Simulation Name", required=False)
-    focusedBody = forms.CharField(label="Focused Body", max_length=100, required=False)
+class RegisterForm(LoginForm):
+    passwordRepeated = forms.CharField(
+        label="Repeat Password", max_length=100, required=True, widget=forms.PasswordInput
+    )

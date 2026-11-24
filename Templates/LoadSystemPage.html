@@ -1,160 +1,41 @@
 {% extends 'page_template.html' %}
-{% load static %}
 
 {% block content %}
-    <style>
-        .main_page_element {
-            position: relative;
-            height: 0;
-            width: 0;
-        }
+    <button class="nav-btn btn-menu" onclick="window.location.href='/'">
+        Return to Main Menu
+    </button>
 
-        .back_to_menu_button {
-            position: absolute;
-            top: 85vh;
-            left: 2vw;
-            height: 10vh;
-            width: 10vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 5vh;
-        }
+    <button class="nav-btn btn-action-right" onclick="window.location.href='/run/1/'">
+        Run Simulation
+    </button>
 
-        .run_simulation_button {
-            position: absolute;
-            top: 85vh;
-            left: 85vw;
-            height: 10vh;
-            width: 10vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 5vh;
-        }
+    <div class="simulation-image-box">
+        <img src="/media/latestSimulation{{ user }}.png" alt="This image has failed to load." id="simImage">
+    </div>
 
-        .choose_save_box {
-            position: absolute;
-            top: 5vh;
-            left: 2vw;
-            height: 70vh;
-            text-align: center;
-            overflow: auto;
-            display: block;
-        }
+    <ul class="choice-list">
+        <li><h2 style="color:white">Saved Simulations:</h2></li>
+        {% for simulation in allSimulations %}
+            <li>
+                <button class="choice-item{% if forloop.counter0 == saveIndex %} selected{% endif %}"
+                        onclick="window.location.href='/load/{{ forloop.counter0 }}'">
+                    {{ simulation.name }}
+                </button>
+            </li>
+        {% endfor %}
+    </ul>
 
-        .choose_save_entry {
-            position: relative;
-            height: 10vh;
-            width: 15vw;
-            border: 2px solid black;
-            padding: 5px
-            text-align: center;
-            background-color: white;
-            border-radius: 15px;
-        }
+    <form class="panel panel-right" action="" method="post" id="infoForm">
+        <h2>Simulation Information:</h2>
+        {% csrf_token %}
+        {{ infoForm }}
+        <p>Simulation Days Elapsed: {{ daysElapsed }}</p>
+        <input type="submit" value="Confirm Changes">
+    </form>
+{% endblock %}
 
-        .selected_save_entry {
-            position: relative;
-            height: 10vh;
-            width: 15vw;
-            border: 2px solid black;
-            padding: 5px
-            text-align: center;
-            background-color: grey;
-            border-radius: 15px;
-        }
-
-        .choose_save_entry:hover {
-            background-color: silver;
-        }
-
-        .simulation_information_box {
-            position: absolute;
-            top: 15vh;
-            left: 78vw;
-            height: 45vh;
-            width: 15vw;
-            text-align: center;
-            border: 2px solid black;
-            background-color: white;
-            overflow: auto;
-            display: block;
-            padding: 5px;
-            border-radius: 5vh;
-        }
-
-        .simulation_image_box {
-            position: absolute;
-            top: 0;
-            left: 27vw;
-            text-align: center;
-        }
-
-    </style>
-    <body>
-        <button class="back_to_menu_button"
-                onclick="window.location.href='/'">
-            Return to Main Menu
-        </button>
-
-        <button class="run_simulation_button"
-                onclick="window.location.href='/run/1'">
-            Run Simulation
-        </button>
-
-        <div class ="simulation_image_box">
-            <img src="/media/latestSimulation{{user}}.png" alt="This image has failed to load."
-                 id="simImage">
-        </div>
-
-        <ul class="choose_save_box">
-            <li><h2 style="color:white">Saved Simulations:</h2></li>
-            {% for simulation in allSimulations %}
-                <li>
-                    {% if forloop.counter0 == saveIndex %}
-                        <button class ="selected_save_entry"
-                                onclick="window.location.href='/load/{{forloop.counter0}}'">
-                            {{simulation.name}}
-                        </button>
-                    {% else %}
-                        <button class ="choose_save_entry"
-                                onclick="window.location.href='/load/{{forloop.counter0}}'">
-                            {{simulation.name}}
-                        </button>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
-
-        <form class ="simulation_information_box" action="" method="post" id="infoForm">
-            <h2>Simulation Information:</h2>
-            {% csrf_token %}
-            {{infoForm}}
-            <p>Simulation Days Elapsed: {{daysElapsed}}</p>
-            <input type="submit" value="Confirm Changes">
-        </form>
-    </body>
-
-    <script>
-        $('#infoForm').click(function(event) {
-            event.preventDefault();
-            $.ajax({
-                url: '/runForm/',
-                type: 'post',
-                cache: false,
-                data: $(this).serialize(),
-
-                success: function(data) {
-                    var modifiedURL = '/media/latestSimulation{{user}}.png?' + Date.now();
-                    $("#simImage").attr('src', modifiedURL);
-                },
-
-                error: function() {
-                    alert("Error in updating form.");
-                }
-            });
-        });
-    </script>
-
+{% block extra_scripts %}
+<script>
+    bindAjaxForm("#infoForm", "/runForm/");
+</script>
 {% endblock %}

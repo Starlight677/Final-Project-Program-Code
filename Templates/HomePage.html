@@ -1,95 +1,47 @@
 {% extends 'page_template.html' %}
-{% load static %}
+
+{% block extra_styles %}
+<style>
+    .title-box {
+        position: absolute;
+        top: 15vh;
+        left: 40vw;
+        height: 20vh;
+        width: 20vw;
+        text-align: center;
+    }
+
+    .menu-btn { width: 30vw; left: 35vw; }
+    .btn-new { top: 45vh; }
+    .btn-load { top: 60vh; }
+    .btn-settings { top: 75vh; }
+
+    .login-btn {
+        top: 10vh;
+        left: 85vw;
+        border-radius: 2vh;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-    <style>
-        .main_page_element {
-            position: relative;
-            height: 0;
-            width: 0;
-        }
+    <div class="title-box">
+        <h1 style="color:white">Welcome to the Planetary Orbit Simulator, {{ user }}!</h1>
+    </div>
 
-        .title_box {
-            position: absolute;
-            top: 15vh;
-            left: 40vw;
-            height: 20vh;
-            width: 20vw;
-            text-align: center;
-        }
+    <button class="nav-btn menu-btn btn-new" onclick="window.location.href='/create/'">
+        Create New System
+    </button>
 
-        .new_system_button {
-            position: absolute;
-            top: 45vh;
-            left: 35vw;
-            height: 10vh;
-            width: 30vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 5vh;
-        }
+    <button class="nav-btn menu-btn btn-load" onclick="window.location.href='/load/'">
+        Load Existing System
+    </button>
 
-        .load_system_button {
-            position: absolute;
-            top: 60vh;
-            left: 35vw;
-            height: 10vh;
-            width: 30vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 5vh;
-        }
+    <button class="nav-btn menu-btn btn-settings" onclick="window.location.href='/settings/'">
+        Settings
+    </button>
 
-        .settings_button {
-            position: absolute;
-            top: 75vh;
-            left: 35vw;
-            height: 10vh;
-            width: 30vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 5vh;
-        }
-
-        .login_button {
-            position: absolute;
-            top: 10vh;
-            left: 85vw;
-            height: 10vh;
-            width: 10vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 2vh;
-        }
-
-    </style>
-    <body>
-        <div class="title_box">
-            <h1 style="color:white">Welcome to the Planetary Orbit Simulator, {{user}}!</h1>
-        </div>
-
-        <button class="new_system_button"
-            onclick="window.location.href='/create'">
-            Create New System
-        </button>
-
-        <button class="load_system_button"
-            onclick="window.location.href='/load'">
-            Load Existing System
-        </button>
-
-        <button class="settings_button"
-            onclick="window.location.href='/settings'">
-            Settings
-        </button>
-
-        <button class="login_button"
-                onclick="window.location.href='/login'">
-            Login
-        </button>
-    </body>
+    <button class="nav-btn login-btn" onclick="window.location.href='/login/'">
+        Login
+    </button>
 {% endblock %}

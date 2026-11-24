@@ -1,5 +1,6 @@
-from django.db import models
 from django.contrib.auth.models import User
+from django.db import models
+
 
 class StoredSimulation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, default=0)
@@ -11,9 +12,15 @@ class StoredSimulation(models.Model):
     ticksPerPageUpdate = models.IntegerField(default=0)
     secondsPerSimulationTick = models.IntegerField(default=0)
     name = models.TextField(default="")
-    image = models.ImageField(default="")
+
+    def __str__(self):
+        return self.name or f"Simulation {self.pk}"
+
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, default=0)
     backgroundStylePreference = models.TextField(default="black")
     axisStylePreference = models.TextField(default="white")
+
+    def __str__(self):
+        return f"{self.user.username} profile"

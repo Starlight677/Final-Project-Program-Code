@@ -1,160 +1,55 @@
 {% extends 'page_template.html' %}
-{% load static %}
+
+{% block extra_styles %}
+<style>
+    .btn-run { top: 85vh; left: 14vw; }
+    .btn-prev { top: 85vh; left: 75vw; }
+    .btn-next { top: 85vh; left: 87vw; }
+    .edit-info { top: 10vh; }
+    .edit-body { top: 10vh; height: 60vh; }
+</style>
+{% endblock %}
 
 {% block content %}
-    <style>
-        .main_page_element {
-            position: relative;
-            height: 0;
-            width: 0;
-        }
+    <button class="nav-btn btn-menu" onclick="window.location.href='/'">
+        Return to Main Menu
+    </button>
 
-        .back_to_menu_button {
-            position: absolute;
-            top: 85vh;
-            left: 2vw;
-            height: 10vh;
-            width: 10vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 5vh;
-        }
+    <button class="nav-btn btn-next" onclick="window.location.href='/edit/{{ nextBody }}'">
+        Next Body
+    </button>
 
-        .run_simulation_button {
-            position: absolute;
-            top: 85vh;
-            left: 14vw;
-            height: 10vh;
-            width: 10vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 5vh;
-        }
+    <button class="nav-btn btn-prev" onclick="window.location.href='/edit/{{ lastBody }}'">
+        Previous Body
+    </button>
 
-        .next_body_button {
-            position: absolute;
-            top: 85vh;
-            left: 87vw;
-            height: 10vh;
-            width: 10vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 5vh;
-        }
+    <button class="nav-btn btn-run" onclick="window.location.href='/run/1/'">
+        Run Simulation
+    </button>
 
-        .previous_body_button {
-            position: absolute;
-            top: 85vh;
-            left: 75vw;
-            height: 10vh;
-            width: 10vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 5vh;
-        }
+    <div class="simulation-image-box">
+        <img src="/media/latestSimulation{{ user }}.png" alt="This image has failed to load." id="simImage">
+    </div>
 
-        .simulation_image_box {
-            position: absolute;
-            top: 0;
-            left: 27vw;
-            text-align: center;
-        }
+    <div class="panel panel-left edit-info">
+        <h2>Simulation Information:</h2>
+        <p>Simulation Name: {{ simulationName }}</p>
+        <p>Simulation Display Size: {{ simulationSizeKM }}km / {{ simulationSizeAU }}AU</p>
+        <p>Days Per Simulation Tick: {{ daysPerTick }}</p>
+        <p>Simulation Days Elapsed: {{ daysElapsed }}</p>
+        <p>Focused Body: {{ focusBodyName }}</p>
+    </div>
 
-        .simulation_information_box {
-            position: absolute;
-            top: 10vh;
-            left: 5vw;
-            height: 45vh;
-            width: 15vw;
-            text-align: center;
-            border: 2px solid black;
-            background-color: white;
-            overflow: auto;
-            display: block;
-            padding: 5px;
-            border-radius: 5vh;
-        }
+    <form class="panel panel-right edit-body" action="" method="post" id="bodyForm">
+        <h2>Body Values:</h2>
+        {% csrf_token %}
+        {{ detailsForm }}
+        <input type="submit" value="Confirm Changes">
+    </form>
+{% endblock %}
 
-        .body_information_box {
-            position: absolute;
-            top: 10vh;
-            left: 78vw;
-            height: 60vh;
-            width: 15vw;
-            text-align: center;
-            border: 2px solid black;
-            background-color: white;
-            overflow: auto;
-            display: block;
-            padding: 5px;
-            border-radius: 5vh;
-        }
-
-    </style>
-    <body>
-        <button class="back_to_menu_button"
-                onclick="window.location.href='/'">
-            Return to Main Menu
-        </button>
-
-        <button class="next_body_button"
-                onclick="window.location.href='/edit/{{nextBody}}'">
-            Next Body
-        </button>
-
-        <button class="previous_body_button"
-                onclick="window.location.href='/edit/{{lastBody}}'">
-            Previous Body
-        </button>
-
-        <button class="run_simulation_button"
-                onclick="window.location.href='/run/1'">
-            Run Simulation
-        </button>
-
-        <div class ="simulation_image_box">
-            <img src="/media/latestSimulation{{user}}.png" alt="This image has failed to load." id="simImage">
-        </div>
-
-        <div class ="simulation_information_box">
-            <h2>Simulation Information:</h2>
-            <p>Simulation Name: {{simulationName}}</p>
-            <p>Simulation Display Size: {{simulationSizeKM}}km / {{simulationSizeAU}}AU</p>
-            <p>Days Per Simulation Tick: {{daysPerTick}}</p>
-            <p>Simulation Days Elapsed: {{daysElapsed}}</p>
-            <p>Focused Body: {{focusBodyName}}</p>
-        </div>
-
-        <form class ="body_information_box" action="" method="post" id="bodyForm">
-            <h2>Body Values:</h2>
-            {% csrf_token %}
-            {{ detailsForm }}
-            <input type="submit" value="Confirm Changes">
-        </form>
-    </body>
-
-    <script>
-        $('#bodyForm').on('submit', function(event) {
-            event.preventDefault();
-            $.ajax({
-                url: '/editForm/{{selectedBody}}',
-                type: 'post',
-                cache: false,
-                data: $(this).serialize(),
-
-                success: function(data) {
-                    var modifiedURL = '/media/latestSimulation{{user}}.png?' + Date.now();
-                    $("#simImage").attr('src', modifiedURL);
-                },
-
-                error: function() {
-                    alert("Error in updating form.");
-                }
-            });
-        });
-    </script>
+{% block extra_scripts %}
+<script>
+    bindAjaxForm("#bodyForm", "/editForm/{{ selectedBody }}");
+</script>
 {% endblock %}

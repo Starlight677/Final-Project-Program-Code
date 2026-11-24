@@ -1,527 +1,403 @@
+import matplotlib.colors as mcolors
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login
 from django.http import JsonResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect, render
 
-from .forms import SimulationNameForm, BodyDetailsForm, LoginForm, RegisterForm
-import matplotlib.colors as mcolors
+from PlanetaryOrbitSimulator.planetarySimulationEngine import (
+    AU_METERS,
+    COLOUR,
+    MASS,
+    NAME,
+    POS,
+    RADIUS,
+    SECONDS_PER_DAY,
+    TEMPLATE_NAMES,
+    VEL,
+    PlanetarySimulationEngine,
+)
+from .forms import BodyDetailsForm, LoginForm, RegisterForm, SimulationNameForm
 from .models import StoredSimulation, UserProfile
 
-from PlanetaryOrbitSimulator.twobodytesting import PlanetarySimulationEngine
+AU_KM = AU_METERS / 1000
+GRAPH_STYLES = (
+    ("Dark Background", "black", "white"),
+    ("Light Background", "white", "black"),
+    ("Transparent Background", "none", "white"),
+)
+SIMULATION_FIELDS = (
+    "simulationTime",
+    "simulationSize",
+    "listOfBodies",
+    "bodyPoints",
+    "ticksPerStorageUpdate",
+    "ticksPerPageUpdate",
+    "secondsPerSimulationTick",
+)
+
+
+def _roundSigFigs(number, sigFigs):
+    return float(f"{number:.{sigFigs}g}")
+
+
+def _loadStyleIntoSession(request, user):
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+    request.session["backgroundStyle"] = profile.backgroundStylePreference
+    request.session["axisStyle"] = profile.axisStylePreference
+    return profile
+
+
+def _getStylePreferences(request):
+    if "backgroundStyle" not in request.session or "axisStyle" not in request.session:
+        _loadStyleIntoSession(request, request.user)
+    return request.session["backgroundStyle"], request.session["axisStyle"]
+
+
+def _copySimulationFields(target, source):
+    for field in SIMULATION_FIELDS:
+        setattr(target, field, getattr(source, field))
+    return target
+
+
+def _getActiveSimulation(request):
+    engine = request.session.get("simulationEngine")
+    storedSim = request.session.get("selectedSimulation")
+    if storedSim is None:
+        simName = engine.simulationName if engine is not None else "No name found"
+        storedSim = StoredSimulation(name=simName, user=request.user)
+        request.session["selectedSimulation"] = storedSim
+    if engine is None:
+        engine = _copySimulationFields(PlanetarySimulationEngine(), storedSim)
+        engine.simulationName = storedSim.name
+    return storedSim, engine
+
+
+def _saveSimulationState(request, storedSim, engine, saveToDb=True, drawGraph=True):
+    if drawGraph:
+        bgStyle, axisStyle = _getStylePreferences(request)
+        engine.drawGraph(request.user, bgStyle, axisStyle)
+    request.session["simulationEngine"] = engine
+    request.session["selectedSimulation"] = storedSim
+    _copySimulationFields(storedSim, engine)
+    storedSim.user = request.user
+    if saveToDb:
+        storedSim.save()
+
+
+def _getBodyChoices(engine, noneLabel="None", excludeIndex=None):
+    return [(-1, noneLabel)] + [
+        (i, b[NAME]) for i, b in enumerate(engine.listOfBodies) if i != excludeIndex
+    ]
+
+
+def _getDisplayMetrics(sim):
+    dtRatio = sim.secondsPerSimulationTick / SECONDS_PER_DAY
+    return {
+        "daysElapsed": round(sim.simulationTime * dtRatio, 2),
+        "daysPerTick": round(sim.ticksPerPageUpdate * dtRatio, 2),
+        "simulationSizeKM": f"{round(sim.simulationSize * AU_KM):,}",
+        "simulationSizeAU": round(sim.simulationSize, 3),
+    }
+
+
+def _buildSimulationForm(request, simulationName, engine, includeFocusBody=False):
+    initial = {
+        "simulationName": simulationName,
+        "simulationSize": engine.simulationSize,
+        "simulationTimePerUpdate": (engine.ticksPerPageUpdate * engine.secondsPerSimulationTick) / SECONDS_PER_DAY,
+    }
+    bodyChoices = None
+    if includeFocusBody:
+        bodyChoices = _getBodyChoices(engine)
+        initial["focusedBody"] = engine.focusBody
+    return SimulationNameForm(request.POST or None, initial=initial, body_choices=bodyChoices)
+
+
+def _stepSimulation(request, storedSim, engine, reverseSimulation=0, dontRunSimulation=0):
+    bgStyle, axisStyle = _getStylePreferences(request)
+    isReverse = "No"
+    if dontRunSimulation != 0:
+        engine.drawGraph(request.user, bgStyle, axisStyle)
+    elif reverseSimulation == 0:
+        setTicks = engine.ticksPerPageUpdate + engine.simulationTime
+        engine.runSimulation(request.user, bgStyle, axisStyle, setTicks)
+    else:
+        if engine.simulationTime > 0:
+            engine.rollbackSimulation(request.user, bgStyle, axisStyle)
+        isReverse = "Yes"
+
+    _saveSimulationState(request, storedSim, engine, drawGraph=False)
+    return isReverse
+
 
 def homePage(request):
-    # Backend for the homepage
-    user = request.user
-    context = {"user": user}
-    return render(request, "HomePage.html", context)
+    return render(request, "HomePage.html")
+
 
 @login_required(login_url="/login/")
-def settingsPage(request, styleIndex = -1):
-    # Backend for the Settings page
-    user = request.user
-    styleBackgroundColours = ["black", "white", "none"]
-    styleAxisColours = ["white", "black", "white"]
-    styleDisplayNames = ["Dark Background", "Light Background", "Transparent Background"]
-
-    if styleIndex == -1:
-        # Note index of style chosen for the page
-        styleIndex = styleBackgroundColours.index(request.session["backgroundStyle"])
-    else:
-        # If the page has chosen a style update the saved style
-        request.session["backgroundStyle"] = styleBackgroundColours[styleIndex]
-        request.session["axisStyle"] = styleAxisColours[styleIndex]
-
-        profile = UserProfile.objects.get(user=user)
-        profile.backgroundStylePreference = styleBackgroundColours[styleIndex]
-        profile.axisStylePreference = styleAxisColours[styleIndex]
+def settingsPage(request, styleIndex=-1):
+    bgColours = [bg for _, bg, _ in GRAPH_STYLES]
+    if 0 <= styleIndex < len(GRAPH_STYLES):
+        _, bg, axis = GRAPH_STYLES[styleIndex]
+        request.session["backgroundStyle"] = bg
+        request.session["axisStyle"] = axis
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+        profile.backgroundStylePreference = bg
+        profile.axisStylePreference = axis
         profile.save()
+    else:
+        bgStyle, _ = _getStylePreferences(request)
+        styleIndex = bgColours.index(bgStyle) if bgStyle in bgColours else 0
 
-    context = {"graphStyles": styleDisplayNames, "styleIndex": styleIndex}
-    return render(request, "SettingsPage.html", context)
+    return render(request, "SettingsPage.html", {
+        "graphStyles": [label for label, _, _ in GRAPH_STYLES],
+        "styleIndex": styleIndex,
+    })
+
 
 def loginPage(request):
     form = LoginForm(request.POST or None)
     if form.is_valid():
-        if User.objects.filter(username=form.cleaned_data["username"]).exists():
-            user = authenticate(username = form.cleaned_data["username"], password =
-                form.cleaned_data["password"])
-            if user is not None:
-                login(request, user)
+        user = authenticate(
+            request,
+            username=form.cleaned_data["username"],
+            password=form.cleaned_data["password"],
+        )
+        if user is not None:
+            login(request, user)
+            _loadStyleIntoSession(request, user)
+            return redirect("/")
+    return render(request, "LoginPage.html", {"loginForm": form})
 
-                # Get preferred style colour
-                try:
-                    profile = UserProfile.objects.get(user=user)
-                except UserProfile.DoesNotExist:
-                    profile = UserProfile(user=user)
-                    profile.save()
-                request.session["backgroundStyle"] = profile.backgroundStylePreference
-                request.session["axisStyle"] = profile.axisStylePreference
-
-                return redirect("/")
-    return render(request, "LoginPage.html",
-                  {"loginForm": form, "currentUser": request.user})
 
 def registerPage(request):
     form = RegisterForm(request.POST or None)
     if form.is_valid():
-        if not User.objects.filter(username=form.cleaned_data["username"]).exists():
-            if form.cleaned_data["password"] == form.cleaned_data["passwordRepeated"]:
-                user = User.objects.create_user(username=form.cleaned_data["username"],
-                                                password=form.cleaned_data["password"])
-                user.save()
-                login(request, user)
+        username = form.cleaned_data["username"]
+        password = form.cleaned_data["password"]
+        if password == form.cleaned_data["passwordRepeated"] and not User.objects.filter(username=username).exists():
+            user = User.objects.create_user(username=username, password=password)
+            login(request, user)
+            _loadStyleIntoSession(request, user)
+    return render(request, "RegisterPage.html", {"registerForm": form})
 
-                # Get preferred style colour
-                try:
-                    profile = UserProfile.objects.get(user=user)
-                except UserProfile.DoesNotExist:
-                    profile = UserProfile(user=user)
-                    profile.save()
-                request.session["backgroundStyle"] = profile.backgroundStylePreference
-                request.session["axisStyle"] = profile.axisStylePreference
-
-    return render(request, "RegisterPage.html",
-                  {"registerForm": form, "currentUser": request.user})
 
 @login_required(login_url="/login/")
-def createPage(request, templateIndex = 0):
-    # Backend for the Create New System page
-    user = request.user
-    request.session["templateIndex"] = templateIndex
-    templatesList = ["Inner Solar System", "Galilean Moons of Jupiter", "Ascendia Primary Star", "Binary Stars", "Single Star"]
+def createPage(request, templateIndex=0):
+    engine = PlanetarySimulationEngine()
+    engine.loadTemplates(templateIndex)
 
-    # Load a Planetary Simulation Engine for accessing parameters
-    simulationEngine = PlanetarySimulationEngine()
-    simulationEngine.loadTemplates(templateIndex)
-    simulationTimePerTick = simulationEngine.ticksPerPageUpdate * simulationEngine.secondsPerSimulationTick
-    simulationTimePerTick = simulationTimePerTick / 86400 # Give the time per tick in days, not seconds
+    form = _buildSimulationForm(request, engine.simulationName, engine)
+    bgStyle, axisStyle = _getStylePreferences(request)
+    engine.drawGraph(request.user, bgStyle, axisStyle)
+    request.session["simulationEngine"] = engine
+    request.session.pop("selectedSimulation", None)
 
-    # Get details of new simulation from user with a form
-    simulationDefaultValues = {"simulationName": simulationEngine.simulationName,
-                               "simulationSize": simulationEngine.simulationSize,
-                               "simulationTimePerUpdate": simulationTimePerTick,}
-    form = SimulationNameForm(request.POST or None, initial=simulationDefaultValues)
-
-    simulationEngine.drawGraph(user, request.session["backgroundStyle"], request.session["axisStyle"])
-    request.session["simulationEngine"] = simulationEngine
-
-    # Wipe this field to stop previous simulation conflicts
-    if "selectedSimulation" in request.session:
-        del request.session["selectedSimulation"]
-
-    context = {"templatesList": templatesList, "templateIndex": templateIndex, "form": form, "user": user}
-
-    return render(request, "NewSystemPage.html", context)
-
-@login_required(login_url="/login/")
-def loadingPage(request, saveIndex = 0):
-    # Backend for the Load Existing System page
-    user = request.user
-    if "templateIndex" not in request.session:
-        # Test if index can be loaded - if not, set it to default
-        request.session["templateIndex"] = 0
-
-    try:
-        # Try loading stored simulations
-        allSimulations = StoredSimulation.objects.filter(user=user)
-        allSimulations.order_by("pk")
-        selectedSimulation = allSimulations[saveIndex]
-        if allSimulations == []:
-            raise IndexError
-        request.session["selectedSimulation"] = selectedSimulation
-
-        simulationEngine, setTicks = loadSimulationEngine(request, selectedSimulation, True)
-
-        selectedSimulation, simulationEngine, infoForm = makeSimulationForm(request, selectedSimulation,
-                                                                            simulationEngine)
-
-        simulationEngine.drawGraph(user, request.session["backgroundStyle"], request.session["axisStyle"])
-        request.session["simulationEngine"] = simulationEngine
-
-        # Create variables for display in information box
-        daysElapsed = round((selectedSimulation.simulationTime / 86400) *
-                            selectedSimulation.secondsPerSimulationTick, 2)  # Simulation time in days
-        daysPerTick = round(
-            (selectedSimulation.ticksPerPageUpdate / 86400) * selectedSimulation.secondsPerSimulationTick, 2)
-        statedSimulationSize = round(
-            selectedSimulation.simulationSize * 1.495979e8)  # Simulation diameter in kilometers
-        fStatedSimulationSize = f"{statedSimulationSize:,}"  # Adds commas to the distance number
-        AUStatedSimulationSize = round(selectedSimulation.simulationSize,
-                                       3)  # Calculates simulation diameter in Astronomical Units to 3DP
-        context = {"allSimulations": allSimulations, "saveIndex": saveIndex, "name": selectedSimulation.name,
-                   "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "simulationSizeKM": fStatedSimulationSize,
-                   "simulationSizeAU": AUStatedSimulationSize, "infoForm": infoForm, "user": user}
-    except:
-        # If stored simulations can't be found, return to home page
-        context = {"user": user}
-        return render(request, "HomePage.html", context)
-
-    return render(request, "LoadSystemPage.html", context)
-
-def makeSimulationForm(request, storedSim, simulationEngine, includeFocusBody=False):
-    simulationDefaultValues = {"simulationName": storedSim.name,
-                               "simulationSize": simulationEngine.simulationSize,
-                               "simulationTimePerUpdate": simulationEngine.ticksPerPageUpdate /
-                                                          (86400 / simulationEngine.secondsPerSimulationTick), }
-    body_choices = None
-    if includeFocusBody:
-        body_choices = [(-1, "None")] + [
-            (i, b[5]) for i, b in enumerate(simulationEngine.listOfBodies)
-        ]
-        simulationDefaultValues["focusedBody"] = simulationEngine.focusBody
-    infoForm = SimulationNameForm(request.POST or None,
-                                  initial=simulationDefaultValues,
-                                  body_choices=body_choices)  # Allow configuring information
-
-    return storedSim, simulationEngine, infoForm
-
-@login_required(login_url="/login/")
-def editSimulationPage(request, selectedBody = 0):
-    # For editing the simulation
-    user = request.user
-    # Load/create a database entry of the simulation
-    storedSim, existingSimLoaded = loadSimulationEntry(request)
-
-    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
-    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
-
-    #Generate useful context variables
-    AU = 1.495979e11
-    body_choices = [(-1, "None (Static Grid)")] + [
-        (i, b[5]) for i, b in enumerate(simulationEngine.listOfBodies) if i != selectedBody
-    ]
-    if selectedBody == len(simulationEngine.listOfBodies):
-        bodyDisplayDetails = {"bodyMass": 0,
-                              "bodyColour": "White",
-                              "bodyName": "Add New Body",
-                              "bodyRadius": 0,
-                              "bodyReference": -1,
-                              "bodyXPosition": 0,
-                              "bodyYPosition": 0,
-                              "bodyXSpeed": 0,
-                              "bodyYSpeed": 0, }
-    else:
-        # Round unnecessary precision before displaying to the user
-        bodyDisplayDetails = {"bodyMass": roundToSignificantFigures(
-                                  simulationEngine.listOfBodies[selectedBody][2],4),
-                              "bodyColour": simulationEngine.listOfBodies[selectedBody][4][0],
-                              "bodyName": simulationEngine.listOfBodies[selectedBody][5],
-                              "bodyRadius": round(simulationEngine.listOfBodies[selectedBody][3]/1000,3),
-                              "bodyReference": simulationEngine.getBodyReference(selectedBody),
-                              "bodyXPosition": roundToSignificantFigures(
-                                  simulationEngine.listOfBodies[selectedBody][0][0]/AU,6),
-                              "bodyYPosition": roundToSignificantFigures(
-                                  simulationEngine.listOfBodies[selectedBody][0][1]/AU,6),
-                              "bodyXSpeed": round(simulationEngine.listOfBodies[selectedBody][1][0]/1000,3),
-                              "bodyYSpeed": round(simulationEngine.listOfBodies[selectedBody][1][1]/1000,3),}
-    detailsForm = BodyDetailsForm(request.POST or None, initial=bodyDisplayDetails, body_choices=body_choices)
-
-    # Focus the screen on the selected body
-    if selectedBody < len(simulationEngine.listOfBodies):
-        simulationEngine.focusBody = selectedBody
-    else:
-        simulationEngine.focusBody = -1
-
-    # Display graph and save any edits
-    simulationEngine.drawGraph(user, request.session["backgroundStyle"], request.session["axisStyle"])
-    request.session["simulationEngine"] = simulationEngine
-    storedSim = loadValues(storedSim, simulationEngine)
-    storedSim.save()
-
-    # Calculate values for display
-    daysElapsed = round((simulationEngine.simulationTime / 86400) *
-                        simulationEngine.secondsPerSimulationTick,2)  # Simulation time in days
-    daysPerTick = round((simulationEngine.ticksPerPageUpdate / 86400) *
-                        simulationEngine.secondsPerSimulationTick, 2)
-    statedSimulationSize = round(simulationEngine.simulationSize * 1.495979e8)  # Simulation diameter in kilometers
-    fStatedSimulationSize = f"{statedSimulationSize:,}"  # Adds commas to the number
-    AUStatedSimulationSize = round(simulationEngine.simulationSize,3)  # Calculates simulation diameter in Astronomical Units to 3DP
-
-    # Calculate next and previous bodies
-    if selectedBody >= len(simulationEngine.listOfBodies):
-        nextBody = selectedBody
-        lastBody = selectedBody - 1
-    elif selectedBody <= 0:
-        nextBody = selectedBody + 1
-        lastBody = selectedBody
-    else:
-        nextBody = selectedBody + 1
-        lastBody = selectedBody - 1
-
-    # Package context for page
-    context = {"simulationSizeKM": fStatedSimulationSize, "simulationSizeAU": AUStatedSimulationSize,
-               "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "selectedBody": selectedBody,
-               "nextBody": nextBody, "lastBody": lastBody, "detailsForm": detailsForm,
-               "simulationName": storedSim.name, "focusBodyName": simulationEngine.focusBodyName,
-               "user": user}
-
-    return render(request, "editSystemPage.html", context)
-
-
-def roundToSignificantFigures(number, significiantFigures):
-    # Modified version of a function from IDiTect.com
-    # Article at: https://www.iditect.com/faq/python/how-to-round-a-number-to-significant-figures-in-python.html
-    formattedNumber = "{:.{}g}".format(number, significiantFigures)
-    # Convert the formatted string back to a floating-point number
-    roundedNumber = float(formattedNumber)
-    return roundedNumber
-
-# Here starts methods used for runSimulation()
-
-def loadValues(objectToLoad, objectLoadFrom):
-    # Copy simulation values to or from database
-    objectToLoad.simulationTime = objectLoadFrom.simulationTime
-    objectToLoad.simulationSize = objectLoadFrom.simulationSize
-    objectToLoad.listOfBodies = objectLoadFrom.listOfBodies
-    objectToLoad.bodyPoints = objectLoadFrom.bodyPoints
-    objectToLoad.ticksPerStorageUpdate = objectLoadFrom.ticksPerStorageUpdate
-    objectToLoad.ticksPerPageUpdate = objectLoadFrom.ticksPerPageUpdate
-    objectToLoad.secondsPerSimulationTick = objectLoadFrom.secondsPerSimulationTick
-
-    return objectToLoad
-
-def loadSimulationEntry(request):
-    user = request.user
-    #Load an entry from the simulation
-    if "selectedSimulation" in request.session:
-        # Use existing save if found
-        existingSimLoaded = True
-    elif "simulationEngine" in request.session:
-        # If not, create new save
-        request.session["selectedSimulation"] = StoredSimulation(name=request.session["simulationEngine"].simulationName, user=user)
-        existingSimLoaded = False
-    else:
-        # If no name for new save, use placeholder
-        request.session["selectedSimulation"] = StoredSimulation(name="No name found")
-        existingSimLoaded = False
-    # Load save
-    storedSim = request.session["selectedSimulation"]
-    return storedSim, existingSimLoaded
-
-def loadSimulationEngine(request, storedSim, forceLoad=False):
-    # Create a PlanetarySimulationEngine() object
-    if "simulationEngine" in request.session and not forceLoad:
-        # Load variables from session if they exist
-        simulationEngine = request.session["simulationEngine"]
-        setTicks = simulationEngine.ticksPerPageUpdate + simulationEngine.simulationTime
-    else:
-        # If variables not found in session, load from the database instead
-        simulationEngine = PlanetarySimulationEngine()
-        simulationEngine = loadValues(simulationEngine, storedSim)
-        setTicks = simulationEngine.ticksPerPageUpdate + simulationEngine.simulationTime
-    return simulationEngine, setTicks
-
-def runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, dontRunSimulation, setTicks):
-    user = request.user
-    if reverseSimulation == 0 and dontRunSimulation == 0:
-        # Run instance of the simulation if not initially loaded
-        simulationEngine.runSimulation(user, request.session["backgroundStyle"], request.session["axisStyle"], setTicks)
-        isSimulationInReverse = "No"
-    elif dontRunSimulation == 0:
-        # Run simulation in reverse if set to (but not before the start of the simulation)
-        if simulationEngine.simulationTime > 0:
-            simulationEngine.rollbackSimulation(user, request.session["backgroundStyle"], request.session["axisStyle"])
-        isSimulationInReverse = "Yes"
-    else:
-        # If simulation just being loaded, only draw graph
-        simulationEngine.drawGraph(user, request.session["backgroundStyle"], request.session["axisStyle"])
-        isSimulationInReverse = "No" # Text description for display
-
-    # Store updated simulation in session variable
-    request.session["simulationEngine"] = simulationEngine
-
-    # Update database entry for simulation
-    storedSim = loadValues(storedSim, simulationEngine)
-    storedSim.user = user
-    storedSim.save()
-
-    return storedSim, simulationEngine, isSimulationInReverse
-
-# The backend main loop for running the simulation - runs on every simulation page refresh
-@login_required(login_url="/login/")
-def runSimulation(request, dontRunSimulation = 0, reverseSimulation = 0):
-    # Load/create a database entry of the simulation
-    storedSim, existingSimLoaded = loadSimulationEntry(request)
-
-    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
-    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
-
-    storedSim, simulationEngine, isSimulationInReverse, = (
-        runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, dontRunSimulation, setTicks))
-
-    storedSim, simulationEngine, infoForm = makeSimulationForm(request, storedSim, simulationEngine, includeFocusBody=True)
-
-    # Calculate values for display
-    daysElapsed = round((simulationEngine.simulationTime/86400)*simulationEngine.secondsPerSimulationTick, 2) # Simulation time in days
-    daysPerTick = round((simulationEngine.ticksPerPageUpdate/86400)*simulationEngine.secondsPerSimulationTick, 2)
-    statedSimulationSize = round(simulationEngine.simulationSize*1.495979e8) # Simulation diameter in kilometers
-    fStatedSimulationSize = f"{statedSimulationSize:,}" #Adds commas to the number
-    AUStatedSimulationSize = round(simulationEngine.simulationSize,3) # Calculates simulation diameter in Astronomical Units to 3DP
-
-    # Package context for page
-    context = {"simulationSizeKM": fStatedSimulationSize, "simulationSizeAU": AUStatedSimulationSize,
-               "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "isSimulationInReverse": isSimulationInReverse,
-               "simulationName": storedSim.name, "focusBodyName": simulationEngine.focusBodyName,
-               "infoForm": infoForm, "user": request.user,}
-
-    constructedResponse = render(request, "RunSimulationPage.html", context)
-    return constructedResponse
-
-@login_required(login_url="/login/")
-def stopSimulation(request, reverseSimulation):
-    # Load/create a database entry of the simulation
-    storedSim, existingSimLoaded = loadSimulationEntry(request)
-
-    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
-    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
-
-    runSimulationTick(request, simulationEngine, storedSim, 0, 1, setTicks)
-
-    context = {"reverseSimulation": reverseSimulation}
-    return render(request, "stopSimulationPage.html", context)
-
-def updateSimulationImage(request, reverseSimulation = 0):
-    user = request.user
-    # Load/create a database entry of the simulation
-    storedSim, existingSimLoaded = loadSimulationEntry(request)
-
-    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
-    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
-
-    storedSim, simulationEngine, isSimulationInReverse = (
-        runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, 0, setTicks))
-
-    daysElapsed = round((simulationEngine.simulationTime / 86400) * simulationEngine.secondsPerSimulationTick, 2)  # Simulation time in days
-    focusChoices = [[-1, "None"]] + [[i, b[5]] for i, b in enumerate(simulationEngine.listOfBodies)]
-    constructedResponse = JsonResponse({
-        "daysElapsed": daysElapsed,
-        "isSimulationInReverse": isSimulationInReverse,
-        "focusBody": simulationEngine.focusBody,
-        "focusBodyName": simulationEngine.focusBodyName,
-        "focusChoices": focusChoices,
+    return render(request, "NewSystemPage.html", {
+        "templatesList": TEMPLATE_NAMES,
+        "templateIndex": templateIndex,
+        "form": form,
     })
-    return constructedResponse
 
+
+@login_required(login_url="/login/")
+def loadingPage(request, saveIndex=0):
+    allSimulations = list(StoredSimulation.objects.filter(user=request.user).order_by("pk"))
+    if not allSimulations or not (0 <= saveIndex < len(allSimulations)):
+        return render(request, "HomePage.html")
+
+    selectedSimulation = allSimulations[saveIndex]
+    request.session["selectedSimulation"] = selectedSimulation
+
+    engine = _copySimulationFields(PlanetarySimulationEngine(), selectedSimulation)
+    engine.simulationName = selectedSimulation.name
+    infoForm = _buildSimulationForm(request, selectedSimulation.name, engine)
+
+    bgStyle, axisStyle = _getStylePreferences(request)
+    engine.drawGraph(request.user, bgStyle, axisStyle)
+    request.session["simulationEngine"] = engine
+
+    return render(request, "LoadSystemPage.html", {
+        "allSimulations": allSimulations,
+        "saveIndex": saveIndex,
+        "name": selectedSimulation.name,
+        "infoForm": infoForm,
+        **_getDisplayMetrics(engine),
+    })
+
+
+@login_required(login_url="/login/")
+def editSimulationPage(request, selectedBody=0):
+    storedSim, engine = _getActiveSimulation(request)
+    numBodies = len(engine.listOfBodies)
+    selectedBody = max(0, min(selectedBody, numBodies))
+
+    bodyChoices = _getBodyChoices(engine, "None (Static Grid)", excludeIndex=selectedBody)
+    if selectedBody == numBodies:
+        bodyDetails = {
+            "bodyMass": 0,
+            "bodyColour": "White",
+            "bodyName": "Add New Body",
+            "bodyRadius": 0,
+            "bodyReference": -1,
+            "bodyXPosition": 0,
+            "bodyYPosition": 0,
+            "bodyXSpeed": 0,
+            "bodyYSpeed": 0,
+        }
+        engine.focusBody = -1
+    else:
+        body = engine.listOfBodies[selectedBody]
+        colour = body[COLOUR][0] if isinstance(body[COLOUR], list) else body[COLOUR]
+        bodyDetails = {
+            "bodyMass": _roundSigFigs(body[MASS], 4),
+            "bodyColour": colour,
+            "bodyName": body[NAME],
+            "bodyRadius": round(body[RADIUS] / 1000, 3),
+            "bodyReference": engine.getBodyReference(selectedBody),
+            "bodyXPosition": _roundSigFigs(body[POS][0] / AU_METERS, 6),
+            "bodyYPosition": _roundSigFigs(body[POS][1] / AU_METERS, 6),
+            "bodyXSpeed": round(body[VEL][0] / 1000, 3),
+            "bodyYSpeed": round(body[VEL][1] / 1000, 3),
+        }
+        engine.focusBody = selectedBody
+
+    detailsForm = BodyDetailsForm(request.POST or None, initial=bodyDetails, body_choices=bodyChoices)
+    _saveSimulationState(request, storedSim, engine)
+
+    return render(request, "editSystemPage.html", {
+        **_getDisplayMetrics(engine),
+        "selectedBody": selectedBody,
+        "nextBody": min(selectedBody + 1, numBodies),
+        "lastBody": max(selectedBody - 1, 0),
+        "detailsForm": detailsForm,
+        "simulationName": storedSim.name,
+        "focusBodyName": engine.focusBodyName,
+    })
+
+
+@login_required(login_url="/login/")
+def runSimulation(request, dontRunSimulation=0, reverseSimulation=0):
+    storedSim, engine = _getActiveSimulation(request)
+    isReverse = _stepSimulation(request, storedSim, engine, reverseSimulation, dontRunSimulation)
+    infoForm = _buildSimulationForm(request, storedSim.name, engine, includeFocusBody=True)
+
+    return render(request, "RunSimulationPage.html", {
+        **_getDisplayMetrics(engine),
+        "isSimulationInReverse": isReverse,
+        "simulationName": storedSim.name,
+        "focusBodyName": engine.focusBodyName,
+        "infoForm": infoForm,
+    })
+
+
+@login_required(login_url="/login/")
+def updateSimulationImage(request, reverseSimulation=0):
+    storedSim, engine = _getActiveSimulation(request)
+    isReverse = _stepSimulation(request, storedSim, engine, reverseSimulation, dontRunSimulation=0)
+
+    return JsonResponse({
+        "daysElapsed": _getDisplayMetrics(engine)["daysElapsed"],
+        "isSimulationInReverse": isReverse,
+        "focusBody": engine.focusBody,
+        "focusBodyName": engine.focusBodyName,
+        "focusChoices": _getBodyChoices(engine),
+    })
+
+
+@login_required(login_url="/login/")
 def changeSimulationFocus(request):
-    user = request.user
-    # Load/create a database entry of the simulation
-    storedSim, existingSimLoaded = loadSimulationEntry(request)
+    storedSim, engine = _getActiveSimulation(request)
+    engine.focusBody += 1
+    engine.updateFocusPoint()
+    _saveSimulationState(request, storedSim, engine)
 
-    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
-    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
+    relativeBodyName = (
+        engine.getBodyReferenceName(engine.focusBody)
+        if engine.focusBody != -1 else "None (Static Grid)"
+    )
+    return JsonResponse({
+        "updatedImageURL": f"/media/latestSimulation{request.user.username}.png",
+        "focusBody": engine.focusBody,
+        "focusBodyName": engine.focusBodyName,
+        "relativeBodyName": relativeBodyName,
+    })
 
-    simulationEngine.focusBody = simulationEngine.focusBody + 1
-    simulationEngine.updateFocusPoint()
 
-    runSimulationTick(request, simulationEngine, storedSim, 0, 1, setTicks)
+@login_required(login_url="/login/")
+def processRunForm(request, isCreating=0):
+    storedSim, engine = _getActiveSimulation(request)
+    runForm = SimulationNameForm(request.POST, body_choices=_getBodyChoices(engine))
+    if not runForm.is_valid():
+        return JsonResponse({"error": "Invalid form data"}, status=400)
 
-    relativeBodyName = (simulationEngine.getBodyReferenceName(simulationEngine.focusBody)
-                        if simulationEngine.focusBody != -1 else "None (Static Grid)")
-    updatedImageURL = "/media/latestSimulation" + user.username + ".png"
-    constructedResponse = JsonResponse({"updatedImageURL": updatedImageURL,
-                                        "focusBody": simulationEngine.focusBody,
-                                        "focusBodyName": simulationEngine.focusBodyName,
-                                        "relativeBodyName": relativeBodyName})
-    return constructedResponse
+    cleaned = runForm.cleaned_data
+    if cleaned.get("simulationName"):
+        storedSim.name = cleaned["simulationName"]
+        engine.simulationName = storedSim.name
+    if cleaned.get("simulationSize") is not None:
+        engine.simulationSize = cleaned["simulationSize"]
+    if cleaned.get("simulationTimePerUpdate") is not None and engine.secondsPerSimulationTick > 0:
+        adjustedSeconds = round(cleaned["simulationTimePerUpdate"] * SECONDS_PER_DAY)
+        engine.ticksPerPageUpdate = round(adjustedSeconds / engine.secondsPerSimulationTick)
 
-def processRunForm(request, isCreating = 0):
-    user = request.user
-    # Load/create a database entry of the simulation
-    storedSim, existingSimLoaded = loadSimulationEntry(request)
+    focusedBodyVal = cleaned.get("focusedBody")
+    if focusedBodyVal not in (None, ""):
+        engine.focusBody = int(focusedBodyVal)
+        engine.updateFocusPoint()
 
-    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
-    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
+    _saveSimulationState(request, storedSim, engine, saveToDb=(isCreating == 0))
+    metrics = _getDisplayMetrics(engine)
 
-    body_choices = [(-1, "None")] + [
-        (i, b[5]) for i, b in enumerate(simulationEngine.listOfBodies)
-    ]
-    runForm = SimulationNameForm(request.POST, body_choices=body_choices)
+    return JsonResponse({
+        "simulationName": storedSim.name,
+        "daysPerTick": metrics["daysPerTick"],
+        "simulationSizeAU": metrics["simulationSizeAU"],
+        "simulationSizeKM": metrics["simulationSizeKM"],
+        "focusBody": engine.focusBody,
+        "focusBodyName": engine.focusBodyName,
+    })
 
-    if runForm.is_valid():
-        storedSim.name = runForm.cleaned_data["simulationName"]
-        simulationEngine.simulationSize = runForm.cleaned_data["simulationSize"]
-        adjustedTimePerTick =  round(runForm.cleaned_data["simulationTimePerUpdate"] * 86400)
-        simulationEngine.ticksPerPageUpdate = adjustedTimePerTick  / simulationEngine.secondsPerSimulationTick
-        focusedBodyVal = runForm.cleaned_data.get("focusedBody")
-        if focusedBodyVal not in (None, ""):
-            simulationEngine.focusBody = int(focusedBodyVal)
-            simulationEngine.updateFocusPoint()
-    else:
-        raise ValueError
 
-    simulationEngine.drawGraph(user, request.session["backgroundStyle"], request.session["axisStyle"])
-
-    #Update stored simulation data
-    request.session["simulationEngine"] = simulationEngine
-    storedSim = loadValues(storedSim, simulationEngine)
-    storedSim.user = user
-
-    if isCreating == 0:
-        storedSim.save()
-
-    # Calculate values for display
-    daysPerTick = round((simulationEngine.ticksPerPageUpdate / 86400) * simulationEngine.secondsPerSimulationTick, 2)
-    statedSimulationSize = round(simulationEngine.simulationSize * 1.495979e8)  # Simulation diameter in kilometers
-    fStatedSimulationSize = f"{statedSimulationSize:,}"  # Adds commas to the number
-    AUStatedSimulationSize = round(simulationEngine.simulationSize,
-                                   3)  # Calculates simulation diameter in Astronomical Units to 3DP
-
-    response = {"simulationName": storedSim.name, "daysPerTick": daysPerTick, "simulationSizeAU": AUStatedSimulationSize,
-                "simulationSizeKM": fStatedSimulationSize, "focusBody": simulationEngine.focusBody,
-                "focusBodyName": simulationEngine.focusBodyName}
-    return JsonResponse(response)
-
+@login_required(login_url="/login/")
 def processEditForm(request, selectedBody):
-    user = request.user
-    # Load/create a database entry of the simulation
-    storedSim, existingSimLoaded = loadSimulationEntry(request)
+    storedSim, engine = _getActiveSimulation(request)
+    if selectedBody < 0 or selectedBody > len(engine.listOfBodies):
+        return JsonResponse({"error": "Body index out of range"}, status=400)
 
-    # Load a PlanetarySimulationEngine() object (either from session/database or new from template)
-    simulationEngine, setTicks = loadSimulationEngine(request, storedSim)
+    bodyChoices = _getBodyChoices(engine, "None (Static Grid)", excludeIndex=selectedBody)
+    detailsForm = BodyDetailsForm(request.POST, body_choices=bodyChoices)
+    if not detailsForm.is_valid():
+        return JsonResponse({"error": "Invalid form data"}, status=400)
 
-    body_choices = [(-1, "None (Static Grid)")] + [
-        (i, b[5]) for i, b in enumerate(simulationEngine.listOfBodies) if i != selectedBody
-    ]
-    detailsForm = BodyDetailsForm(request.POST, body_choices=body_choices)
+    cleaned = detailsForm.cleaned_data
+    if selectedBody == len(engine.listOfBodies):
+        engine.listOfBodies.append([[0, 0, 0], [0, 0, 0], 0, 0, ["white", "white"], "", -1])
+        engine.bodyPoints.append([[], [], [[], [], []]])
 
-    AU = 1.495979e11
-    if detailsForm.is_valid():
-        # Load parameters from form
-        if selectedBody == len(simulationEngine.listOfBodies):
-            # If creating new body, add empty framework to list
-            simulationEngine.listOfBodies.append([[0, 0, 0], [0, 0, 0], 0, 0, ['white', 'white'], "", -1])
-            simulationEngine.bodyPoints.append([[], [], [[],[],[]]])
+    body = engine.listOfBodies[selectedBody]
+    if cleaned.get("bodyMass") is not None:
+        body[MASS] = cleaned["bodyMass"]
+    if cleaned.get("bodyRadius") is not None:
+        body[RADIUS] = cleaned["bodyRadius"] * 1000
+    if cleaned.get("bodyName") is not None:
+        body[NAME] = cleaned["bodyName"]
+    if cleaned.get("bodyXPosition") is not None:
+        body[POS][0] = cleaned["bodyXPosition"] * AU_METERS
+    if cleaned.get("bodyYPosition") is not None:
+        body[POS][1] = cleaned["bodyYPosition"] * AU_METERS
+    if cleaned.get("bodyXSpeed") is not None:
+        body[VEL][0] = cleaned["bodyXSpeed"] * 1000
+    if cleaned.get("bodyYSpeed") is not None:
+        body[VEL][1] = cleaned["bodyYSpeed"] * 1000
 
-        simulationEngine.listOfBodies[selectedBody][2] = detailsForm.cleaned_data["bodyMass"]
-        simulationEngine.listOfBodies[selectedBody][3] = detailsForm.cleaned_data["bodyRadius"] * 1000
-        simulationEngine.listOfBodies[selectedBody][5] = detailsForm.cleaned_data["bodyName"]
+    refVal = cleaned.get("bodyReference")
+    engine.setBodyReference(selectedBody, int(refVal) if refVal not in (None, "") else -1)
 
-        simulationEngine.listOfBodies[selectedBody][0][0] = detailsForm.cleaned_data["bodyXPosition"]*AU
-        simulationEngine.listOfBodies[selectedBody][0][1] = detailsForm.cleaned_data["bodyYPosition"]*AU
-        simulationEngine.listOfBodies[selectedBody][1][0] = detailsForm.cleaned_data["bodyXSpeed"]*1000
-        simulationEngine.listOfBodies[selectedBody][1][1] = detailsForm.cleaned_data["bodyYSpeed"]*1000
+    colour = (cleaned.get("bodyColour") or "").strip().lower()
+    if colour in mcolors.CSS4_COLORS:
+        body[COLOUR] = [colour, colour]
 
-        ref_val = int(detailsForm.cleaned_data.get("bodyReference", -1))
-        simulationEngine.setBodyReference(selectedBody, ref_val)
-
-        if detailsForm.cleaned_data["bodyColour"] in mcolors.CSS4_COLORS:
-            # Only update colour if valid colour entered
-            simulationEngine.listOfBodies[selectedBody][4][0] = detailsForm.cleaned_data["bodyColour"]
-            simulationEngine.listOfBodies[selectedBody][4][1] = detailsForm.cleaned_data["bodyColour"] # Update both colour fields
-        else:
-            print("Invalid colour!")
-    else:
-        raise ValueError
-
-    simulationEngine.drawGraph(user, request.session["backgroundStyle"], request.session["axisStyle"])
-
-    #Update stored simulation data
-    request.session["simulationEngine"] = simulationEngine
-    storedSim = loadValues(storedSim, simulationEngine)
-    storedSim.user = user
-    storedSim.save()
-
-    response = {}
-    return JsonResponse(response)
-
+    _saveSimulationState(request, storedSim, engine)
+    return JsonResponse({})

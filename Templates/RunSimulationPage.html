@@ -1,369 +1,200 @@
 {% extends 'page_template.html' %}
-{% load static %}
+
+{% block extra_styles %}
+<style>
+    .btn-edit { top: 85vh; left: 14vw; }
+    .btn-focus { top: 70vh; left: 75vw; }
+    .btn-start { top: 70vh; left: 87vw; }
+    .btn-reverse { top: 85vh; left: 75vw; }
+    .btn-stop { top: 85vh; left: 87vw; }
+</style>
+{% endblock %}
 
 {% block content %}
-    <style>
-        .main_page_element {
-            position: relative;
-            height: 0;
-            width: 0;
+    <button class="nav-btn btn-menu" onclick="window.location.href='/'">
+        Return to Main Menu
+    </button>
+
+    <button class="nav-btn btn-start" id="startButton">
+        Start Simulation
+    </button>
+
+    <button class="nav-btn btn-stop" id="stopButton">
+        Stop Simulation
+    </button>
+
+    <button class="nav-btn btn-reverse" id="reverseButton">
+        Reverse Simulation Direction
+    </button>
+
+    <button class="nav-btn btn-focus" id="focusButton">
+        Focus Next Body
+    </button>
+
+    <button class="nav-btn btn-edit" onclick="window.location.href='/edit/0'">
+        Edit Simulation
+    </button>
+
+    <div class="simulation-image-box">
+        <img src="/media/latestSimulation{{ user }}.png" id="simImage" alt="Test">
+    </div>
+
+    <div class="panel panel-left">
+        <h3>Simulation Information:</h3>
+        <p id="nameBox">Simulation Name: {{ simulationName }}</p>
+        <p id="displaySizeBox">Simulation Display Size: {{ simulationSizeKM }}km / {{ simulationSizeAU }}AU</p>
+        <p id="daysPerTickBox">Days Per Simulation Tick: {{ daysPerTick }}</p>
+        <p id="daysElapsedBox">Simulation Days Elapsed: {{ daysElapsed }}</p>
+        <p id="focusBodyBox">Focused Body: {{ focusBodyName }}</p>
+        <p id="reverseBox">Simulation Iteration Reversed: {{ isSimulationInReverse }}</p>
+    </div>
+
+    <form class="panel panel-right" action="" method="post" id="submitForm">
+        <h2>Modify Simulation Values:</h2>
+        {% csrf_token %}
+        {{ infoForm }}
+        <input id="submitFormButton" type="submit" value="Confirm Changes">
+    </form>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let isRunning = false;
+    let isReversing = false;
+    let pendingCount = 0;
+    let tickTimer = null;
+    let actionQueue = Promise.resolve();
+    $("#stopButton").css("background", "grey");
+
+    function updateFocusUI(data) {
+        if (data.focusBodyName !== undefined) {
+            $("#focusBodyBox").text("Focused Body: " + data.focusBodyName);
         }
-
-        .back_to_menu_button {
-            position: absolute;
-            top: 85vh;
-            left: 2vw;
-            height: 10vh;
-            width: 10vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 5vh;
+        const $select = $("#id_focusedBody");
+        if (data.focusChoices !== undefined && $select.find("option").length !== data.focusChoices.length) {
+            $select.empty();
+            $.each(data.focusChoices, (_, [val, label]) => {
+                $select.append($("<option>", { value: val, text: label }));
+            });
         }
-
-        .start_simulation_button {
-            position: absolute;
-            top: 70vh;
-            left: 87vw;
-            height: 10vh;
-            width: 10vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 5vh;
+        if (data.focusBody !== undefined) {
+            $select.val(String(data.focusBody));
         }
+    }
 
-        .stop_simulation_button {
-            position: absolute;
-            top: 85vh;
-            left: 87vw;
-            height: 10vh;
-            width: 10vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 5vh;
+    function ajaxPromise(options) {
+        return new Promise((resolve) => {
+            $.ajax({ cache: false, ...options, complete: resolve });
+        });
+    }
+
+    function scheduleNextTick() {
+        clearTimeout(tickTimer);
+        tickTimer = null;
+        if (pendingCount > 0) return;
+        if (isRunning) {
+            tickTimer = setTimeout(() => {
+                tickTimer = null;
+                enqueue(sendTick);
+            }, 50);
+        } else {
+            $("#startButton").css("background", "");
         }
+    }
 
-        .invert_simulation_button {
-            position: absolute;
-            top: 85vh;
-            left: 75vw;
-            height: 10vh;
-            width: 10vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 5vh;
-        }
+    function enqueue(task) {
+        pendingCount++;
+        actionQueue = actionQueue
+            .then(task, task)
+            .finally(() => {
+                pendingCount--;
+                scheduleNextTick();
+            });
+    }
 
-        .edit_simulation_button {
-            position: absolute;
-            top: 85vh;
-            left: 14vw;
-            height: 10vh;
-            width: 10vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 5vh;
-        }
-
-        .change_focus_button {
-            position: absolute;
-            top: 70vh;
-            left: 75vw;
-            height: 10vh;
-            width: 10vw;
-            text-align: center;
-            border: 2px solid black;
-            padding: 5px;
-            border-radius: 5vh;
-        }
-
-        .simulation_image_box {
-            position: absolute;
-            top: 0;
-            left: 27vw;
-            text-align: center;
-        }
-
-        .simulation_information_box {
-            position: absolute;
-            top: 15vh;
-            left: 5vw;
-            height: 45vh;
-            width: 15vw;
-            text-align: center;
-            border: 2px solid black;
-            background-color: white;
-            overflow: auto;
-            display: block;
-            padding: 5px;
-            border-radius: 5vh;
-        }
-
-        .simulation_edit_box {
-            position: absolute;
-            top: 15vh;
-            left: 78vw;
-            height: 45vh;
-            width: 15vw;
-            text-align: center;
-            border: 2px solid black;
-            background-color: white;
-            overflow: auto;
-            display: block;
-            padding: 5px;
-            border-radius: 5vh;
-        }
-    </style>
-    <body>
-        <button class="back_to_menu_button"
-                onclick="window.location.href='/'">
-            Return to Main Menu
-        </button>
-
-        <button class="start_simulation_button" id="startButton">
-            Start Simulation
-        </button>
-
-        <button class="stop_simulation_button" id="stopButton">
-            Stop Simulation
-        </button>
-
-        <button class="invert_simulation_button" id="reverseButton">
-            Reverse Simulation Direction
-        </button>
-
-        <button class="change_focus_button"
-                id="focusButton">
-            Focus Next Body
-        </button>
-
-        <button class="edit_simulation_button"
-                onclick="window.location.href='/edit/0'">
-            Edit Simulation
-        </button>
-
-        <div class="simulation_image_box">
-            <img src="/media/latestSimulation{{user}}.png" id="simImage" alt="Test">
-        </div>
-
-        <div class ="simulation_information_box">
-            <h3>Simulation Information:</h3>
-            <p id="nameBox">Simulation Name: {{simulationName}}</p>
-            <p id="displaySizeBox">Simulation Display Size: {{simulationSizeKM}}km / {{simulationSizeAU}}AU</p>
-            <p id="daysPerTickBox">Days Per Simulation Tick: {{daysPerTick}}</p>
-            <p id="daysElapsedBox">Simulation Days Elapsed: {{daysElapsed}}</p>
-            <p id="focusBodyBox">Focused Body: {{focusBodyName}}</p>
-            <p id="reverseBox">Simulation Iteration Reversed: {{isSimulationInReverse}}</p>
-        </div>
-
-        <form class ="simulation_edit_box" action="" method="post" id="submitForm">
-            <h2>Modify Simulation Values:</h2>
-            {% csrf_token %}
-            {{infoForm}}
-            <input id="submitFormButton" type="submit" value="Confirm Changes">
-        </form>
-    </body>
-    <script>
-        let isSimulationRunning = 0;
-        let isSimulationReversing = 0;
-        let requestInFlight = false;
-        let pendingActions = [];
-        let tickTimer = null;
-        $("#stopButton").css('background','grey');
-
-        function simulationImageURL() {
-            return '/media/latestSimulation{{user}}.png?' + Date.now();
-        }
-
-        function enqueueAction(action) {
-            pendingActions.push(action);
-            dispatchNextAction();
-        }
-
-        function onActionFinished() {
-            requestInFlight = false;
-            if (pendingActions.length > 0) {
-                dispatchNextAction();
-                return;
-            }
-            if (isSimulationRunning === 1) {
+    function sendTick() {
+        return ajaxPromise({
+            url: `/update/${isReversing ? 1 : 0}/`,
+            type: "get",
+            success: (data) => {
+                refreshSimImage();
+                $("#daysElapsedBox").text("Simulation Days Elapsed: " + data.daysElapsed);
+                $("#reverseBox").text("Simulation Iteration Reversed: " + data.isSimulationInReverse);
+                updateFocusUI(data);
+            },
+            error: () => {
+                isRunning = false;
                 clearTimeout(tickTimer);
-                tickTimer = setTimeout(function() {
-                    tickTimer = null;
-                    enqueueAction({ type: 'tick' });
-                }, 50);
-            } else {
-                $("#startButton").css('background','');
-            }
-        }
-
-        function dispatchNextAction() {
-            if (requestInFlight || pendingActions.length === 0) {
-                return;
-            }
-            requestInFlight = true;
-            var action = pendingActions.shift();
-            if (action.type === 'tick') {
-                sendTickRequest();
-            } else if (action.type === 'focus') {
-                sendFocusRequest();
-            } else if (action.type === 'form') {
-                sendFormRequest(action.data);
-            } else {
-                onActionFinished();
-            }
-        }
-
-        function sendTickRequest() {
-            $.ajax({
-                url: '/update/' + isSimulationReversing,
-                type: 'get',
-                cache: false,
-
-                success: function(data) {
-                    $("#simImage").attr('src', simulationImageURL());
-                    $("#daysElapsedBox").text("Simulation Days Elapsed: " + data.daysElapsed);
-                    $("#reverseBox").text("Simulation Iteration Reversed: " + data.isSimulationInReverse);
-                    if (typeof(data.focusBodyName) != "undefined") {
-                        $("#focusBodyBox").text("Focused Body: " + data.focusBodyName);
-                    }
-                    if (typeof(data.focusChoices) != "undefined") {
-                        var $select = $("#id_focusedBody");
-                        if ($select.find("option").length !== data.focusChoices.length) {
-                            $select.empty();
-                            $.each(data.focusChoices, function(index, item) {
-                                $select.append($('<option>', {
-                                    value: item[0],
-                                    text: item[1]
-                                }));
-                            });
-                        }
-                        if (typeof(data.focusBody) != "undefined") {
-                            $select.val(String(data.focusBody));
-                        }
-                    }
-                },
-
-                error: function() {
-                    isSimulationRunning = 0;
-                    pendingActions = [];
-                    clearTimeout(tickTimer);
-                    tickTimer = null;
-                    alert("Error in updating simulation.");
-                    window.location.href = '/stop/0';
-                },
-
-                complete: function() {
-                    onActionFinished();
-                }
-            });
-        }
-
-        function sendFocusRequest() {
-            $.ajax({
-                url: '/focus/',
-                type: 'get',
-                cache: false,
-
-                success: function(data) {
-                    $("#simImage").attr('src', simulationImageURL());
-                    $("#focusBodyBox").text("Focused Body: " + data.focusBodyName);
-                    if (typeof(data.focusBody) != "undefined") {
-                        $("#id_focusedBody").val(String(data.focusBody));
-                    }
-                },
-
-                error: function() {
-                    alert("Error in changing focus.");
-                },
-
-                complete: function() {
-                    onActionFinished();
-                }
-            });
-        }
-
-        function sendFormRequest(formData) {
-            $.ajax({
-                url: '/runForm/',
-                type: 'post',
-                cache: false,
-                data: formData,
-
-                success: function(data) {
-                    $("#simImage").attr('src', simulationImageURL());
-                    $("#nameBox").text("Simulation Name: " + data.simulationName);
-                    $("#displaySizeBox").text("Simulation Display Size: " + data.simulationSizeKM + "km / " + data.simulationSizeAU + "AU");
-                    $("#daysPerTickBox").text("Days Per Simulation Tick: " + data.daysPerTick);
-                    if (typeof(data.focusBodyName) != "undefined") {
-                        $("#focusBodyBox").text("Focused Body: " + data.focusBodyName);
-                    }
-                    if (typeof(data.focusBody) != "undefined") {
-                        $("#id_focusedBody").val(String(data.focusBody));
-                    }
-                },
-
-                error: function() {
-                    alert("Error in updating form.");
-                },
-
-                complete: function() {
-                    onActionFinished();
-                }
-            });
-        }
-
-        $('#focusButton').click(function(event) {
-            event.preventDefault();
-            enqueueAction({ type: 'focus' });
-        });
-
-        $('#submitForm').on('submit', function(event) {
-            event.preventDefault();
-            enqueueAction({ type: 'form', data: $(this).serialize() });
-        });
-
-        $('#stopButton').click(function(event) {
-            event.preventDefault();
-            isSimulationRunning = 0;
-            clearTimeout(tickTimer);
-            tickTimer = null;
-            $("#stopButton").css('background','grey');
-            if (!requestInFlight) {
-                $("#startButton").css('background','');
+                tickTimer = null;
+                alert("Error in updating simulation.");
+                window.location.href = "/run/1/";
             }
         });
+    }
 
-        $('#startButton').click(function(event) {
-            event.preventDefault();
-            if (isSimulationRunning === 1) {
-                return;
-            }
-            isSimulationRunning = 1;
-            clearTimeout(tickTimer);
-            tickTimer = null;
-            $("#stopButton").css('background','');
-            $("#startButton").css('background','grey');
-            enqueueAction({ type: 'tick' });
+    function sendFocus() {
+        return ajaxPromise({
+            url: "/focus/",
+            type: "get",
+            success: (data) => {
+                refreshSimImage();
+                updateFocusUI(data);
+            },
+            error: () => alert("Error in changing focus.")
         });
+    }
 
-        $('#reverseButton').click(function(event) {
-            event.preventDefault();
-            if (isSimulationReversing == 0) {
-                isSimulationReversing = 1;
-            } else {
-                isSimulationReversing = 0;
-            }
-            if (isSimulationReversing == 0) {
-                $("#reverseBox").text("Simulation Iteration Reversed: No");
-            } else {
-                $("#reverseBox").text("Simulation Iteration Reversed: Yes");
-            }
+    function sendForm(formData) {
+        return ajaxPromise({
+            url: "/runForm/",
+            type: "post",
+            data: formData,
+            success: (data) => {
+                refreshSimImage();
+                $("#nameBox").text("Simulation Name: " + data.simulationName);
+                $("#displaySizeBox").text("Simulation Display Size: " + data.simulationSizeKM + "km / " + data.simulationSizeAU + "AU");
+                $("#daysPerTickBox").text("Days Per Simulation Tick: " + data.daysPerTick);
+                updateFocusUI(data);
+            },
+            error: () => alert("Error in updating form.")
         });
+    }
 
-    </script>
+    $("#focusButton").on("click", (e) => {
+        e.preventDefault();
+        enqueue(sendFocus);
+    });
+
+    $("#submitForm").on("submit", function(e) {
+        e.preventDefault();
+        const data = $(this).serialize();
+        enqueue(() => sendForm(data));
+    });
+
+    $("#stopButton").on("click", (e) => {
+        e.preventDefault();
+        isRunning = false;
+        clearTimeout(tickTimer);
+        tickTimer = null;
+        $("#stopButton").css("background", "grey");
+        if (pendingCount === 0) $("#startButton").css("background", "");
+    });
+
+    $("#startButton").on("click", (e) => {
+        e.preventDefault();
+        if (isRunning) return;
+        isRunning = true;
+        clearTimeout(tickTimer);
+        tickTimer = null;
+        $("#stopButton").css("background", "");
+        $("#startButton").css("background", "grey");
+        enqueue(sendTick);
+    });
+
+    $("#reverseButton").on("click", (e) => {
+        e.preventDefault();
+        isReversing = !isReversing;
+        $("#reverseBox").text("Simulation Iteration Reversed: " + (isReversing ? "Yes" : "No"));
+    });
+</script>
 {% endblock %}
