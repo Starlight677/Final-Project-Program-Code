@@ -1,3 +1,5 @@
+import time
+
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
@@ -115,47 +117,81 @@ def createPage(request, templateIndex = 0):
     return render(request, "NewSystemPage.html", context)
 
 @login_required(login_url="/login/")
-def loadingPage(request, saveIndex = 0):
+def loadingPage(request, saveIndex=None):
     # Backend for the Load Existing System page
     user = request.user
     if "templateIndex" not in request.session:
         # Test if index can be loaded - if not, set it to default
         request.session["templateIndex"] = 0
 
+    allSimulations = StoredSimulation.objects.filter(user=user).order_by("pk")
+    hasSimulations = allSimulations.exists()
+
+    if saveIndex is None:
+        # Clear any stale simulation state carried over from previous pages
+        request.session.pop("selectedSimulation", None)
+        request.session.pop("simulationEngine", None)
+        infoForm = SimulationNameForm()
+        context = {
+            "allSimulations": allSimulations,
+            "saveIndex": None,
+            "hasSelectedSimulation": False,
+            "hasSimulations": hasSimulations,
+            "infoForm": infoForm,
+            "user": user,
+        }
+        return render(request, "LoadSystemPage.html", context)
+
+    if not hasSimulations:
+        request.session.pop("selectedSimulation", None)
+        request.session.pop("simulationEngine", None)
+        return redirect("/load/")
+
     try:
-        # Try loading stored simulations
-        allSimulations = StoredSimulation.objects.filter(user=user)
-        allSimulations.order_by("pk")
         selectedSimulation = allSimulations[saveIndex]
-        if allSimulations == []:
-            raise IndexError
-        request.session["selectedSimulation"] = selectedSimulation
+    except IndexError:
+        request.session.pop("selectedSimulation", None)
+        request.session.pop("simulationEngine", None)
+        return redirect("/load/")
 
-        simulationEngine, setTicks = loadSimulationEngine(request, selectedSimulation, True)
+    request.session["selectedSimulation"] = selectedSimulation
 
-        selectedSimulation, simulationEngine, infoForm = makeSimulationForm(request, selectedSimulation,
-                                                                            simulationEngine)
+    simulationEngine, setTicks = loadSimulationEngine(request, selectedSimulation, True)
 
-        simulationEngine.drawGraph(user, request.session["backgroundStyle"], request.session["axisStyle"])
-        request.session["simulationEngine"] = simulationEngine
+    selectedSimulation, simulationEngine, infoForm = makeSimulationForm(request, selectedSimulation,
+                                                                        simulationEngine)
 
-        # Create variables for display in information box
-        daysElapsed = round((selectedSimulation.simulationTime / 86400) *
-                            selectedSimulation.secondsPerSimulationTick, 2)  # Simulation time in days
-        daysPerTick = round(
-            (selectedSimulation.ticksPerPageUpdate / 86400) * selectedSimulation.secondsPerSimulationTick, 2)
-        statedSimulationSize = round(
-            selectedSimulation.simulationSize * 1.495979e8)  # Simulation diameter in kilometers
-        fStatedSimulationSize = f"{statedSimulationSize:,}"  # Adds commas to the distance number
-        AUStatedSimulationSize = round(selectedSimulation.simulationSize,
-                                       3)  # Calculates simulation diameter in Astronomical Units to 3DP
-        context = {"allSimulations": allSimulations, "saveIndex": saveIndex, "name": selectedSimulation.name,
-                   "daysElapsed": daysElapsed, "daysPerTick": daysPerTick, "simulationSizeKM": fStatedSimulationSize,
-                   "simulationSizeAU": AUStatedSimulationSize, "infoForm": infoForm, "user": user}
-    except:
-        # If stored simulations can't be found, return to home page
-        context = {"user": user}
-        return render(request, "HomePage.html", context)
+    simulationEngine.drawGraph(
+        user,
+        request.session.get("backgroundStyle", "black"),
+        request.session.get("axisStyle", "white"),
+    )
+    request.session["simulationEngine"] = simulationEngine
+
+    # Create variables for display in information box
+    daysElapsed = round((selectedSimulation.simulationTime / 86400) *
+                        selectedSimulation.secondsPerSimulationTick, 2)  # Simulation time in days
+    daysPerTick = round(
+        (selectedSimulation.ticksPerPageUpdate / 86400) * selectedSimulation.secondsPerSimulationTick, 2)
+    statedSimulationSize = round(
+        selectedSimulation.simulationSize * 1.495979e8)  # Simulation diameter in kilometers
+    fStatedSimulationSize = f"{statedSimulationSize:,}"  # Adds commas to the distance number
+    AUStatedSimulationSize = round(selectedSimulation.simulationSize,
+                                   3)  # Calculates simulation diameter in Astronomical Units to 3DP
+    context = {
+        "allSimulations": allSimulations,
+        "saveIndex": saveIndex,
+        "hasSelectedSimulation": True,
+        "hasSimulations": hasSimulations,
+        "imageTimestamp": int(time.time() * 1000),
+        "name": selectedSimulation.name,
+        "daysElapsed": daysElapsed,
+        "daysPerTick": daysPerTick,
+        "simulationSizeKM": fStatedSimulationSize,
+        "simulationSizeAU": AUStatedSimulationSize,
+        "infoForm": infoForm,
+        "user": user,
+    }
 
     return render(request, "LoadSystemPage.html", context)
 
@@ -341,6 +377,9 @@ def runSimulationTick(request, simulationEngine, storedSim, reverseSimulation, d
 # The backend main loop for running the simulation - runs on every simulation page refresh
 @login_required(login_url="/login/")
 def runSimulation(request, dontRunSimulation = 0, reverseSimulation = 0):
+    if "selectedSimulation" not in request.session and "simulationEngine" not in request.session:
+        return redirect("/load/")
+
     # Load/create a database entry of the simulation
     storedSim, existingSimLoaded = loadSimulationEntry(request)
 
@@ -426,6 +465,9 @@ def changeSimulationFocus(request):
     return constructedResponse
 
 def processRunForm(request, isCreating = 0):
+    if "selectedSimulation" not in request.session and "simulationEngine" not in request.session:
+        return JsonResponse({"error": "No simulation selected."}, status=400)
+
     user = request.user
     # Load/create a database entry of the simulation
     storedSim, existingSimLoaded = loadSimulationEntry(request)

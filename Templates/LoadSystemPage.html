@@ -91,6 +91,59 @@
             text-align: center;
         }
 
+        .run_simulation_button:disabled {
+            background-color: #b0b0b0;
+            color: #555555;
+            border-color: #666666;
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .disabled_box {
+            background-color: #cccccc;
+            color: #555555;
+            border-color: #666666;
+            opacity: 0.75;
+        }
+
+        .disabled_box input,
+        .disabled_box select {
+            background-color: #dcdcdc;
+            color: #666666;
+            cursor: not-allowed;
+        }
+
+        .simulation_image_placeholder {
+            margin-top: 5vh;
+            width: 46vw;
+            height: 70vh;
+            border: 2px solid #666666;
+            border-radius: 5vh;
+            background-color: rgba(190, 190, 190, 0.8);
+            color: #333333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .no_simulations_error {
+            width: 15vw;
+            border: 2px solid #900000;
+            border-radius: 15px;
+            padding: 10px;
+            background-color: #ffe6e6;
+            color: #900000;
+            box-sizing: border-box;
+        }
+
+        .disabled_fieldset {
+            border: none;
+            margin: 0;
+            padding: 0;
+        }
+
     </style>
     <body>
         <button class="back_to_menu_button"
@@ -98,21 +151,37 @@
             Return to Main Menu
         </button>
 
-        <button class="run_simulation_button"
-                onclick="window.location.href='/run/1'">
-            Run Simulation
-        </button>
+        {% if hasSelectedSimulation %}
+            <button class="run_simulation_button"
+                    onclick="window.location.href='/run/1'">
+                Run Simulation
+            </button>
+        {% else %}
+            <button class="run_simulation_button" disabled>
+                Run Simulation
+            </button>
+        {% endif %}
 
         <div class ="simulation_image_box">
-            <img src="/media/latestSimulation{{user}}.png" alt="This image has failed to load."
-                 id="simImage">
+            {% if hasSelectedSimulation %}
+                <img src="/media/latestSimulation{{user}}.png?{{ imageTimestamp }}" alt="This image has failed to load."
+                     id="simImage">
+            {% else %}
+                <div class="simulation_image_placeholder">
+                    {% if not hasSimulations %}
+                        <h2>Error: No saved simulations found. Create a new system from the Main Menu first.</h2>
+                    {% else %}
+                        <h2>No simulation selected. Choose a saved simulation from the list.</h2>
+                    {% endif %}
+                </div>
+            {% endif %}
         </div>
 
         <ul class="choose_save_box">
             <li><h2 style="color:white">Saved Simulations:</h2></li>
             {% for simulation in allSimulations %}
                 <li>
-                    {% if forloop.counter0 == saveIndex %}
+                    {% if hasSelectedSimulation and forloop.counter0 == saveIndex %}
                         <button class ="selected_save_entry"
                                 onclick="window.location.href='/load/{{forloop.counter0}}'">
                             {{simulation.name}}
@@ -124,18 +193,37 @@
                         </button>
                     {% endif %}
                 </li>
+            {% empty %}
+                <li>
+                    <div class="no_simulations_error">
+                        Error: No saved simulations found.
+                    </div>
+                </li>
             {% endfor %}
         </ul>
 
-        <form class ="simulation_information_box" action="" method="post" id="infoForm">
-            <h2>Simulation Information:</h2>
-            {% csrf_token %}
-            {{infoForm}}
-            <p>Simulation Days Elapsed: {{daysElapsed}}</p>
-            <input type="submit" value="Confirm Changes">
-        </form>
+        {% if hasSelectedSimulation %}
+            <form class ="simulation_information_box" action="" method="post" id="infoForm">
+                <h2>Simulation Information:</h2>
+                {% csrf_token %}
+                {{infoForm}}
+                <p>Simulation Days Elapsed: {{daysElapsed}}</p>
+                <input type="submit" value="Confirm Changes">
+            </form>
+        {% else %}
+            <div class="simulation_information_box disabled_box">
+                <h2>Simulation Information:</h2>
+                <p>{% if not hasSimulations %}No saved simulations available.{% else %}No simulation selected.{% endif %}</p>
+                <fieldset class="disabled_fieldset" disabled>
+                    {{infoForm}}
+                    <p>Simulation Days Elapsed: --</p>
+                    <input type="submit" value="Confirm Changes" disabled>
+                </fieldset>
+            </div>
+        {% endif %}
     </body>
 
+    {% if hasSelectedSimulation %}
     <script>
         $('#infoForm').click(function(event) {
             event.preventDefault();
@@ -156,5 +244,6 @@
             });
         });
     </script>
+    {% endif %}
 
 {% endblock %}
