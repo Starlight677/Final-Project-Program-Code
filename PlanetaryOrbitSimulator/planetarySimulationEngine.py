@@ -1,13 +1,15 @@
+import io
 import math
 
 import matplotlib
-matplotlib.use('agg')  # Headless backend for Django worker threads
-import matplotlib.pyplot as plt
-import numpy as np
+matplotlib.use("agg")  # Headless backend for Django worker threads
+matplotlib.rcParams["path.simplify"] = True
+matplotlib.rcParams["path.simplify_threshold"] = 0.2
+matplotlib.rcParams["agg.path.chunksize"] = 10000
 
-plt.style.use("fast")
-matplotlib.rcParams['path.simplify'] = True
-matplotlib.rcParams['path.simplify_threshold'] = 0.2
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.figure import Figure
+import numpy as np
 
 G = 6.6743e-11
 AU_METERS = 1.495979e11
@@ -16,17 +18,11 @@ EARTH_MASS = 5.972e24
 MOON_MASS = EARTH_MASS * 0.0123
 SECONDS_PER_DAY = 86400
 SIGNIFICANCE_THRESHOLD = 1e-6
+MAX_HISTORY_POINTS = 5000
+NUMPY_BODY_THRESHOLD = 12
 
 # Indices into each body entry: [pos, vel, mass, radius, [line_colour, marker_colour], name, ref_index]
 POS, VEL, MASS, RADIUS, COLOUR, NAME, REF = range(7)
-
-
-class _BodyCollision(Exception):
-    """Internal signal raised when two bodies overlap during a gravity step."""
-
-    def __init__(self, body1Index, body2Index):
-        self.body1Index = body1Index
-        self.body2Index = body2Index
 
 
 def _makeBody(pos, vel, mass, radius, colour, name, ref=-1):
@@ -100,8 +96,7 @@ SYSTEM_TEMPLATES = {
             ((0, 0, 0), (0, 0, 0), SOLAR_MASS * 1, 7e7, "yellow", "Primary Star", -1),
         ),
     },
-    99: {
-        # Disabled from UI selection due to complexity / long runtimes
+    5: {
         "name": "Madman's Halo",
         "size": 11,
         "dt": 1800,
@@ -123,32 +118,32 @@ SYSTEM_TEMPLATES = {
             ((-585759554317.0, 0.0, 0.0), (-0.0, -33347.8, 0.0), EARTH_MASS * 0.006879, 1.33e6, "sandybrown", "Pyroifoi RD-Z d1-223 5 c", 9),
             ((-583690000000.0, -2694282701.8, 0.0), (13911.4, -17475.0, 0.0), EARTH_MASS * 0.006498, 1.31e6, "silver", "Pyroifoi RD-Z d1-223 5 d", 9),
             ((-596630000000.0, 0.0, 0.0), (0.0, -11052.0, 0.0), EARTH_MASS * 31.564976, 3.41e7, "whitesmoke", "Pyroifoi RD-Z d1-223 6", 0),
-            ((-596411065182.7, 0.0, 0.0), (0.0, -3471.3, 0.0), EARTH_MASS * 0.00018, 3.98e5, "gold", "Pyroifoi RD-Z d1-223 6 a", 15),
+            ((-596411065182.7, 0.0, 0.0), (0.0, -3471.3, 0.0), EARTH_MASS * 0.00018, 3.98e5, "gold", "Pyroifoi RD-Z d1-223 6 a", 14),
             ((0.0, 950720000000.0, 0.0), (-13675.0, 0.0, 0.0), SOLAR_MASS * 0.011719, 7e7 * 0.0603, "darkmagenta", "Pyroifoi RD-Z d1-223 7", 0),
-            ((1937555573.4, 950720000000.0, 0.0), (-13675.0, 28336.0, 0.0), EARTH_MASS * 0.006953, 1.33e6, "silver", "Pyroifoi RD-Z d1-223 7 a", 17),
-            ((0.0, 953432368185.1, 0.0), (-37624.2, 0.0, 0.0), EARTH_MASS * 0.006178, 1.28e6, "silver", "Pyroifoi RD-Z d1-223 7 b", 17),
-            ((-3458488009.2, 950720000000.0, 0.0), (-13675.0, -21209.1, 0.0), EARTH_MASS * 0.005175, 1.21e6, "sandybrown", "Pyroifoi RD-Z d1-223 7 c", 17),
-            ((-0.0, 945995000660.1, 0.0), (4470.3, -0.0, 0.0), EARTH_MASS * 0.004555, 1.16e6, "silver", "Pyroifoi RD-Z d1-223 7 d", 17),
-            ((4509413714.8, 955229413714.8, 0.0), (-24719.2, 11044.2, 0.0), EARTH_MASS * 0.003913, 1.10e6, "silver", "Pyroifoi RD-Z d1-223 7 e", 17),
-            ((-6672850099.7, 957392850099.7, 0.0), (-22754.0, -9079.0, 0.0), EARTH_MASS * 0.02264, 1.96e6, "silver", "Pyroifoi RD-Z d1-223 7 f", 17),
+            ((1937555573.4, 950720000000.0, 0.0), (-13675.0, 28336.0, 0.0), EARTH_MASS * 0.006953, 1.33e6, "silver", "Pyroifoi RD-Z d1-223 7 a", 16),
+            ((0.0, 953432368185.1, 0.0), (-37624.2, 0.0, 0.0), EARTH_MASS * 0.006178, 1.28e6, "silver", "Pyroifoi RD-Z d1-223 7 b", 16),
+            ((-3458488009.2, 950720000000.0, 0.0), (-13675.0, -21209.1, 0.0), EARTH_MASS * 0.005175, 1.21e6, "sandybrown", "Pyroifoi RD-Z d1-223 7 c", 16),
+            ((-0.0, 945995000660.1, 0.0), (4470.3, -0.0, 0.0), EARTH_MASS * 0.004555, 1.16e6, "silver", "Pyroifoi RD-Z d1-223 7 d", 16),
+            ((4509413714.8, 955229413714.8, 0.0), (-24719.2, 11044.2, 0.0), EARTH_MASS * 0.003913, 1.10e6, "silver", "Pyroifoi RD-Z d1-223 7 e", 16),
+            ((-6672850099.7, 957392850099.7, 0.0), (-22754.0, -9079.0, 0.0), EARTH_MASS * 0.02264, 1.96e6, "silver", "Pyroifoi RD-Z d1-223 7 f", 16),
             ((0.0, 997120000000.0, 0.0), (-7836.0, 0.0, 0.0), EARTH_MASS * 69.959572, 4.04e7, "peru", "Pyroifoi RD-Z d1-223 8", 0),
             ((1403700000000.0, 0.0, 0.0), (0.0, 11209.0, 0.0), EARTH_MASS * 2188.751709, 7.08e7, "mediumblue", "Pyroifoi RD-Z d1-223 9", 0),
-            ((1404319433363.4, 0.0, 0.0), (0.0, 48737.7, 0.0), EARTH_MASS * 0.16297, 3.48e6, "lightsteelblue", "Pyroifoi RD-Z d1-223 9 a", 25),
-            ((1403700000000.0, 1106238462.6, 0.0), (-28082.6, 11209.0, 0.0), EARTH_MASS * 0.202102, 3.73e6, "sandybrown", "Pyroifoi RD-Z d1-223 9 b", 25),
-            ((1401586677626.1, 0.0, 0.0), (-0.0, -9108.9, 0.0), EARTH_MASS * 0.787346, 5.67e6, "orangered", "Pyroifoi RD-Z d1-223 9 c", 25),
-            ((1403700000000.0, -4934228254.2, 0.0), (13296.9, 11209.0, 0.0), EARTH_MASS * 12.583962, 3.20e7, "peru", "Pyroifoi RD-Z d1-223 9 d", 25),
-            ((1409717486834.0, 6017486834.0, 0.0), (-7159.5, 18368.5, 0.0), EARTH_MASS * 42.22065, 4.55e7, "whitesmoke", "Pyroifoi RD-Z d1-223 9 e", 25),
-            ((1409977787956.3, 6017486834.0, 0.0), (-7159.5, 26409.0, 0.0), EARTH_MASS * 0.03382, 2.82e6, "snow", "Pyroifoi RD-Z d1-223 9 e a", 30),
+            ((1404319433363.4, 0.0, 0.0), (0.0, 48737.7, 0.0), EARTH_MASS * 0.16297, 3.48e6, "lightsteelblue", "Pyroifoi RD-Z d1-223 9 a", 24),
+            ((1403700000000.0, 1106238462.6, 0.0), (-28082.6, 11209.0, 0.0), EARTH_MASS * 0.202102, 3.73e6, "sandybrown", "Pyroifoi RD-Z d1-223 9 b", 24),
+            ((1401586677626.1, 0.0, 0.0), (-0.0, -9108.9, 0.0), EARTH_MASS * 0.787346, 5.67e6, "orangered", "Pyroifoi RD-Z d1-223 9 c", 24),
+            ((1403700000000.0, -4934228254.2, 0.0), (13296.9, 11209.0, 0.0), EARTH_MASS * 12.583962, 3.20e7, "peru", "Pyroifoi RD-Z d1-223 9 d", 24),
+            ((1409717486834.0, 6017486834.0, 0.0), (-7159.5, 18368.5, 0.0), EARTH_MASS * 42.22065, 4.55e7, "whitesmoke", "Pyroifoi RD-Z d1-223 9 e", 24),
+            ((1409977787956.3, 6017486834.0, 0.0), (-7159.5, 26409.0, 0.0), EARTH_MASS * 0.03382, 2.82e6, "snow", "Pyroifoi RD-Z d1-223 9 e a", 29),
             ((1460000000000.0, 0.0, 0.0), (0.0, 7253.0, 0.0), EARTH_MASS * 20.416899, 1.76e7, "snow", "Pyroifoi RD-Z d1-223 10", 0),
         ),
     },
 }
 
-TEMPLATE_NAMES = [SYSTEM_TEMPLATES[i]["name"] for i in range(5)]
+TEMPLATE_NAMES = [SYSTEM_TEMPLATES[i]["name"] for i in range(len(SYSTEM_TEMPLATES))]
 
 
 class PlanetarySimulationEngine:
-    """N-body gravitational simulator with adaptive pair filtering and orbital trail rendering."""
+    """N-body gravitational simulator with adaptive pair filtering, NumPy vectorization, and orbital trail rendering."""
 
     def __init__(self):
         self.listOfBodies = []
@@ -162,6 +157,13 @@ class PlanetarySimulationEngine:
         self.ticksPerPageUpdate = 0
         self.secondsPerSimulationTick = 0
         self.simulationName = ""
+        self._significantCompanions = None
+        self._activePairs = None
+
+    def invalidatePairCache(self):
+        """Clear cached pair significance structures after body list or history changes."""
+        self._significantCompanions = None
+        self._activePairs = None
 
     def getBodyReference(self, bodyIndex):
         """Return the reference body index for bodyIndex, or -1 for static grid."""
@@ -186,7 +188,13 @@ class PlanetarySimulationEngine:
         """Set the reference body index for bodyIndex, falling back to -1 if invalid."""
         if bodyIndex < 0 or bodyIndex >= len(self.listOfBodies):
             return
-        if isinstance(refIndex, bool) or not isinstance(refIndex, int) or refIndex < 0 or refIndex >= len(self.listOfBodies) or refIndex == bodyIndex:
+        if (
+            isinstance(refIndex, bool)
+            or not isinstance(refIndex, int)
+            or refIndex < 0
+            or refIndex >= len(self.listOfBodies)
+            or refIndex == bodyIndex
+        ):
             refIndex = -1
         body = self.listOfBodies[bodyIndex]
         if len(body) > REF:
@@ -194,21 +202,48 @@ class PlanetarySimulationEngine:
         else:
             body.append(refIndex)
 
+    def _findCollidingPair(self):
+        """Return the first pair of overlapping body indices, or None if no bodies overlap."""
+        bodies = self.listOfBodies
+        n = len(bodies)
+        for i in range(n):
+            pos1 = bodies[i][POS]
+            r1 = bodies[i][RADIUS]
+            for j in range(i + 1, n):
+                pos2 = bodies[j][POS]
+                dx = pos1[0] - pos2[0]
+                dy = pos1[1] - pos2[1]
+                dz = pos1[2] - pos2[2]
+                radSum = r1 + bodies[j][RADIUS]
+                if dx * dx + dy * dy + dz * dz <= radSum * radSum:
+                    return i, j
+        return None
+
+    def _resolveCollisions(self):
+        """Resolve all currently overlapping body pairs before forces are applied."""
+        merged = False
+        while True:
+            pair = self._findCollidingPair()
+            if pair is None:
+                break
+            i, j = pair
+            self.mergeCollidingBodies(i, j)
+            print(f"Body Collision resolved between body {i} and body {j}.")
+            merged = True
+        return merged
+
     def _applyPairGravity(self, body1, body2, filterTick):
-        """
-        Apply mutual gravitational impulse to body1 and body2 using Newton's third law.
-        Returns whether the pair exceeds the significance threshold, or None on collision.
-        """
+        """Apply mutual gravitational impulse to body1 and body2 and return significance."""
         pos1, pos2 = body1[POS], body2[POS]
         dx = pos1[0] - pos2[0]
         dy = pos1[1] - pos2[1]
         dz = pos1[2] - pos2[2]
-        dist = math.sqrt(dx * dx + dy * dy + dz * dz)
+        distSq = dx * dx + dy * dy + dz * dz
+        if distSq <= 0.0:
+            return False
 
-        if dist <= body1[RADIUS] + body2[RADIUS]:
-            return None
-
-        invDistCubed = G / (dist * dist * dist)
+        dist = math.sqrt(distSq)
+        invDistCubed = G / (distSq * dist)
         mod1 = abs(body2[MASS] * invDistCubed)
         mod2 = abs(body1[MASS] * invDistCubed)
 
@@ -220,7 +255,7 @@ class PlanetarySimulationEngine:
             or (abs(a2x) + abs(a2y) + abs(a2z)) >= SIGNIFICANCE_THRESHOLD
         )
 
-        # Batch below-threshold pairs over the full storage interval in one pass
+        # Batch below-threshold pairs over the full storage interval on filter ticks
         dt = self.secondsPerSimulationTick
         if filterTick and not exceedsThreshold and self.ticksPerStorageUpdate > 1:
             dt *= self.ticksPerStorageUpdate
@@ -234,34 +269,7 @@ class PlanetarySimulationEngine:
         vel2[2] += a2z * dt
         return exceedsThreshold
 
-    def cycleBody(self, bodyNumber, filterMask, fullCompanions, filterTick=False):
-        """Calculate gravitational interactions for bodyNumber and advance its position."""
-        significantCompanions = (
-            [fullCompanions[j][bodyNumber] for j in range(bodyNumber)] + [False]
-            if filterTick else None
-        )
-
-        body1 = self.listOfBodies[bodyNumber]
-        for secondBodyNumber in range(bodyNumber + 1, len(self.listOfBodies)):
-            if filterTick or filterMask[secondBodyNumber]:
-                isOverThreshold = self._applyPairGravity(
-                    body1, self.listOfBodies[secondBodyNumber], filterTick
-                )
-                if isOverThreshold is None:
-                    raise _BodyCollision(bodyNumber, secondBodyNumber)
-                if filterTick:
-                    significantCompanions.append(isOverThreshold)
-
-        pos = body1[POS]
-        vel = body1[VEL]
-        dt = self.secondsPerSimulationTick
-        pos[0] += vel[0] * dt
-        pos[1] += vel[1] * dt
-        pos[2] += vel[2] * dt
-
-        return significantCompanions
-
-    def mergeCollidingBodies(self, body1Index, body2Index, significantCompanions):
+    def mergeCollidingBodies(self, body1Index, body2Index):
         """Merge two colliding bodies into the lower-indexed slot and remap tracking structures."""
         if body1Index > body2Index:
             body1Index, body2Index = body2Index, body1Index
@@ -282,7 +290,8 @@ class PlanetarySimulationEngine:
         dominant = body1 if m1 >= m2 else body2
         mergedColour = dominant[COLOUR][0] if isinstance(dominant[COLOUR], list) else dominant[COLOUR]
         mergedName = dominant[NAME]
-        mergedRef = dominant[REF] if len(dominant) > REF and isinstance(dominant[REF], int) else -1
+        rawRef = dominant[REF] if len(dominant) > REF else -1
+        mergedRef = rawRef if isinstance(rawRef, int) and not isinstance(rawRef, bool) else -1
         if mergedRef in (body1Index, body2Index):
             mergedRef = -1
 
@@ -291,18 +300,6 @@ class PlanetarySimulationEngine:
         )
         self.listOfBodies.pop(body2Index)
         self.bodyPoints.pop(body2Index)
-
-        updatedCompanions = [
-            [entry for j, entry in enumerate(row) if j != body2Index]
-            for i, row in enumerate(significantCompanions)
-            if i != body2Index
-        ]
-        # Force full gravity checks on the merged body until the next filter tick
-        for i, row in enumerate(updatedCompanions):
-            if i == body1Index:
-                updatedCompanions[i] = [j != body1Index for j in range(len(row))]
-            elif body1Index < len(row):
-                row[body1Index] = True
 
         if self.focusBody == body2Index:
             self.focusBody = -1
@@ -314,22 +311,24 @@ class PlanetarySimulationEngine:
                 self.focusBodyName = mergedName
 
         for body in self.listOfBodies:
-            if len(body) > REF and isinstance(body[REF], int):
+            if len(body) > REF and isinstance(body[REF], int) and not isinstance(body[REF], bool):
                 if body[REF] == body2Index:
                     body[REF] = -1
                 elif body[REF] > body2Index:
                     body[REF] -= 1
 
-        return updatedCompanions
+        self.invalidatePairCache()
 
-    def drawGraph(self, user, backgroundColour="black", graphColour="white"):
-        """Render the current orbital state and trails to the user's PNG file."""
+    def renderGraphBytes(self, backgroundColour="black", graphColour="white"):
+        """Render the current orbital state and trails to PNG bytes using OO Matplotlib."""
         self.updateFocusPoint()
 
-        fig, ax = plt.subplots(figsize=(6.9, 6.9))
+        fig = Figure(figsize=(6.9, 6.9))
+        FigureCanvasAgg(fig)
+        ax = fig.add_subplot(111)
         fig.set_facecolor(backgroundColour)
         ax.set_facecolor(backgroundColour)
-        ax.set_aspect('equal', adjustable='box')
+        ax.set_aspect("equal", adjustable="box")
 
         for spine in ax.spines.values():
             spine.set_color(graphColour)
@@ -351,14 +350,23 @@ class PlanetarySimulationEngine:
         ax.set_ylabel("Distance (AU)")
         ax.grid(True)
 
+        refSliceCache = {}
         for bodyIndex in range(len(self.listOfBodies) - 1, -1, -1):
             try:
-                self.plotBodyPoints(ax, self.listOfBodies[bodyIndex], bodyIndex, viewBounds, pixelSizeAU)
+                self.plotBodyPoints(
+                    ax,
+                    self.listOfBodies[bodyIndex],
+                    bodyIndex,
+                    viewBounds,
+                    pixelSizeAU,
+                    refSliceCache=refSliceCache,
+                )
             except IndexError:
                 continue
 
-        fig.savefig(f"media/latestSimulation{user.username}.png")
-        plt.close(fig)
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", pil_kwargs={"compress_level": 1})
+        return buf.getvalue()
 
     def _smoothOrbitPoints(self, x, y, targetPoints=120):
         """Vectorized centripetal Catmull-Rom spline interpolation for sparse orbital arcs."""
@@ -422,10 +430,12 @@ class PlanetarySimulationEngine:
             minViewX, maxViewX, minViewY, maxViewY = viewBounds
             marginX = marginRatio * xSpan
             marginY = marginRatio * ySpan
-            if (originX + xMax + marginX < minViewX or
-                    originX + xMin - marginX > maxViewX or
-                    originY + yMax + marginY < minViewY or
-                    originY + yMin - marginY > maxViewY):
+            if (
+                originX + xMax + marginX < minViewX
+                or originX + xMin - marginX > maxViewX
+                or originY + yMax + marginY < minViewY
+                or originY + yMin - marginY > maxViewY
+            ):
                 return False
         return True
 
@@ -444,27 +454,65 @@ class PlanetarySimulationEngine:
         return np.concatenate(([startX], dx[segEnd:])), np.concatenate(([startY], dy[segEnd:]))
 
     @staticmethod
-    def _sliceTrailWindow(trailX, trailY, startIdx, totalLen, stride, refXPoints=None, refYPoints=None):
-        """Slice (trailX, trailY) and subtract reference body slices when provided."""
-        tx = np.asarray(trailX[startIdx:totalLen:stride], dtype=float)
-        ty = np.asarray(trailY[startIdx:totalLen:stride], dtype=float)
+    def _sliceTrailWindow(
+        trailX,
+        trailY,
+        startIdx,
+        totalLen,
+        stride,
+        bodyOffset=0,
+        refXPoints=None,
+        refYPoints=None,
+        refOffset=0,
+        refIdx=-1,
+        refSliceCache=None,
+    ):
+        """Slice tail-aligned (trailX, trailY) and subtract cached reference slices when provided."""
+        bStart = bodyOffset + startIdx
+        bEnd = bodyOffset + totalLen
+        tx = np.asarray(trailX[bStart:bEnd:stride], dtype=float)
+        ty = np.asarray(trailY[bStart:bEnd:stride], dtype=float)
         if refXPoints is None or refYPoints is None:
             return tx, ty
-        rx = np.asarray(refXPoints[startIdx:totalLen:stride], dtype=float)
-        ry = np.asarray(refYPoints[startIdx:totalLen:stride], dtype=float)
+
+        rStart = refOffset + startIdx
+        rEnd = refOffset + totalLen
+        cacheKey = (refIdx, rStart, rEnd, stride)
+        if refSliceCache is not None and cacheKey in refSliceCache:
+            rx, ry = refSliceCache[cacheKey]
+        else:
+            rx = np.asarray(refXPoints[rStart:rEnd:stride], dtype=float)
+            ry = np.asarray(refYPoints[rStart:rEnd:stride], dtype=float)
+            if refSliceCache is not None:
+                refSliceCache[cacheKey] = (rx, ry)
         return tx - rx, ty - ry
 
-    def _extractOrbitTrail(self, trailX, trailY, currentX, currentY,
-                           refXPoints=None, refYPoints=None, refCurrentX=0.0, refCurrentY=0.0,
-                           viewBounds=None, pixelSizeAU=0.0):
+    def _extractOrbitTrail(
+        self,
+        trailX,
+        trailY,
+        currentX,
+        currentY,
+        refXPoints=None,
+        refYPoints=None,
+        refCurrentX=0.0,
+        refCurrentY=0.0,
+        viewBounds=None,
+        pixelSizeAU=0.0,
+        refIdx=-1,
+        refSliceCache=None,
+    ):
         """
         Extract a single-revolution orbital trail in world coordinates in O(1) time
-        using angular-rate guided tail windows and early viewport/sub-pixel culling.
+        using tail-aligned history windows and early viewport/sub-pixel culling.
         """
         useRelative = refXPoints is not None and refYPoints is not None
         totalLen = min(len(trailX), len(refXPoints)) if useRelative else len(trailX)
         if totalLen == 0:
             return None, None
+
+        bodyOffset = len(trailX) - totalLen
+        refOffset = (len(refXPoints) - totalLen) if useRelative else 0
 
         currDX = (currentX - refCurrentX) if useRelative else currentX
         currDY = (currentY - refCurrentY) if useRelative else currentY
@@ -485,8 +533,17 @@ class PlanetarySimulationEngine:
             startIdx = max(0, (totalLen - 1) - stepsBack * stride)
 
             dx, dy = self._sliceTrailWindow(
-                trailX, trailY, startIdx, totalLen, stride,
-                refXPoints if useRelative else None, refYPoints if useRelative else None,
+                trailX,
+                trailY,
+                startIdx,
+                totalLen,
+                stride,
+                bodyOffset=bodyOffset,
+                refXPoints=refXPoints if useRelative else None,
+                refYPoints=refYPoints if useRelative else None,
+                refOffset=refOffset,
+                refIdx=refIdx,
+                refSliceCache=refSliceCache,
             )
             dx = np.append(dx, currDX)
             dy = np.append(dy, currDY)
@@ -551,7 +608,7 @@ class PlanetarySimulationEngine:
 
         return originX + dx, originY + dy
 
-    def plotBodyPoints(self, ax, body, bodyIndex, viewBounds=None, pixelSizeAU=None):
+    def plotBodyPoints(self, ax, body, bodyIndex, viewBounds=None, pixelSizeAU=None, refSliceCache=None):
         """Plot a body's orbital trail and current marker onto ax."""
         if viewBounds is None:
             viewBounds = (
@@ -577,9 +634,18 @@ class PlanetarySimulationEngine:
             refCurrentX = refCurrentY = 0.0
 
         plotX, plotY = self._extractOrbitTrail(
-            trailX, trailY, currentX, currentY,
-            refX, refY, refCurrentX, refCurrentY,
-            viewBounds=viewBounds, pixelSizeAU=pixelSizeAU,
+            trailX,
+            trailY,
+            currentX,
+            currentY,
+            refX,
+            refY,
+            refCurrentX,
+            refCurrentY,
+            viewBounds=viewBounds,
+            pixelSizeAU=pixelSizeAU,
+            refIdx=refIdx,
+            refSliceCache=refSliceCache,
         )
 
         colours = body[COLOUR]
@@ -592,9 +658,11 @@ class PlanetarySimulationEngine:
 
         minViewX, maxViewX, minViewY, maxViewY = viewBounds
         markerMargin = 0.05 * self.simulationSize if self.simulationSize > 0 else 0.0
-        if (minViewX - markerMargin <= currentX <= maxViewX + markerMargin and
-                minViewY - markerMargin <= currentY <= maxViewY + markerMargin):
-            ax.plot(currentX, currentY, 'o', color=markerColour)
+        if (
+            minViewX - markerMargin <= currentX <= maxViewX + markerMargin
+            and minViewY - markerMargin <= currentY <= maxViewY + markerMargin
+        ):
+            ax.plot(currentX, currentY, "o", color=markerColour)
         return ax
 
     def updateFocusPoint(self):
@@ -608,58 +676,166 @@ class PlanetarySimulationEngine:
             self.focusPoint = [chosenFocusBody[POS][0] / AU_METERS, chosenFocusBody[POS][1] / AU_METERS]
             self.focusBodyName = chosenFocusBody[NAME]
 
+    @staticmethod
+    def _appendPointsForBody(points, xAU, yAU, zAU, vx, vy, vz):
+        """Append one 3D sample to a body's history and cap growth at MAX_HISTORY_POINTS."""
+        if len(points) < 4:
+            points.append([0.0] * len(points[0]))
+        points[0].append(float(xAU))
+        points[1].append(float(yAU))
+        points[2][0].append(float(vx))
+        points[2][1].append(float(vy))
+        points[2][2].append(float(vz))
+        points[3].append(float(zAU))
+
+        if len(points[0]) > MAX_HISTORY_POINTS + 500:
+            points[0] = points[0][-MAX_HISTORY_POINTS:]
+            points[1] = points[1][-MAX_HISTORY_POINTS:]
+            points[2][0] = points[2][0][-MAX_HISTORY_POINTS:]
+            points[2][1] = points[2][1][-MAX_HISTORY_POINTS:]
+            points[2][2] = points[2][2][-MAX_HISTORY_POINTS:]
+            points[3] = points[3][-MAX_HISTORY_POINTS:]
+
     def updateStoredPath(self):
         """Append each body's current position (in AU) and velocity (in m/s) to bodyPoints."""
         for bodyNumber, body in enumerate(self.listOfBodies):
-            points = self.bodyPoints[bodyNumber]
-            points[0].append(body[POS][0] / AU_METERS)
-            points[1].append(body[POS][1] / AU_METERS)
-            points[2][0].append(body[VEL][0])
-            points[2][1].append(body[VEL][1])
-            points[2][2].append(body[VEL][2])
+            pos = body[POS]
+            vel = body[VEL]
+            self._appendPointsForBody(
+                self.bodyPoints[bodyNumber],
+                pos[0] / AU_METERS,
+                pos[1] / AU_METERS,
+                pos[2] / AU_METERS,
+                vel[0],
+                vel[1],
+                vel[2],
+            )
 
-    def tickSimulation(self, significantCompanions):
-        """Advance the simulation by one tick, resolving any body collisions."""
+    def _appendStoredPathFromArrays(self, pos, vel):
+        """Append NumPy position and velocity arrays directly to bodyPoints."""
+        invAU = 1.0 / AU_METERS
+        for bodyNumber in range(len(self.listOfBodies)):
+            self._appendPointsForBody(
+                self.bodyPoints[bodyNumber],
+                pos[bodyNumber, 0] * invAU,
+                pos[bodyNumber, 1] * invAU,
+                pos[bodyNumber, 2] * invAU,
+                vel[bodyNumber, 0],
+                vel[bodyNumber, 1],
+                vel[bodyNumber, 2],
+            )
+
+    def tickSimulation(self):
+        """Advance the simulation by one tick on the scalar path after resolving any collisions."""
+        self._resolveCollisions()
+        bodies = self.listOfBodies
+        n = len(bodies)
         isFilterTick = self.ticksPerStorageUpdate > 0 and (
             self.simulationTime % self.ticksPerStorageUpdate == 0
         )
-        bodyNumber = 0
-        while bodyNumber < len(self.listOfBodies):
-            try:
-                result = self.cycleBody(
-                    bodyNumber, significantCompanions[bodyNumber], significantCompanions, isFilterTick
-                )
-                if isFilterTick:
-                    significantCompanions[bodyNumber] = result
-                bodyNumber += 1
-            except _BodyCollision as col:
-                significantCompanions = self.mergeCollidingBodies(
-                    col.body1Index, col.body2Index, significantCompanions
-                )
-                print(f"Body Collision resolved between body {col.body1Index} and body {col.body2Index}.")
-                bodyNumber = 0
+
+        if isFilterTick:
+            activePairs = []
+            for i in range(n):
+                body1 = bodies[i]
+                for j in range(i + 1, n):
+                    if self._applyPairGravity(body1, bodies[j], filterTick=True):
+                        activePairs.append((i, j))
+            self._activePairs = activePairs
+        else:
+            if self._activePairs is None:
+                self._activePairs = [(i, j) for i in range(n) for j in range(i + 1, n)]
+            for i, j in self._activePairs:
+                self._applyPairGravity(bodies[i], bodies[j], filterTick=False)
+
+        dt = self.secondsPerSimulationTick
+        for body in bodies:
+            pos = body[POS]
+            vel = body[VEL]
+            pos[0] += vel[0] * dt
+            pos[1] += vel[1] * dt
+            pos[2] += vel[2] * dt
 
         if isFilterTick:
             self.updateStoredPath()
 
-        return significantCompanions
+    def _packNumpyState(self):
+        """Pack current listOfBodies state into contiguous float64 NumPy arrays."""
+        bodies = self.listOfBodies
+        pos = np.array([b[POS] for b in bodies], dtype=np.float64)
+        vel = np.array([b[VEL] for b in bodies], dtype=np.float64)
+        mass = np.array([b[MASS] for b in bodies], dtype=np.float64)
+        rad = np.array([b[RADIUS] for b in bodies], dtype=np.float64)
+        radSumSq = (rad[:, None] + rad[None, :]) ** 2
+        np.fill_diagonal(radSumSq, -1.0)
+        return pos, vel, mass, radSumSq
 
-    def runSimulation(self, user, backgroundStyle, axisStyle, setTicks=-1):
-        """Run the simulation until targetTicks (or indefinitely if setTicks < 0) and render."""
-        numBodies = len(self.listOfBodies)
-        significantCompanions = [[True] * numBodies for _ in range(numBodies)]
-        targetTicks = round(setTicks) if setTicks >= 0 else -1
+    def _syncNumpyState(self, pos, vel):
+        """Write vectorized NumPy positions and velocities back into listOfBodies."""
+        for i, body in enumerate(self.listOfBodies):
+            body[POS][0] = float(pos[i, 0])
+            body[POS][1] = float(pos[i, 1])
+            body[POS][2] = float(pos[i, 2])
+            body[VEL][0] = float(vel[i, 0])
+            body[VEL][1] = float(vel[i, 1])
+            body[VEL][2] = float(vel[i, 2])
 
-        timePassed = False
-        while targetTicks < 0 or self.simulationTime < targetTicks:
-            significantCompanions = self.tickSimulation(significantCompanions)
+    def _runSimulationNumpy(self, targetTicks):
+        """Advance N >= NUMPY_BODY_THRESHOLD systems using exact vectorized all-pairs gravity."""
+        if self._resolveCollisions() and len(self.listOfBodies) < NUMPY_BODY_THRESHOLD:
+            return
+        pos, vel, mass, radSumSq = self._packNumpyState()
+        dt = float(self.secondsPerSimulationTick)
+
+        while targetTicks is None or self.simulationTime < targetTicks:
+            diff = pos[None, :, :] - pos[:, None, :]
+            distSq = np.einsum("ijk,ijk->ij", diff, diff)
+            np.fill_diagonal(distSq, np.inf)
+
+            if np.any(distSq <= radSumSq):
+                self._syncNumpyState(pos, vel)
+                self._resolveCollisions()
+                if len(self.listOfBodies) < NUMPY_BODY_THRESHOLD:
+                    return
+                pos, vel, mass, radSumSq = self._packNumpyState()
+                continue
+
+            invD3 = G / (distSq * np.sqrt(distSq))
+            np.fill_diagonal(invD3, 0.0)
+            acc = np.einsum("ij,j,ijk->ik", invD3, mass, diff)
+            vel += acc * dt
+            pos += vel * dt
+
+            if self.ticksPerStorageUpdate > 0 and self.simulationTime % self.ticksPerStorageUpdate == 0:
+                self._appendStoredPathFromArrays(pos, vel)
+
             self.simulationTime += 1
-            timePassed = True
 
-        if targetTicks >= 0:
-            if timePassed and self.ticksPerPageUpdate < self.ticksPerStorageUpdate:
-                self.updateStoredPath()
-            self.drawGraph(user, backgroundStyle, axisStyle)
+        self._syncNumpyState(pos, vel)
+        self.invalidatePairCache()
+
+    def runSimulation(self, setTicks=None):
+        """Advance the simulation until targetTicks (or indefinitely if setTicks is None)."""
+        targetTicks = None
+        if setTicks is not None:
+            targetTicks = round(setTicks)
+            if targetTicks <= self.simulationTime:
+                return
+
+        startTime = self.simulationTime
+        if len(self.listOfBodies) >= NUMPY_BODY_THRESHOLD:
+            self._runSimulationNumpy(targetTicks)
+
+        while targetTicks is None or self.simulationTime < targetTicks:
+            self.tickSimulation()
+            self.simulationTime += 1
+
+        if (
+            targetTicks is not None
+            and self.simulationTime > startTime
+            and self.ticksPerPageUpdate < self.ticksPerStorageUpdate
+        ):
+            self.updateStoredPath()
 
     def loadTemplates(self, templateNumber=0):
         """Populate engine bodies and timing parameters from SYSTEM_TEMPLATES."""
@@ -671,14 +847,16 @@ class PlanetarySimulationEngine:
         self.ticksPerStorageUpdate = round(template["storageSeconds"] / dt)
         self.ticksPerPageUpdate = round(template["pageSeconds"] / dt)
         self.simulationName = template["name"]
-        self.bodyPoints = [[[], [], [[], [], []]] for _ in self.listOfBodies]
+        self.bodyPoints = [[[], [], [[], [], []], []] for _ in self.listOfBodies]
+        self.invalidatePairCache()
 
-    def rollbackSimulation(self, user, backgroundStyle, axisStyle):
-        """Roll back the simulation by one page-update interval and redraw."""
+    def rollbackSimulation(self):
+        """Roll back the simulation by one page-update interval without rendering."""
         storedValuesPerUpdate = (
-            round(self.ticksPerPageUpdate / self.ticksPerStorageUpdate)
-            if self.ticksPerStorageUpdate else 0
+            max(1, round(self.ticksPerPageUpdate / self.ticksPerStorageUpdate))
+            if self.ticksPerStorageUpdate > 0 else 0
         )
+        poppedAny = False
         for _ in range(storedValuesPerUpdate):
             for index, body in enumerate(self.listOfBodies):
                 points = self.bodyPoints[index]
@@ -689,6 +867,10 @@ class PlanetarySimulationEngine:
                 body[VEL][0] = points[2][0].pop()
                 body[VEL][1] = points[2][1].pop()
                 body[VEL][2] = points[2][2].pop()
+                if len(points) > 3 and points[3]:
+                    body[POS][2] = points[3].pop() * AU_METERS
+                poppedAny = True
 
-        self.simulationTime = max(0, self.simulationTime - self.ticksPerPageUpdate)
-        self.drawGraph(user, backgroundStyle, axisStyle)
+        if poppedAny:
+            self.simulationTime = max(0, self.simulationTime - self.ticksPerPageUpdate)
+        self.invalidatePairCache()

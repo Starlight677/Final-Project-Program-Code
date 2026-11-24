@@ -10,7 +10,7 @@
     </button>
 
     <div class="simulation-image-box">
-        <img src="/media/latestSimulation{{ user }}.png" alt="This image has failed to load." id="simImage">
+        <img src="/sim-image/" alt="This image has failed to load." id="simImage">
     </div>
 
     <ul class="choice-list">
@@ -18,7 +18,7 @@
         {% for simulation in allSimulations %}
             <li>
                 <button class="choice-item{% if forloop.counter0 == saveIndex %} selected{% endif %}"
-                        onclick="window.location.href='/load/{{ forloop.counter0 }}'">
+                        onclick="window.location.href='/load/{{ forloop.counter0 }}/'">
                     {{ simulation.name }}
                 </button>
             </li>
@@ -36,6 +36,10 @@
 
 {% block extra_scripts %}
 <script>
-    bindAjaxForm("#infoForm", "/runForm/");
+    bindAjaxForm("#infoForm", "/runForm/", function(data) {
+        if (data.simulationName) {
+            $(".choice-item.selected").text(data.simulationName);
+        }
+    });
 </script>
 {% endblock %}

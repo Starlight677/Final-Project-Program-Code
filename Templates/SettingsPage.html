@@ -5,15 +5,18 @@
         Return to Main Menu
     </button>
 
-    <ul class="choice-list">
-        <li><h3 style="color:white">Simulation View Options:</h3></li>
-        {% for style in graphStyles %}
-            <li>
-                <button class="choice-item{% if forloop.counter0 == styleIndex %} selected{% endif %}"
-                        onclick="window.location.href='/settings/{{ forloop.counter0 }}'">
-                    {{ style }}
-                </button>
-            </li>
-        {% endfor %}
-    </ul>
+    <form method="post" action="/settings/">
+        {% csrf_token %}
+        <ul class="choice-list">
+            <li><h3 style="color:white">Simulation View Options:</h3></li>
+            {% for style in graphStyles %}
+                <li>
+                    <button type="submit" name="styleIndex" value="{{ forloop.counter0 }}"
+                            class="choice-item{% if forloop.counter0 == styleIndex %} selected{% endif %}">
+                        {{ style }}
+                    </button>
+                </li>
+            {% endfor %}
+        </ul>
+    </form>
 {% endblock %}

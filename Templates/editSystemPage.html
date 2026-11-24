@@ -15,11 +15,11 @@
         Return to Main Menu
     </button>
 
-    <button class="nav-btn btn-next" onclick="window.location.href='/edit/{{ nextBody }}'">
+    <button class="nav-btn btn-next" id="nextBodyButton">
         Next Body
     </button>
 
-    <button class="nav-btn btn-prev" onclick="window.location.href='/edit/{{ lastBody }}'">
+    <button class="nav-btn btn-prev" onclick="window.location.href='/edit/{{ lastBody }}/'">
         Previous Body
     </button>
 
@@ -28,7 +28,7 @@
     </button>
 
     <div class="simulation-image-box">
-        <img src="/media/latestSimulation{{ user }}.png" alt="This image has failed to load." id="simImage">
+        <img src="/sim-image/" alt="This image has failed to load." id="simImage">
     </div>
 
     <div class="panel panel-left edit-info">
@@ -37,7 +37,7 @@
         <p>Simulation Display Size: {{ simulationSizeKM }}km / {{ simulationSizeAU }}AU</p>
         <p>Days Per Simulation Tick: {{ daysPerTick }}</p>
         <p>Simulation Days Elapsed: {{ daysElapsed }}</p>
-        <p>Focused Body: {{ focusBodyName }}</p>
+        <p id="focusBodyBox">Focused Body: {{ focusBodyName }}</p>
     </div>
 
     <form class="panel panel-right edit-body" action="" method="post" id="bodyForm">
@@ -50,6 +50,18 @@
 
 {% block extra_scripts %}
 <script>
-    bindAjaxForm("#bodyForm", "/editForm/{{ selectedBody }}");
+    let nextBodyUrl = "/edit/{{ nextBody }}/";
+    $("#nextBodyButton").on("click", function() {
+        window.location.href = nextBodyUrl;
+    });
+    bindAjaxForm("#bodyForm", "/editForm/{{ selectedBody }}/", function(data) {
+        if (data.focusBodyName !== undefined) {
+            $("#focusBodyBox").text("Focused Body: " + data.focusBodyName);
+        }
+        if (data.numBodies !== undefined) {
+            const nextIdx = Math.min({{ selectedBody }} + 1, data.numBodies);
+            nextBodyUrl = `/edit/${nextIdx}/`;
+        }
+    });
 </script>
 {% endblock %}

@@ -14,7 +14,7 @@
         {% for template in templatesList %}
             <li>
                 <button class="choice-item{% if forloop.counter0 == templateIndex %} selected{% endif %}"
-                        onclick="window.location.href='/create/{{ forloop.counter0 }}'">
+                        onclick="window.location.href='/create/{{ forloop.counter0 }}/'">
                     {{ template }}
                 </button>
             </li>
@@ -31,12 +31,12 @@
     </form>
 
     <div class="simulation-image-box">
-        <img src="/media/latestSimulation{{ user }}.png" alt="This image has failed to load." id="simImage">
+        <img src="/sim-image/" alt="This image has failed to load." id="simImage">
     </div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-    bindAjaxForm("#submitForm", "/runForm/1");
+    bindAjaxForm("#submitForm", "/runForm/1/");
 </script>
 {% endblock %}

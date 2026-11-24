@@ -99,21 +99,31 @@
     <div class="background_image"></div>
     {% block content %}{% endblock %}
     <script>
-        const SIM_IMAGE_URL = "/media/latestSimulation{{ user|escapejs }}.png";
+        const SIM_IMAGE_URL = "/sim-image/";
+        function getCsrfToken() {
+            const inputToken = $("input[name=csrfmiddlewaretoken]").first().val();
+            if (inputToken) return inputToken;
+            const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+            return match ? decodeURIComponent(match[1]) : "";
+        }
         function refreshSimImage() {
             $("#simImage").attr("src", SIM_IMAGE_URL + "?" + Date.now());
         }
-        function bindAjaxForm(formSelector, url) {
+        function bindAjaxForm(formSelector, url, onSuccess) {
             $(formSelector).on("submit", function(event) {
                 event.preventDefault();
                 $.ajax({
                     url: url,
                     type: "post",
                     cache: false,
+                    headers: { "X-CSRFToken": getCsrfToken() },
                     data: $(this).serialize(),
-                    success: refreshSimImage,
-                    error: function() {
-                        alert("Error in updating form.");
+                    success: function(data) {
+                        refreshSimImage();
+                        if (onSuccess) onSuccess(data);
+                    },
+                    error: function(xhr) {
+                        alert(xhr.responseJSON?.error || "Error in updating form.");
                     }
                 });
             });

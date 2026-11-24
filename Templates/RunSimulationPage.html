@@ -11,7 +11,7 @@
 {% endblock %}
 
 {% block content %}
-    <button class="nav-btn btn-menu" onclick="window.location.href='/'">
+    <button class="nav-btn btn-menu" id="menuButton">
         Return to Main Menu
     </button>
 
@@ -31,12 +31,12 @@
         Focus Next Body
     </button>
 
-    <button class="nav-btn btn-edit" onclick="window.location.href='/edit/0'">
+    <button class="nav-btn btn-edit" id="editButton">
         Edit Simulation
     </button>
 
     <div class="simulation-image-box">
-        <img src="/media/latestSimulation{{ user }}.png" id="simImage" alt="Test">
+        <img src="/sim-image/" id="simImage" alt="Simulation plot">
     </div>
 
     <div class="panel panel-left">
@@ -64,6 +64,7 @@
     let pendingCount = 0;
     let tickTimer = null;
     let actionQueue = Promise.resolve();
+    let queueGeneration = 0;
     $("#stopButton").css("background", "grey");
 
     function updateFocusUI(data) {
@@ -71,11 +72,25 @@
             $("#focusBodyBox").text("Focused Body: " + data.focusBodyName);
         }
         const $select = $("#id_focusedBody");
-        if (data.focusChoices !== undefined && $select.find("option").length !== data.focusChoices.length) {
-            $select.empty();
-            $.each(data.focusChoices, (_, [val, label]) => {
-                $select.append($("<option>", { value: val, text: label }));
-            });
+        if (data.focusChoices !== undefined) {
+            const $opts = $select.find("option");
+            let mismatch = $opts.length !== data.focusChoices.length;
+            if (!mismatch) {
+                for (let i = 0; i < data.focusChoices.length; i++) {
+                    const [val, label] = data.focusChoices[i];
+                    const opt = $opts.eq(i);
+                    if (opt.val() !== String(val) || opt.text() !== String(label)) {
+                        mismatch = true;
+                        break;
+                    }
+                }
+            }
+            if (mismatch) {
+                $select.empty();
+                $.each(data.focusChoices, (_, [val, label]) => {
+                    $select.append($("<option>", { value: val, text: label }));
+                });
+            }
         }
         if (data.focusBody !== undefined) {
             $select.val(String(data.focusBody));
@@ -103,9 +118,14 @@
     }
 
     function enqueue(task) {
+        const gen = queueGeneration;
         pendingCount++;
+        const runTask = () => {
+            if (gen !== queueGeneration) return;
+            return task();
+        };
         actionQueue = actionQueue
-            .then(task, task)
+            .then(runTask, runTask)
             .finally(() => {
                 pendingCount--;
                 scheduleNextTick();
@@ -115,18 +135,20 @@
     function sendTick() {
         return ajaxPromise({
             url: `/update/${isReversing ? 1 : 0}/`,
-            type: "get",
+            type: "post",
+            headers: { "X-CSRFToken": getCsrfToken() },
             success: (data) => {
                 refreshSimImage();
                 $("#daysElapsedBox").text("Simulation Days Elapsed: " + data.daysElapsed);
                 $("#reverseBox").text("Simulation Iteration Reversed: " + data.isSimulationInReverse);
                 updateFocusUI(data);
             },
-            error: () => {
+            error: (xhr) => {
                 isRunning = false;
+                queueGeneration++;
                 clearTimeout(tickTimer);
                 tickTimer = null;
-                alert("Error in updating simulation.");
+                alert(xhr.responseJSON?.error || "Error in updating simulation.");
                 window.location.href = "/run/1/";
             }
         });
@@ -135,12 +157,13 @@
     function sendFocus() {
         return ajaxPromise({
             url: "/focus/",
-            type: "get",
+            type: "post",
+            headers: { "X-CSRFToken": getCsrfToken() },
             success: (data) => {
                 refreshSimImage();
                 updateFocusUI(data);
             },
-            error: () => alert("Error in changing focus.")
+            error: (xhr) => alert(xhr.responseJSON?.error || "Error in changing focus.")
         });
     }
 
@@ -148,6 +171,7 @@
         return ajaxPromise({
             url: "/runForm/",
             type: "post",
+            headers: { "X-CSRFToken": getCsrfToken() },
             data: formData,
             success: (data) => {
                 refreshSimImage();
@@ -156,9 +180,36 @@
                 $("#daysPerTickBox").text("Days Per Simulation Tick: " + data.daysPerTick);
                 updateFocusUI(data);
             },
-            error: () => alert("Error in updating form.")
+            error: (xhr) => alert(xhr.responseJSON?.error || "Error in updating form.")
         });
     }
+
+    function sendSave() {
+        return ajaxPromise({
+            url: "/save/",
+            type: "post",
+            headers: { "X-CSRFToken": getCsrfToken() }
+        });
+    }
+
+    function saveAndNavigate(targetUrl) {
+        isRunning = false;
+        clearTimeout(tickTimer);
+        tickTimer = null;
+        enqueue(() => sendSave().then(() => {
+            window.location.href = targetUrl;
+        }));
+    }
+
+    $("#menuButton").on("click", (e) => {
+        e.preventDefault();
+        saveAndNavigate("/");
+    });
+
+    $("#editButton").on("click", (e) => {
+        e.preventDefault();
+        saveAndNavigate("/edit/0/");
+    });
 
     $("#focusButton").on("click", (e) => {
         e.preventDefault();
@@ -178,6 +229,7 @@
         tickTimer = null;
         $("#stopButton").css("background", "grey");
         if (pendingCount === 0) $("#startButton").css("background", "");
+        enqueue(sendSave);
     });
 
     $("#startButton").on("click", (e) => {
