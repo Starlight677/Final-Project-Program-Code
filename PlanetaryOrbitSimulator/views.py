@@ -89,7 +89,7 @@ def createPage(request, templateIndex = 0):
     # Backend for the Create New System page
     user = request.user
     request.session["templateIndex"] = templateIndex
-    templatesList = ["Inner Solar System", "Galilean Moons of Jupiter", "Ascendia Primary Star", "Binary Stars", "Madman's Halo System", "Single Star"]
+    templatesList = ["Inner Solar System", "Galilean Moons of Jupiter", "Ascendia Primary Star", "Binary Stars", "Single Star"]
 
     # Load a Planetary Simulation Engine for accessing parameters
     simulationEngine = PlanetarySimulationEngine()

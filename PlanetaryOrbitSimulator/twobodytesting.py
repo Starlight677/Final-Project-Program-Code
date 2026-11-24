@@ -22,7 +22,7 @@ class PlanetarySimulationEngine:
         pass
 
     def getBodyReference(self, bodyIndex):
-        """Returns the reference body index for bodyIndex (-1 for static grid)."""
+        # Returns the reference body index for bodyIndex, or -1 if aligned to static grid
         if bodyIndex < 0 or bodyIndex >= len(self.listOfBodies):
             return -1
         body = self.listOfBodies[bodyIndex]
@@ -31,23 +31,6 @@ class PlanetarySimulationEngine:
             # Return no reference body if error
             return -1
         return ref
-
-    def getBodyReferenceName(self, bodyIndex):
-        """Returns the display name of the reference body for bodyIndex."""
-        ref = self.getBodyReference(bodyIndex)
-        if ref == -1:
-            return "None (Static Grid)"
-        return self.listOfBodies[ref][5]
-
-    def setBodyReference(self, bodyIndex, refIndex):
-        """Sets the reference body index for bodyIndex."""
-        if bodyIndex < 0 or bodyIndex >= len(self.listOfBodies):
-            return
-        body = self.listOfBodies[bodyIndex]
-        if refIndex < -1 or refIndex >= len(self.listOfBodies) or refIndex == bodyIndex:
-            refIndex = -1
-        body[6] = refIndex
-        self.listOfBodies[bodyIndex] = body
 
     def tickBodyPair(self, body1Coords, body2Coords, body1Motion, body2Motion, body1Mass,
                        body2Mass, body1Radius, body2Radius, secondsMultiplier):
@@ -631,11 +614,7 @@ class PlanetarySimulationEngine:
             self.focusBodyName = chosenFocusBody[5]
 
     def detectCollidingPair(self):
-        """
-        Scans all body pairs and returns the indices (i, j) of the first pair
-        whose separation is less than or equal to the sum of their radii.
-        Returns (None, None) if no collision is currently detected.
-        """
+        # Returns the index numbers of any pair of colliding bodies, or None if there isn't any this tick
         for i in range(len(self.listOfBodies)):
             for j in range(i + 1, len(self.listOfBodies)):
                 bodyA = self.listOfBodies[i]
@@ -814,8 +793,9 @@ class PlanetarySimulationEngine:
             self.ticksPerStorageUpdate = (3600*12) / self.secondsPerSimulationTick  # One course point saved every 12 hours
             self.ticksPerPageUpdate = round((86400 * 30) / self.secondsPerSimulationTick)  # One update per 30 days
             self.simulationName = "Binary Stars"
-        elif templateNumber == 4:
+        elif templateNumber == 99:
             # Madman's Halo system (Complete system with all planets and moons)
+            # Currently disabled due to complexity, as it takes a long time to run
             body1Stats = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], solarMass * 1.320313, 7e7 * 1.2902, ['white', 'white'], "Pyroifoi RD-Z d1-223", -1]  # F (White) Star
             body2Stats = [[-3300000000.0, 0.0, 0.0], [0.0, 230543.0, 0.0], earthMass * 15.172054, 1.27e+07, ['saddlebrown', 'saddlebrown'], "Pyroifoi RD-Z d1-223 1", 0]  # High metal content world
             body3Stats = [[5700000000.0, 0.0, 0.0], [0.0, -175417.0, 0.0], earthMass * 5.797106, 1.00e+07, ['maroon', 'maroon'], "Pyroifoi RD-Z d1-223 2", 0]  # High metal content world
