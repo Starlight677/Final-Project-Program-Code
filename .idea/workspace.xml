@@ -4,13 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Modified the graph drawing system to improve speed and allow longer paths, and added setting for experimental templates.">
-      <change beforePath="$PROJECT_DIR$/.idea/Final Project Program.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Final Project Program.iml" afterDir="false" />
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Removed some unused code, and the now-unnecessary old significant-bodies optimisation structure.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/planetarySimulationEngine.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/planetarySimulationEngine.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Templates/NewSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/NewSystemPage.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/settings.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,23 +43,23 @@
 }</component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0000499407166155" />
-      <entry key="MS500" value="1.166764920400676" />
-      <entry key="S2" value="2.021497345315006" />
-      <entry key="S5" value="2.5217306991437303" />
-      <entry key="S10" value="2.7432193437022887" />
-      <entry key="S30" value="2.910132486410242" />
-      <entry key="S60" value="2.9545082541652254" />
-      <entry key="M2" value="2.9771128496866517" />
-      <entry key="M5" value="3.0088295040346895" />
-      <entry key="M10" value="4.222213245819978" />
-      <entry key="M15" value="8.229665123425363" />
-      <entry key="M30" value="29.69458984360774" />
-      <entry key="H1" value="79.3462607227946" />
-      <entry key="H2" value="147.91889745984182" />
-      <entry key="H4" value="209.72633105719123" />
-      <entry key="D1" value="286.04719176392905" />
-      <entry key="W1" value="302.20475214869873" />
+      <entry key="MS100" value="1.7431005897281655" />
+      <entry key="MS500" value="2.3017070357624583" />
+      <entry key="S2" value="3.4057439898917887" />
+      <entry key="S5" value="5.0108285272601" />
+      <entry key="S10" value="7.603983563859533" />
+      <entry key="S30" value="15.476933924113554" />
+      <entry key="S60" value="20.645616463632372" />
+      <entry key="M2" value="24.31520615526367" />
+      <entry key="M5" value="27.143347692984058" />
+      <entry key="M10" value="28.93592244194495" />
+      <entry key="M15" value="31.3896877957849" />
+      <entry key="M30" value="46.827258198541024" />
+      <entry key="H1" value="90.9042180930913" />
+      <entry key="H2" value="159.7505936596801" />
+      <entry key="H4" value="226.2023507156451" />
+      <entry key="D1" value="312.12992448488654" />
+      <entry key="W1" value="330.76259140042924" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -85,23 +81,23 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.920233601305499" />
-      <entry key="MS500" value="1.146097731293274" />
-      <entry key="S2" value="2.007878951855672" />
-      <entry key="S5" value="2.5139564204127973" />
-      <entry key="S10" value="2.738795134528402" />
-      <entry key="S30" value="2.908520485721154" />
-      <entry key="S60" value="2.953683852739146" />
-      <entry key="M2" value="2.9766959504464303" />
-      <entry key="M5" value="3.008661245903306" />
-      <entry key="M10" value="4.222116136510916" />
-      <entry key="M15" value="8.229565153776303" />
-      <entry key="M30" value="29.694390366697974" />
-      <entry key="H1" value="79.34592950071254" />
-      <entry key="H2" value="147.91855762877833" />
-      <entry key="H4" value="209.72608086012" />
-      <entry key="D1" value="286.04713341407347" />
-      <entry key="W1" value="302.20474330813494" />
+      <entry key="MS100" value="1.7004625905835238" />
+      <entry key="MS500" value="2.2906114094994146" />
+      <entry key="S2" value="3.4015614368764595" />
+      <entry key="S5" value="5.008152974302356" />
+      <entry key="S10" value="7.601867667662751" />
+      <entry key="S30" value="15.475501146872155" />
+      <entry key="S60" value="20.644665788693594" />
+      <entry key="M2" value="24.314647598998715" />
+      <entry key="M5" value="27.143091359588738" />
+      <entry key="M10" value="28.93577198418416" />
+      <entry key="M15" value="31.389563859858722" />
+      <entry key="M30" value="46.827092334337046" />
+      <entry key="H1" value="90.90393693770523" />
+      <entry key="H2" value="159.75028203117415" />
+      <entry key="H4" value="226.20210987948894" />
+      <entry key="D1" value="312.1298658062552" />
+      <entry key="W1" value="330.7625824409753" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -112,31 +108,31 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultHtmlFileTemplate": "HTML File",
-    "Django Server.Final Project Program.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.main.executor": "Run",
-    "Python.twobodytesting.executor": "Run",
-    "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "git-widget-placeholder": "Extensive-Overwrite",
-    "last_opened_file_path": "C:/Users/mcleo/OneDrive/Documents/ARU Year 4/Final Project/Final Project Program",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.jshint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.jshint": "",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "python.packages.toolwindow.project.migrated.to.right.top.v2": "true",
-    "settings.editor.selected.configurable": "com.intellij.python.django.customization.DjangoModulesConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;Django Server.Final Project Program.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.twobodytesting.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;Extensive-Overwrite&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/mcleo/OneDrive/Documents/ARU Year 4/Final Project/Final Project Program&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.jshint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.jshint&quot;: &quot;&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;python.packages.toolwindow.project.migrated.to.right.top.v2&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.intellij.python.django.customization.DjangoModulesConfigurable&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\mcleo\OneDrive\Documents\ARU Year 4\Final Project\Final Project Program\PlanetaryOrbitSimulator" />
@@ -193,14 +189,7 @@
       <updated>1779351571015</updated>
       <workItem from="1795527874169" duration="3591000" />
       <workItem from="1795532497904" duration="4003000" />
-    </task>
-    <task id="LOCAL-00023" summary="Modified data being shown in the edit screen to remove unnecessary precision.">
-      <option name="closed" value="true" />
-      <created>1783412646861</created>
-      <option name="number" value="00023" />
-      <option name="presentableId" value="LOCAL-00023" />
-      <option name="project" value="LOCAL" />
-      <updated>1783412646861</updated>
+      <workItem from="1795701221560" duration="1865000" />
     </task>
     <task id="LOCAL-00024" summary="Added ability to customise pre-existing saves in the Load Simulation screen.">
       <option name="closed" value="true" />
@@ -586,7 +575,15 @@
       <option name="project" value="LOCAL" />
       <updated>1795687459222</updated>
     </task>
-    <option name="localTasksCounter" value="72" />
+    <task id="LOCAL-00072" summary="Removed some unused code, and the now-unnecessary old significant-bodies optimisation structure.">
+      <option name="closed" value="true" />
+      <created>1795692265426</created>
+      <option name="number" value="00072" />
+      <option name="presentableId" value="LOCAL-00072" />
+      <option name="project" value="LOCAL" />
+      <updated>1795692265426</updated>
+    </task>
+    <option name="localTasksCounter" value="73" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -604,7 +601,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Added migration support." />
     <MESSAGE value="Attempted to change the database." />
     <MESSAGE value="Reset back to working configuration." />
     <MESSAGE value="Modified port." />
@@ -629,6 +625,7 @@
     <MESSAGE value="Cleaned up some of the generated methods, and disabled Madman's Halo template due to complexity." />
     <MESSAGE value="Initial modifications from the review." />
     <MESSAGE value="Modified the graph drawing system to improve speed and allow longer paths, and added setting for experimental templates." />
-    <option name="LAST_COMMIT_MESSAGE" value="Modified the graph drawing system to improve speed and allow longer paths, and added setting for experimental templates." />
+    <MESSAGE value="Removed some unused code, and the now-unnecessary old significant-bodies optimisation structure." />
+    <option name="LAST_COMMIT_MESSAGE" value="Removed some unused code, and the now-unnecessary old significant-bodies optimisation structure." />
   </component>
 </project>
