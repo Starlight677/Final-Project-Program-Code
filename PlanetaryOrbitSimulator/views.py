@@ -143,7 +143,7 @@ def _getDisplayMetrics(sim):
     }
 
 
-def _buildSimulationForm(request, simulationName, engine, includeFocusBody=False):
+def _buildSimulationForm(simulationName, engine, includeFocusBody=False):
     initial = {
         "simulationName": simulationName,
         "simulationSize": engine.simulationSize,
@@ -188,6 +188,8 @@ def simulationImage(request):
 def settingsPage(request):
     bgColours = [bg for _, bg, _ in GRAPH_STYLES]
     if request.method == "POST":
+        profile = None
+        dirty = False
         try:
             styleIndex = int(request.POST.get("styleIndex", -1))
         except (TypeError, ValueError):
@@ -199,16 +201,20 @@ def settingsPage(request):
             profile, _ = UserProfile.objects.get_or_create(user=request.user)
             profile.backgroundStylePreference = bg
             profile.axisStylePreference = axis
-            profile.save()
+            dirty = True
 
         if "showExperimentalTemplates" in request.POST:
             rawVal = request.POST.get("showExperimentalTemplates", "").strip().lower()
             if rawVal in ("1", "true", "0", "false"):
                 enabled = rawVal in ("1", "true")
-                profile, _ = UserProfile.objects.get_or_create(user=request.user)
+                if profile is None:
+                    profile, _ = UserProfile.objects.get_or_create(user=request.user)
                 profile.showExperimentalTemplates = enabled
-                profile.save()
                 request.session["showExperimentalTemplates"] = enabled
+                dirty = True
+
+        if dirty:
+            profile.save()
 
         return redirect("/settings/")
 
@@ -262,7 +268,7 @@ def createPage(request, templateIndex=0):
     engine = PlanetarySimulationEngine()
     engine.loadTemplates(templateIndex)
 
-    form = _buildSimulationForm(request, engine.simulationName, engine)
+    form = _buildSimulationForm(engine.simulationName, engine)
     request.session.pop("selectedSimulationId", None)
     _saveSessionState(request, engine, saveToDb=False, drawGraph=True)
 
@@ -285,7 +291,7 @@ def loadingPage(request, saveIndex=0):
     engine = _copySimulationFields(PlanetarySimulationEngine(), selectedSimulation)
     engine.simulationName = selectedSimulation.name
     engine.updateFocusPoint()
-    infoForm = _buildSimulationForm(request, selectedSimulation.name, engine)
+    infoForm = _buildSimulationForm(selectedSimulation.name, engine)
 
     _saveSessionState(request, engine, saveToDb=False, drawGraph=True)
 
@@ -352,15 +358,15 @@ def editSimulationPage(request, selectedBody=0):
 
 
 @login_required(login_url="/login/")
-def runSimulation(request, dontRunSimulation=0, reverseSimulation=0):
+def runSimulation(request, dontRunSimulation=0):
     engine = _getActiveEngine(request)
     if engine is None:
         return redirect("/create/")
 
-    isReverse = _stepSimulationEngine(engine, reverseSimulation, dontRunSimulation)
+    isReverse = _stepSimulationEngine(engine, reverseSimulation=0, dontRunSimulation=dontRunSimulation)
     isNewSave = request.session.get("selectedSimulationId") is None
     _saveSessionState(request, engine, saveToDb=isNewSave, drawGraph=True)
-    infoForm = _buildSimulationForm(request, engine.simulationName, engine, includeFocusBody=True)
+    infoForm = _buildSimulationForm(engine.simulationName, engine, includeFocusBody=True)
 
     return render(request, "RunSimulationPage.html", {
         **_getDisplayMetrics(engine),
@@ -412,14 +418,9 @@ def changeSimulationFocus(request):
     engine.updateFocusPoint()
     _saveSessionState(request, engine, saveToDb=False, drawGraph=True)
 
-    relativeBodyName = (
-        engine.getBodyReferenceName(engine.focusBody)
-        if engine.focusBody != -1 else "None (Static Grid)"
-    )
     return JsonResponse({
         "focusBody": engine.focusBody,
         "focusBodyName": engine.focusBodyName,
-        "relativeBodyName": relativeBodyName,
     })
 
 
@@ -506,7 +507,6 @@ def processEditForm(request, selectedBody):
     if colour:
         body[COLOUR] = [colour, colour]
 
-    engine.invalidatePairCache()
     engine.updateFocusPoint()
     _saveSessionState(request, engine, saveToDb=True, drawGraph=True)
     return JsonResponse({

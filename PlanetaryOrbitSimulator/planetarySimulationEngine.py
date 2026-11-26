@@ -1,4 +1,5 @@
 import io
+import logging
 import math
 
 import matplotlib
@@ -11,13 +12,14 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 import numpy as np
 
+logger = logging.getLogger(__name__)
+
 G = 6.6743e-11
 AU_METERS = 1.495979e11
 SOLAR_MASS = 1.989e30
 EARTH_MASS = 5.972e24
 MOON_MASS = EARTH_MASS * 0.0123
 SECONDS_PER_DAY = 86400
-SIGNIFICANCE_THRESHOLD = 1e-6
 TRAIL_TIER_STRIDES = (1, 4, 16, 64, 256, 1024, 4096)
 TRAIL_TIER_CAPACITY = 512
 TRAIL_TIER_TRIM_MARGIN = 64
@@ -169,9 +171,6 @@ SYSTEM_TEMPLATES = {
     },
 }
 
-TEMPLATE_NAMES = [SYSTEM_TEMPLATES[i]["name"] for i in range(len(SYSTEM_TEMPLATES))]
-
-
 def getAvailableTemplates(includeExperimental=False):
     """Return metadata dicts for templates visible under the current experimental setting."""
     return [
@@ -186,7 +185,7 @@ def getAvailableTemplates(includeExperimental=False):
 
 
 class PlanetarySimulationEngine:
-    """N-body gravitational simulator with adaptive pair filtering, NumPy vectorization, and orbital trail rendering."""
+    """N-body gravitational simulator with exact all-pairs integration, NumPy vectorization, and orbital trail rendering."""
 
     def __init__(self):
         self.listOfBodies = []
@@ -200,25 +199,16 @@ class PlanetarySimulationEngine:
         self.ticksPerPageUpdate = 0
         self.secondsPerSimulationTick = 0
         self.simulationName = ""
-        self._significantCompanions = None
-        self._activePairs = None
-
-    def invalidatePairCache(self):
-        """Clear cached pair significance structures after body list or history changes."""
-        self._significantCompanions = None
-        self._activePairs = None
 
     def resetHistory(self):
         """Initialize a clean multi-resolution trail and snapshot history for current bodies."""
         self.bodyPoints = _makeEmptyHistory(len(self.listOfBodies))
-        self.invalidatePairCache()
 
     def addBody(self, body):
         """Append a body and initialize its synchronized history entry at the current sampleCount."""
         self.listOfBodies.append(body)
         self.bodyPoints["bodies"].append(_makeEmptyBodyHistory(self.bodyPoints["sampleCount"]))
         self.bodyPoints["snapshots"].clear()
-        self.invalidatePairCache()
         return len(self.listOfBodies) - 1
 
     def getBodyReference(self, bodyIndex):
@@ -232,13 +222,6 @@ class PlanetarySimulationEngine:
         if ref < 0 or ref >= len(self.listOfBodies) or ref == bodyIndex:
             return -1
         return ref
-
-    def getBodyReferenceName(self, bodyIndex):
-        """Return the display name of the reference body for bodyIndex."""
-        ref = self.getBodyReference(bodyIndex)
-        if ref == -1:
-            return "None (Static Grid)"
-        return self.listOfBodies[ref][NAME]
 
     def setBodyReference(self, bodyIndex, refIndex):
         """Set the reference body index for bodyIndex, falling back to -1 if invalid."""
@@ -284,46 +267,9 @@ class PlanetarySimulationEngine:
                 break
             i, j = pair
             self.mergeCollidingBodies(i, j)
-            print(f"Body Collision resolved between body {i} and body {j}.")
+            logger.info("Body Collision resolved between body %d and body %d.", i, j)
             merged = True
         return merged
-
-    def _applyPairGravity(self, body1, body2, filterTick):
-        """Apply mutual gravitational impulse to body1 and body2 and return significance."""
-        pos1, pos2 = body1[POS], body2[POS]
-        dx = pos1[0] - pos2[0]
-        dy = pos1[1] - pos2[1]
-        dz = pos1[2] - pos2[2]
-        distSq = dx * dx + dy * dy + dz * dz
-        if distSq <= 0.0:
-            return False
-
-        dist = math.sqrt(distSq)
-        invDistCubed = G / (distSq * dist)
-        mod1 = abs(body2[MASS] * invDistCubed)
-        mod2 = abs(body1[MASS] * invDistCubed)
-
-        a1x, a1y, a1z = -dx * mod1, -dy * mod1, -dz * mod1
-        a2x, a2y, a2z = dx * mod2, dy * mod2, dz * mod2
-
-        exceedsThreshold = (
-            (abs(a1x) + abs(a1y) + abs(a1z)) >= SIGNIFICANCE_THRESHOLD
-            or (abs(a2x) + abs(a2y) + abs(a2z)) >= SIGNIFICANCE_THRESHOLD
-        )
-
-        # Batch below-threshold pairs over the full storage interval on filter ticks
-        dt = self.secondsPerSimulationTick
-        if filterTick and not exceedsThreshold and self.ticksPerStorageUpdate > 1:
-            dt *= self.ticksPerStorageUpdate
-
-        vel1, vel2 = body1[VEL], body2[VEL]
-        vel1[0] += a1x * dt
-        vel1[1] += a1y * dt
-        vel1[2] += a1z * dt
-        vel2[0] += a2x * dt
-        vel2[1] += a2y * dt
-        vel2[2] += a2z * dt
-        return exceedsThreshold
 
     def mergeCollidingBodies(self, body1Index, body2Index):
         """Merge two colliding bodies into the lower-indexed slot and remap tracking structures."""
@@ -374,7 +320,16 @@ class PlanetarySimulationEngine:
                 elif body[REF] > body2Index:
                     body[REF] -= 1
 
-        self.invalidatePairCache()
+    def _getViewMetrics(self):
+        """Return viewport (xmin, xmax, ymin, ymax) in AU and approximate pixel size in AU."""
+        viewBounds = (
+            -self.simulationSize + self.focusPoint[0],
+            self.simulationSize + self.focusPoint[0],
+            -self.simulationSize + self.focusPoint[1],
+            self.simulationSize + self.focusPoint[1],
+        )
+        pixelSizeAU = (2.0 * self.simulationSize) / 550.0 if self.simulationSize > 0 else 0.0
+        return viewBounds, pixelSizeAU
 
     def renderGraphBytes(self, backgroundColour="black", graphColour="white"):
         """Render the current orbital state and trails to PNG bytes using OO Matplotlib."""
@@ -393,13 +348,7 @@ class PlanetarySimulationEngine:
         ax.xaxis.label.set_color(graphColour)
         ax.yaxis.label.set_color(graphColour)
 
-        viewBounds = (
-            -self.simulationSize + self.focusPoint[0],
-            self.simulationSize + self.focusPoint[0],
-            -self.simulationSize + self.focusPoint[1],
-            self.simulationSize + self.focusPoint[1],
-        )
-        pixelSizeAU = (2.0 * self.simulationSize) / 550.0 if self.simulationSize > 0 else 0.0
+        viewBounds, pixelSizeAU = self._getViewMetrics()
 
         ax.set_xlim(viewBounds[0], viewBounds[1])
         ax.set_ylim(viewBounds[2], viewBounds[3])
@@ -643,15 +592,12 @@ class PlanetarySimulationEngine:
 
     def plotBodyPoints(self, ax, body, bodyIndex, viewBounds=None, pixelSizeAU=None, refSliceCache=None):
         """Plot a body's orbital trail and current marker onto ax."""
-        if viewBounds is None:
-            viewBounds = (
-                -self.simulationSize + self.focusPoint[0],
-                self.simulationSize + self.focusPoint[0],
-                -self.simulationSize + self.focusPoint[1],
-                self.simulationSize + self.focusPoint[1],
-            )
-        if pixelSizeAU is None:
-            pixelSizeAU = (2.0 * self.simulationSize) / 550.0 if self.simulationSize > 0 else 0.0
+        if viewBounds is None or pixelSizeAU is None:
+            defaultBounds, defaultPixelSize = self._getViewMetrics()
+            if viewBounds is None:
+                viewBounds = defaultBounds
+            if pixelSizeAU is None:
+                pixelSizeAU = defaultPixelSize
 
         bodyHist = self.bodyPoints["bodies"][bodyIndex]
         currentX = body[POS][0] / AU_METERS
@@ -682,9 +628,7 @@ class PlanetarySimulationEngine:
         colours = body[COLOUR]
         lineColour, markerColour = colours if isinstance(colours, (list, tuple)) else (colours, colours)
 
-        if plotX is not None and plotX.size > 0 and self._isTrailVisible(
-            plotX, plotY, 0.0, 0.0, viewBounds, pixelSizeAU, marginRatio=0.0
-        ):
+        if plotX is not None and plotX.size > 0:
             ax.plot(plotX, plotY, color=lineColour)
 
         minViewX, maxViewX, minViewY, maxViewY = viewBounds
@@ -741,29 +685,35 @@ class PlanetarySimulationEngine:
         self._recordSampleCoords(pos[:, 0] * invAU, pos[:, 1] * invAU)
 
     def tickSimulation(self):
-        """Advance the simulation by one tick on the scalar path after resolving any collisions."""
+        """Advance the simulation by one tick on the exact all-pairs scalar path."""
         self._resolveCollisions()
         bodies = self.listOfBodies
         n = len(bodies)
-        isFilterTick = self.ticksPerStorageUpdate > 0 and (
-            self.simulationTime % self.ticksPerStorageUpdate == 0
-        )
-
-        if isFilterTick:
-            activePairs = []
-            for i in range(n):
-                body1 = bodies[i]
-                for j in range(i + 1, n):
-                    if self._applyPairGravity(body1, bodies[j], filterTick=True):
-                        activePairs.append((i, j))
-            self._activePairs = activePairs
-        else:
-            if self._activePairs is None:
-                self._activePairs = [(i, j) for i in range(n) for j in range(i + 1, n)]
-            for i, j in self._activePairs:
-                self._applyPairGravity(bodies[i], bodies[j], filterTick=False)
-
         dt = self.secondsPerSimulationTick
+        sqrt = math.sqrt
+
+        for i in range(n):
+            body1 = bodies[i]
+            pos1, vel1, m1 = body1[POS], body1[VEL], body1[MASS]
+            for j in range(i + 1, n):
+                body2 = bodies[j]
+                pos2, vel2 = body2[POS], body2[VEL]
+                dx = pos1[0] - pos2[0]
+                dy = pos1[1] - pos2[1]
+                dz = pos1[2] - pos2[2]
+                distSq = dx * dx + dy * dy + dz * dz
+                if distSq <= 0.0:
+                    continue
+                invDistCubed = G / (distSq * sqrt(distSq))
+                f1 = body2[MASS] * invDistCubed * dt
+                f2 = m1 * invDistCubed * dt
+                vel1[0] -= dx * f1
+                vel1[1] -= dy * f1
+                vel1[2] -= dz * f1
+                vel2[0] += dx * f2
+                vel2[1] += dy * f2
+                vel2[2] += dz * f2
+
         for body in bodies:
             pos = body[POS]
             vel = body[VEL]
@@ -771,8 +721,90 @@ class PlanetarySimulationEngine:
             pos[1] += vel[1] * dt
             pos[2] += vel[2] * dt
 
-        if isFilterTick:
+        if self.ticksPerStorageUpdate > 0 and self.simulationTime % self.ticksPerStorageUpdate == 0:
             self.updateStoredPath()
+
+    def _runSimulationScalar(self, targetTicks):
+        """Advance N < NUMPY_BODY_THRESHOLD systems using a hoisted exact all-pairs scalar loop."""
+        self._resolveCollisions()
+        bodies = self.listOfBodies
+        dt = self.secondsPerSimulationTick
+        storageInterval = self.ticksPerStorageUpdate
+        invAU = 1.0 / AU_METERS
+        sqrt = math.sqrt
+        simTime = self.simulationTime
+
+        def unpack():
+            n = len(bodies)
+            xs = [b[POS][0] for b in bodies]
+            ys = [b[POS][1] for b in bodies]
+            zs = [b[POS][2] for b in bodies]
+            vxs = [b[VEL][0] for b in bodies]
+            vys = [b[VEL][1] for b in bodies]
+            vzs = [b[VEL][2] for b in bodies]
+            pairs = [
+                (
+                    i,
+                    j,
+                    G * bodies[j][MASS] * dt,
+                    G * bodies[i][MASS] * dt,
+                    (bodies[i][RADIUS] + bodies[j][RADIUS]) ** 2,
+                )
+                for i in range(n)
+                for j in range(i + 1, n)
+            ]
+            return n, xs, ys, zs, vxs, vys, vzs, pairs
+
+        def sync(xs, ys, zs, vxs, vys, vzs):
+            for idx, body in enumerate(bodies):
+                pos = body[POS]
+                vel = body[VEL]
+                pos[0], pos[1], pos[2] = xs[idx], ys[idx], zs[idx]
+                vel[0], vel[1], vel[2] = vxs[idx], vys[idx], vzs[idx]
+
+        n, xs, ys, zs, vxs, vys, vzs, pairs = unpack()
+
+        while targetTicks is None or simTime < targetTicks:
+            pvx, pvy, pvz = vxs[:], vys[:], vzs[:]
+            collided = False
+            for i, j, gmj_dt, gmi_dt, radSumSq in pairs:
+                dx = xs[i] - xs[j]
+                dy = ys[i] - ys[j]
+                dz = zs[i] - zs[j]
+                d2 = dx * dx + dy * dy + dz * dz
+                if d2 <= radSumSq:
+                    collided = True
+                    break
+                invD3 = 1.0 / (d2 * sqrt(d2))
+                f1 = gmj_dt * invD3
+                f2 = gmi_dt * invD3
+                vxs[i] -= dx * f1
+                vys[i] -= dy * f1
+                vzs[i] -= dz * f1
+                vxs[j] += dx * f2
+                vys[j] += dy * f2
+                vzs[j] += dz * f2
+
+            if collided:
+                vxs, vys, vzs = pvx, pvy, pvz
+                sync(xs, ys, zs, vxs, vys, vzs)
+                self.simulationTime = simTime
+                self._resolveCollisions()
+                n, xs, ys, zs, vxs, vys, vzs, pairs = unpack()
+                continue
+
+            for i in range(n):
+                xs[i] += vxs[i] * dt
+                ys[i] += vys[i] * dt
+                zs[i] += vzs[i] * dt
+
+            if storageInterval > 0 and simTime % storageInterval == 0:
+                self._recordSampleCoords([x * invAU for x in xs], [y * invAU for y in ys])
+
+            simTime += 1
+
+        sync(xs, ys, zs, vxs, vys, vzs)
+        self.simulationTime = simTime
 
     def _packNumpyState(self):
         """Pack current listOfBodies state into contiguous float64 NumPy arrays."""
@@ -816,7 +848,6 @@ class PlanetarySimulationEngine:
                 continue
 
             invD3 = G / (distSq * np.sqrt(distSq))
-            np.fill_diagonal(invD3, 0.0)
             acc = np.einsum("ij,j,ijk->ik", invD3, mass, diff)
             vel += acc * dt
             pos += vel * dt
@@ -827,7 +858,6 @@ class PlanetarySimulationEngine:
             self.simulationTime += 1
 
         self._syncNumpyState(pos, vel)
-        self.invalidatePairCache()
 
     def _pushRollbackSnapshot(self):
         """Capture a compact pre-step 3D checkpoint for exact rollback across all tiers."""
@@ -856,9 +886,8 @@ class PlanetarySimulationEngine:
         if len(self.listOfBodies) >= NUMPY_BODY_THRESHOLD:
             self._runSimulationNumpy(targetTicks)
 
-        while targetTicks is None or self.simulationTime < targetTicks:
-            self.tickSimulation()
-            self.simulationTime += 1
+        if targetTicks is None or self.simulationTime < targetTicks:
+            self._runSimulationScalar(targetTicks)
 
         if (
             targetTicks is not None
@@ -891,7 +920,6 @@ class PlanetarySimulationEngine:
                 break
 
         if snap is None:
-            self.invalidatePairCache()
             return
 
         self.simulationTime = snap["time"]
@@ -917,4 +945,3 @@ class PlanetarySimulationEngine:
                     del tier[1][-toDrop:]
 
         self.bodyPoints["sampleCount"] = oldCount
-        self.invalidatePairCache()

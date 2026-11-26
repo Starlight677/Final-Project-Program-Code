@@ -4,13 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Initial modifications from the review.">
+    <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Modified the graph drawing system to improve speed and allow longer paths, and added setting for experimental templates.">
+      <change beforePath="$PROJECT_DIR$/.idea/Final Project Program.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Final Project Program.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/planetarySimulationEngine.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/planetarySimulationEngine.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Templates/NewSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/NewSystemPage.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Templates/SettingsPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/SettingsPage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,23 +47,23 @@
 }</component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.9304860203630687" />
-      <entry key="MS500" value="4.613529657070186" />
-      <entry key="S2" value="14.032423547927326" />
-      <entry key="S5" value="23.03141428047745" />
-      <entry key="S10" value="28.130616244634776" />
-      <entry key="S30" value="32.474386507888134" />
-      <entry key="S60" value="33.70529381013478" />
-      <entry key="M2" value="34.36532462982872" />
-      <entry key="M5" value="34.97406494808726" />
-      <entry key="M10" value="36.47089228893156" />
-      <entry key="M15" value="40.533705342525266" />
-      <entry key="M30" value="63.248283475059495" />
-      <entry key="H1" value="108.92674017318247" />
-      <entry key="H2" value="159.9674677331061" />
-      <entry key="H4" value="199.3963203319324" />
-      <entry key="D1" value="242.86770446336902" />
-      <entry key="W1" value="251.5198794390108" />
+      <entry key="MS100" value="1.0000499407166155" />
+      <entry key="MS500" value="1.166764920400676" />
+      <entry key="S2" value="2.021497345315006" />
+      <entry key="S5" value="2.5217306991437303" />
+      <entry key="S10" value="2.7432193437022887" />
+      <entry key="S30" value="2.910132486410242" />
+      <entry key="S60" value="2.9545082541652254" />
+      <entry key="M2" value="2.9771128496866517" />
+      <entry key="M5" value="3.0088295040346895" />
+      <entry key="M10" value="4.222213245819978" />
+      <entry key="M15" value="8.229665123425363" />
+      <entry key="M30" value="29.69458984360774" />
+      <entry key="H1" value="79.3462607227946" />
+      <entry key="H2" value="147.91889745984182" />
+      <entry key="H4" value="209.72633105719123" />
+      <entry key="D1" value="286.04719176392905" />
+      <entry key="W1" value="302.20475214869873" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -85,23 +85,23 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="1.8718162363113229" />
-      <entry key="MS500" value="4.58411942161704" />
-      <entry key="S2" value="14.005723863054177" />
-      <entry key="S5" value="23.01132876583707" />
-      <entry key="S10" value="28.11766709045832" />
-      <entry key="S30" value="32.46921262526045" />
-      <entry key="S60" value="33.70258282331191" />
-      <entry key="M2" value="34.363929614105665" />
-      <entry key="M5" value="34.97346766843953" />
-      <entry key="M10" value="36.47048896617306" />
-      <entry key="M15" value="40.53327003117477" />
-      <entry key="M30" value="63.247710484390595" />
-      <entry key="H1" value="108.92615994485841" />
-      <entry key="H2" value="159.9670274237474" />
-      <entry key="H4" value="199.39604425774527" />
-      <entry key="D1" value="242.86764837147473" />
-      <entry key="W1" value="251.5198711418069" />
+      <entry key="MS100" value="0.920233601305499" />
+      <entry key="MS500" value="1.146097731293274" />
+      <entry key="S2" value="2.007878951855672" />
+      <entry key="S5" value="2.5139564204127973" />
+      <entry key="S10" value="2.738795134528402" />
+      <entry key="S30" value="2.908520485721154" />
+      <entry key="S60" value="2.953683852739146" />
+      <entry key="M2" value="2.9766959504464303" />
+      <entry key="M5" value="3.008661245903306" />
+      <entry key="M10" value="4.222116136510916" />
+      <entry key="M15" value="8.229565153776303" />
+      <entry key="M30" value="29.694390366697974" />
+      <entry key="H1" value="79.34592950071254" />
+      <entry key="H2" value="147.91855762877833" />
+      <entry key="H4" value="209.72608086012" />
+      <entry key="D1" value="286.04713341407347" />
+      <entry key="W1" value="302.20474330813494" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -112,29 +112,31 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Python.main.executor&quot;: &quot;Run&quot;,
-    &quot;Python.twobodytesting.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;Extensive-Overwrite&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/mcleo/OneDrive/Documents/ARU Year 4/Final Project/Final Project Program&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.jshint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.jshint&quot;: &quot;&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;python.packages.toolwindow.project.migrated.to.right.top.v2&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultHtmlFileTemplate": "HTML File",
+    "Django Server.Final Project Program.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.main.executor": "Run",
+    "Python.twobodytesting.executor": "Run",
+    "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "git-widget-placeholder": "Extensive-Overwrite",
+    "last_opened_file_path": "C:/Users/mcleo/OneDrive/Documents/ARU Year 4/Final Project/Final Project Program",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.jshint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.jshint": "",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "python.packages.toolwindow.project.migrated.to.right.top.v2": "true",
+    "settings.editor.selected.configurable": "com.intellij.python.django.customization.DjangoModulesConfigurable"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\mcleo\OneDrive\Documents\ARU Year 4\Final Project\Final Project Program\PlanetaryOrbitSimulator" />
@@ -152,8 +154,10 @@
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="DJANGO_SETTINGS_MODULE" value="PlanetaryOrbitSimulator.settings" />
       </envs>
       <option name="SDK_HOME" value="" />
+      <option name="SDK_NAME" value="~\PycharmProjects\Final-Project-Program-Code_2\.venv" />
       <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -189,14 +193,6 @@
       <updated>1779351571015</updated>
       <workItem from="1795527874169" duration="3591000" />
       <workItem from="1795532497904" duration="4003000" />
-    </task>
-    <task id="LOCAL-00022" summary="Added ability to change position and velocity of the bodies.">
-      <option name="closed" value="true" />
-      <created>1783352380562</created>
-      <option name="number" value="00022" />
-      <option name="presentableId" value="LOCAL-00022" />
-      <option name="project" value="LOCAL" />
-      <updated>1783352380562</updated>
     </task>
     <task id="LOCAL-00023" summary="Modified data being shown in the edit screen to remove unnecessary precision.">
       <option name="closed" value="true" />
@@ -582,7 +578,15 @@
       <option name="project" value="LOCAL" />
       <updated>1795535521187</updated>
     </task>
-    <option name="localTasksCounter" value="71" />
+    <task id="LOCAL-00071" summary="Modified the graph drawing system to improve speed and allow longer paths, and added setting for experimental templates.">
+      <option name="closed" value="true" />
+      <created>1795687459222</created>
+      <option name="number" value="00071" />
+      <option name="presentableId" value="LOCAL-00071" />
+      <option name="project" value="LOCAL" />
+      <updated>1795687459222</updated>
+    </task>
+    <option name="localTasksCounter" value="72" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -600,7 +604,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Added system start in main.py." />
     <MESSAGE value="Added migration support." />
     <MESSAGE value="Attempted to change the database." />
     <MESSAGE value="Reset back to working configuration." />
@@ -625,6 +628,7 @@
     <MESSAGE value="Graph display code optimised for fast display on long-running simulations. NOTE: Significantly increases code complexity." />
     <MESSAGE value="Cleaned up some of the generated methods, and disabled Madman's Halo template due to complexity." />
     <MESSAGE value="Initial modifications from the review." />
-    <option name="LAST_COMMIT_MESSAGE" value="Initial modifications from the review." />
+    <MESSAGE value="Modified the graph drawing system to improve speed and allow longer paths, and added setting for experimental templates." />
+    <option name="LAST_COMMIT_MESSAGE" value="Modified the graph drawing system to improve speed and allow longer paths, and added setting for experimental templates." />
   </component>
 </project>
