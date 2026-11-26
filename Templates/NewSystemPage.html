@@ -13,9 +13,9 @@
         <li><h2 style="color:white">Select Template:</h2></li>
         {% for template in templatesList %}
             <li>
-                <button class="choice-item{% if forloop.counter0 == templateIndex %} selected{% endif %}"
-                        onclick="window.location.href='/create/{{ forloop.counter0 }}/'">
-                    {{ template }}
+                <button class="choice-item{% if template.id == templateIndex %} selected{% endif %}"
+                        onclick="window.location.href='/create/{{ template.id }}/'">
+                    {{ template.name }}{% if template.experimental %}<br><small>(Experimental)</small>{% endif %}
                 </button>
             </li>
         {% endfor %}

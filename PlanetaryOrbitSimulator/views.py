@@ -14,9 +14,9 @@ from PlanetaryOrbitSimulator.planetarySimulationEngine import (
     POS,
     RADIUS,
     SECONDS_PER_DAY,
-    TEMPLATE_NAMES,
     VEL,
     PlanetarySimulationEngine,
+    getAvailableTemplates,
 )
 from .forms import BodyDetailsForm, LoginForm, RegisterForm, SimulationNameForm
 from .models import StoredSimulation, UserProfile
@@ -51,17 +51,24 @@ def _formatFormErrors(form):
     return " | ".join(messages) or "Invalid form data"
 
 
-def _loadStyleIntoSession(request, user):
+def _loadPreferencesIntoSession(request, user):
     profile, _ = UserProfile.objects.get_or_create(user=user)
     request.session["backgroundStyle"] = profile.backgroundStylePreference
     request.session["axisStyle"] = profile.axisStylePreference
+    request.session["showExperimentalTemplates"] = profile.showExperimentalTemplates
     return profile
 
 
 def _getStylePreferences(request):
     if "backgroundStyle" not in request.session or "axisStyle" not in request.session:
-        _loadStyleIntoSession(request, request.user)
+        _loadPreferencesIntoSession(request, request.user)
     return request.session["backgroundStyle"], request.session["axisStyle"]
+
+
+def _getShowExperimentalTemplates(request):
+    if "showExperimentalTemplates" not in request.session:
+        _loadPreferencesIntoSession(request, request.user)
+    return bool(request.session["showExperimentalTemplates"])
 
 
 def _copySimulationFields(target, source):
@@ -193,6 +200,16 @@ def settingsPage(request):
             profile.backgroundStylePreference = bg
             profile.axisStylePreference = axis
             profile.save()
+
+        if "showExperimentalTemplates" in request.POST:
+            rawVal = request.POST.get("showExperimentalTemplates", "").strip().lower()
+            if rawVal in ("1", "true", "0", "false"):
+                enabled = rawVal in ("1", "true")
+                profile, _ = UserProfile.objects.get_or_create(user=request.user)
+                profile.showExperimentalTemplates = enabled
+                profile.save()
+                request.session["showExperimentalTemplates"] = enabled
+
         return redirect("/settings/")
 
     bgStyle, _ = _getStylePreferences(request)
@@ -200,6 +217,7 @@ def settingsPage(request):
     return render(request, "SettingsPage.html", {
         "graphStyles": [label for label, _, _ in GRAPH_STYLES],
         "styleIndex": styleIndex,
+        "showExperimentalTemplates": _getShowExperimentalTemplates(request),
     })
 
 
@@ -213,7 +231,7 @@ def loginPage(request):
         )
         if user is not None:
             login(request, user)
-            _loadStyleIntoSession(request, user)
+            _loadPreferencesIntoSession(request, user)
             return redirect("/")
         form.add_error(None, "Invalid username or password.")
     return render(request, "LoginPage.html", {"loginForm": form})
@@ -227,13 +245,20 @@ def registerPage(request):
             password=form.cleaned_data["password"],
         )
         login(request, user)
-        _loadStyleIntoSession(request, user)
+        _loadPreferencesIntoSession(request, user)
         return redirect("/")
     return render(request, "RegisterPage.html", {"registerForm": form})
 
 
 @login_required(login_url="/login/")
 def createPage(request, templateIndex=0):
+    showExperimental = _getShowExperimentalTemplates(request)
+    availableTemplates = getAvailableTemplates(includeExperimental=showExperimental)
+    availableIds = {tpl["id"] for tpl in availableTemplates}
+    if availableTemplates and templateIndex not in availableIds:
+        fallbackId = 0 if 0 in availableIds else availableTemplates[0]["id"]
+        return redirect("/create/" if fallbackId == 0 else f"/create/{fallbackId}/")
+
     engine = PlanetarySimulationEngine()
     engine.loadTemplates(templateIndex)
 
@@ -242,7 +267,7 @@ def createPage(request, templateIndex=0):
     _saveSessionState(request, engine, saveToDb=False, drawGraph=True)
 
     return render(request, "NewSystemPage.html", {
-        "templatesList": TEMPLATE_NAMES,
+        "templatesList": availableTemplates,
         "templateIndex": templateIndex,
         "form": form,
     })
@@ -453,8 +478,7 @@ def processEditForm(request, selectedBody):
 
     cleaned = detailsForm.cleaned_data
     if selectedBody == len(engine.listOfBodies):
-        engine.listOfBodies.append([[0, 0, 0], [0, 0, 0], 0, 0, ["white", "white"], "", -1])
-        engine.bodyPoints.append([[], [], [[], [], []], []])
+        engine.addBody([[0, 0, 0], [0, 0, 0], 0, 0, ["white", "white"], "", -1])
         engine.focusBody = selectedBody
 
     body = engine.listOfBodies[selectedBody]

@@ -18,7 +18,10 @@ EARTH_MASS = 5.972e24
 MOON_MASS = EARTH_MASS * 0.0123
 SECONDS_PER_DAY = 86400
 SIGNIFICANCE_THRESHOLD = 1e-6
-MAX_HISTORY_POINTS = 5000
+TRAIL_TIER_STRIDES = (1, 4, 16, 64, 256, 1024, 4096)
+TRAIL_TIER_CAPACITY = 512
+TRAIL_TIER_TRIM_MARGIN = 64
+MAX_ROLLBACK_SNAPSHOTS = 200
 NUMPY_BODY_THRESHOLD = 12
 
 # Indices into each body entry: [pos, vel, mass, radius, [line_colour, marker_colour], name, ref_index]
@@ -27,6 +30,32 @@ POS, VEL, MASS, RADIUS, COLOUR, NAME, REF = range(7)
 
 def _makeBody(pos, vel, mass, radius, colour, name, ref=-1):
     return [list(pos), list(vel), mass, radius, [colour, colour], name, ref]
+
+
+def _countTierAppends(startSample, endSample, stride):
+    """Return exact count of indices k in [startSample, endSample) with k % stride == 0."""
+    if endSample <= startSample:
+        return 0
+    return ((endSample - 1) // stride) - ((startSample - 1) // stride)
+
+
+def _makeEmptyBodyHistory(startSample=0):
+    """Create per-body multi-resolution 2D trail buffers aligned to global sample index."""
+    return {
+        "startSample": startSample,
+        "tiers": [[[], []] for _ in TRAIL_TIER_STRIDES],
+    }
+
+
+def _makeEmptyHistory(numBodies=0):
+    """Create the versioned multi-resolution trail and rollback snapshot history dict."""
+    return {
+        "version": 2,
+        "sampleCount": 0,
+        "strides": list(TRAIL_TIER_STRIDES),
+        "bodies": [_makeEmptyBodyHistory(0) for _ in range(numBodies)],
+        "snapshots": [],
+    }
 
 
 SYSTEM_TEMPLATES = {
@@ -97,7 +126,8 @@ SYSTEM_TEMPLATES = {
         ),
     },
     5: {
-        "name": "Madman's Halo",
+        "name": "Madman's Halo System",
+        "experimental": True,
         "size": 11,
         "dt": 1800,
         "storageSeconds": 7200,
@@ -142,6 +172,19 @@ SYSTEM_TEMPLATES = {
 TEMPLATE_NAMES = [SYSTEM_TEMPLATES[i]["name"] for i in range(len(SYSTEM_TEMPLATES))]
 
 
+def getAvailableTemplates(includeExperimental=False):
+    """Return metadata dicts for templates visible under the current experimental setting."""
+    return [
+        {
+            "id": tid,
+            "name": tpl["name"],
+            "experimental": bool(tpl.get("experimental", False)),
+        }
+        for tid, tpl in sorted(SYSTEM_TEMPLATES.items())
+        if includeExperimental or not tpl.get("experimental", False)
+    ]
+
+
 class PlanetarySimulationEngine:
     """N-body gravitational simulator with adaptive pair filtering, NumPy vectorization, and orbital trail rendering."""
 
@@ -152,7 +195,7 @@ class PlanetarySimulationEngine:
         self.focusPoint = [0, 0]
         self.focusBody = -1
         self.focusBodyName = "None"
-        self.bodyPoints = []
+        self.bodyPoints = _makeEmptyHistory(0)
         self.ticksPerStorageUpdate = 0
         self.ticksPerPageUpdate = 0
         self.secondsPerSimulationTick = 0
@@ -164,6 +207,19 @@ class PlanetarySimulationEngine:
         """Clear cached pair significance structures after body list or history changes."""
         self._significantCompanions = None
         self._activePairs = None
+
+    def resetHistory(self):
+        """Initialize a clean multi-resolution trail and snapshot history for current bodies."""
+        self.bodyPoints = _makeEmptyHistory(len(self.listOfBodies))
+        self.invalidatePairCache()
+
+    def addBody(self, body):
+        """Append a body and initialize its synchronized history entry at the current sampleCount."""
+        self.listOfBodies.append(body)
+        self.bodyPoints["bodies"].append(_makeEmptyBodyHistory(self.bodyPoints["sampleCount"]))
+        self.bodyPoints["snapshots"].clear()
+        self.invalidatePairCache()
+        return len(self.listOfBodies) - 1
 
     def getBodyReference(self, bodyIndex):
         """Return the reference body index for bodyIndex, or -1 for static grid."""
@@ -287,10 +343,10 @@ class PlanetarySimulationEngine:
             mergedMotion = [(body1[VEL][i] + body2[VEL][i]) / 2 for i in range(3)]
 
         mergedRadius = (body1[RADIUS] ** 3 + body2[RADIUS] ** 3) ** (1 / 3)
-        dominant = body1 if m1 >= m2 else body2
-        mergedColour = dominant[COLOUR][0] if isinstance(dominant[COLOUR], list) else dominant[COLOUR]
-        mergedName = dominant[NAME]
-        rawRef = dominant[REF] if len(dominant) > REF else -1
+        dominantBody = body1 if m1 >= m2 else body2
+        mergedColour = dominantBody[COLOUR][0] if isinstance(dominantBody[COLOUR], list) else dominantBody[COLOUR]
+        mergedName = dominantBody[NAME]
+        rawRef = dominantBody[REF] if len(dominantBody) > REF else -1
         mergedRef = rawRef if isinstance(rawRef, int) and not isinstance(rawRef, bool) else -1
         if mergedRef in (body1Index, body2Index):
             mergedRef = -1
@@ -299,7 +355,8 @@ class PlanetarySimulationEngine:
             mergedCoords, mergedMotion, totalMass, mergedRadius, mergedColour, mergedName, mergedRef
         )
         self.listOfBodies.pop(body2Index)
-        self.bodyPoints.pop(body2Index)
+        self.bodyPoints["bodies"].pop(body2Index)
+        self.bodyPoints["snapshots"].clear()
 
         if self.focusBody == body2Index:
             self.focusBody = -1
@@ -454,47 +511,31 @@ class PlanetarySimulationEngine:
         return np.concatenate(([startX], dx[segEnd:])), np.concatenate(([startY], dy[segEnd:]))
 
     @staticmethod
-    def _sliceTrailWindow(
-        trailX,
-        trailY,
-        startIdx,
-        totalLen,
-        stride,
-        bodyOffset=0,
-        refXPoints=None,
-        refYPoints=None,
-        refOffset=0,
-        refIdx=-1,
-        refSliceCache=None,
-    ):
-        """Slice tail-aligned (trailX, trailY) and subtract cached reference slices when provided."""
-        bStart = bodyOffset + startIdx
-        bEnd = bodyOffset + totalLen
-        tx = np.asarray(trailX[bStart:bEnd:stride], dtype=float)
-        ty = np.asarray(trailY[bStart:bEnd:stride], dtype=float)
-        if refXPoints is None or refYPoints is None:
+    def _getTierRelativeArrays(bodyTier, refTier, totalLen, refIdx=-1, tierIdx=0, refSliceCache=None):
+        """Slice tail-aligned samples from one tier and subtract cached reference coordinates."""
+        bOff = len(bodyTier[0]) - totalLen
+        tx = np.asarray(bodyTier[0][bOff:], dtype=float)
+        ty = np.asarray(bodyTier[1][bOff:], dtype=float)
+        if refTier is None:
             return tx, ty
 
-        rStart = refOffset + startIdx
-        rEnd = refOffset + totalLen
-        cacheKey = (refIdx, rStart, rEnd, stride)
+        rOff = len(refTier[0]) - totalLen
+        cacheKey = (refIdx, tierIdx, rOff, totalLen)
         if refSliceCache is not None and cacheKey in refSliceCache:
             rx, ry = refSliceCache[cacheKey]
         else:
-            rx = np.asarray(refXPoints[rStart:rEnd:stride], dtype=float)
-            ry = np.asarray(refYPoints[rStart:rEnd:stride], dtype=float)
+            rx = np.asarray(refTier[0][rOff:], dtype=float)
+            ry = np.asarray(refTier[1][rOff:], dtype=float)
             if refSliceCache is not None:
                 refSliceCache[cacheKey] = (rx, ry)
         return tx - rx, ty - ry
 
     def _extractOrbitTrail(
         self,
-        trailX,
-        trailY,
+        bodyHist,
         currentX,
         currentY,
-        refXPoints=None,
-        refYPoints=None,
+        refHist=None,
         refCurrentX=0.0,
         refCurrentY=0.0,
         viewBounds=None,
@@ -503,46 +544,40 @@ class PlanetarySimulationEngine:
         refSliceCache=None,
     ):
         """
-        Extract a single-revolution orbital trail in world coordinates in O(1) time
-        using tail-aligned history windows and early viewport/sub-pixel culling.
+        Extract a single-revolution orbital trail in world coordinates by walking
+        multi-resolution stride tiers from finest to coarsest.
         """
-        useRelative = refXPoints is not None and refYPoints is not None
-        totalLen = min(len(trailX), len(refXPoints)) if useRelative else len(trailX)
-        if totalLen == 0:
-            return None, None
-
-        bodyOffset = len(trailX) - totalLen
-        refOffset = (len(refXPoints) - totalLen) if useRelative else 0
+        useRelative = refHist is not None
+        globalCount = self.bodyPoints["sampleCount"]
+        strides = self.bodyPoints["strides"]
+        commonStart = (
+            max(bodyHist["startSample"], refHist["startSample"])
+            if useRelative else bodyHist["startSample"]
+        )
 
         currDX = (currentX - refCurrentX) if useRelative else currentX
         currDY = (currentY - refCurrentY) if useRelative else currentY
         originX = refCurrentX if useRelative else 0.0
         originY = refCurrentY if useRelative else 0.0
 
-        dx = dy = cumTheta = revHits = None
-        winSize = min(128, totalLen)
-        visitedTotal = False
+        best = None
+        for tierIdx, stride in enumerate(strides):
+            bodyTier = bodyHist["tiers"][tierIdx]
+            refTier = refHist["tiers"][tierIdx] if useRelative else None
+            totalLen = min(len(bodyTier[0]), len(refTier[0])) if useRelative else len(bodyTier[0])
+            expectedCommonLen = _countTierAppends(commonStart, globalCount, stride)
 
-        while True:
-            if winSize >= totalLen:
-                winSize = totalLen
-                visitedTotal = True
+            if totalLen == 0:
+                if expectedCommonLen == 0:
+                    break
+                continue
 
-            stride = max(1, winSize // 1500)
-            stepsBack = (winSize - 1) // stride
-            startIdx = max(0, (totalLen - 1) - stepsBack * stride)
-
-            dx, dy = self._sliceTrailWindow(
-                trailX,
-                trailY,
-                startIdx,
+            dx, dy = self._getTierRelativeArrays(
+                bodyTier,
+                refTier,
                 totalLen,
-                stride,
-                bodyOffset=bodyOffset,
-                refXPoints=refXPoints if useRelative else None,
-                refYPoints=refYPoints if useRelative else None,
-                refOffset=refOffset,
                 refIdx=refIdx,
+                tierIdx=tierIdx,
                 refSliceCache=refSliceCache,
             )
             dx = np.append(dx, currDX)
@@ -555,22 +590,20 @@ class PlanetarySimulationEngine:
 
             if dx.size >= 2:
                 cumTheta, revHits = self._cumulativeBackwardAngles(dx, dy)
-                if revHits.size > 0 or visitedTotal:
+                best = (dx, dy, cumTheta, revHits)
+                if revHits.size > 0 or totalLen >= expectedCommonLen:
                     break
-
-                swept = float(cumTheta[-1])
-                if swept > 1e-3:
-                    estWin = int(math.ceil(winSize * (2.0 * np.pi / swept) * 1.75))
-                    nextWin = max(winSize * 4, min(totalLen, max(1024, estWin)))
-                else:
-                    nextWin = max(winSize * 8, 1024)
-                winSize = min(totalLen, nextWin)
             else:
-                if visitedTotal:
+                if best is None:
+                    best = (dx, dy, None, None)
+                if totalLen >= expectedCommonLen:
                     break
-                winSize = min(totalLen, max(1024, winSize * 8))
 
-        if dx is None or dx.size == 0:
+        if best is None:
+            return None, None
+
+        dx, dy, cumTheta, revHits = best
+        if dx.size == 0:
             return None, None
 
         if revHits is not None and revHits.size > 0:
@@ -620,28 +653,26 @@ class PlanetarySimulationEngine:
         if pixelSizeAU is None:
             pixelSizeAU = (2.0 * self.simulationSize) / 550.0 if self.simulationSize > 0 else 0.0
 
-        trailX, trailY = self.bodyPoints[bodyIndex][0], self.bodyPoints[bodyIndex][1]
+        bodyHist = self.bodyPoints["bodies"][bodyIndex]
         currentX = body[POS][0] / AU_METERS
         currentY = body[POS][1] / AU_METERS
 
         refIdx = self.getBodyReference(bodyIndex)
-        if refIdx != -1 and len(self.bodyPoints[refIdx][0]) > 0:
-            refX, refY = self.bodyPoints[refIdx][0], self.bodyPoints[refIdx][1]
+        if refIdx != -1:
+            refHist = self.bodyPoints["bodies"][refIdx]
             refCurrentX = self.listOfBodies[refIdx][POS][0] / AU_METERS
             refCurrentY = self.listOfBodies[refIdx][POS][1] / AU_METERS
         else:
-            refX = refY = None
+            refHist = None
             refCurrentX = refCurrentY = 0.0
 
         plotX, plotY = self._extractOrbitTrail(
-            trailX,
-            trailY,
+            bodyHist,
             currentX,
             currentY,
-            refX,
-            refY,
-            refCurrentX,
-            refCurrentY,
+            refHist=refHist,
+            refCurrentX=refCurrentX,
+            refCurrentY=refCurrentY,
             viewBounds=viewBounds,
             pixelSizeAU=pixelSizeAU,
             refIdx=refIdx,
@@ -676,54 +707,38 @@ class PlanetarySimulationEngine:
             self.focusPoint = [chosenFocusBody[POS][0] / AU_METERS, chosenFocusBody[POS][1] / AU_METERS]
             self.focusBodyName = chosenFocusBody[NAME]
 
-    @staticmethod
-    def _appendPointsForBody(points, xAU, yAU, zAU, vx, vy, vz):
-        """Append one 3D sample to a body's history and cap growth at MAX_HISTORY_POINTS."""
-        if len(points) < 4:
-            points.append([0.0] * len(points[0]))
-        points[0].append(float(xAU))
-        points[1].append(float(yAU))
-        points[2][0].append(float(vx))
-        points[2][1].append(float(vy))
-        points[2][2].append(float(vz))
-        points[3].append(float(zAU))
+    def _recordSampleCoords(self, xsAU, ysAU):
+        """Record one synchronized (x, y) AU sample across all applicable resolution tiers."""
+        history = self.bodyPoints
+        sampleIndex = history["sampleCount"]
+        strides = history["strides"]
+        bodyHistories = history["bodies"]
+        maxLen = TRAIL_TIER_CAPACITY + TRAIL_TIER_TRIM_MARGIN
 
-        if len(points[0]) > MAX_HISTORY_POINTS + 500:
-            points[0] = points[0][-MAX_HISTORY_POINTS:]
-            points[1] = points[1][-MAX_HISTORY_POINTS:]
-            points[2][0] = points[2][0][-MAX_HISTORY_POINTS:]
-            points[2][1] = points[2][1][-MAX_HISTORY_POINTS:]
-            points[2][2] = points[2][2][-MAX_HISTORY_POINTS:]
-            points[3] = points[3][-MAX_HISTORY_POINTS:]
+        for tierIdx, stride in enumerate(strides):
+            if sampleIndex % stride != 0:
+                continue
+            for bodyIdx, bodyHist in enumerate(bodyHistories):
+                tier = bodyHist["tiers"][tierIdx]
+                tier[0].append(float(xsAU[bodyIdx]))
+                tier[1].append(float(ysAU[bodyIdx]))
+                if len(tier[0]) > maxLen:
+                    tier[0] = tier[0][-TRAIL_TIER_CAPACITY:]
+                    tier[1] = tier[1][-TRAIL_TIER_CAPACITY:]
+
+        history["sampleCount"] = sampleIndex + 1
 
     def updateStoredPath(self):
-        """Append each body's current position (in AU) and velocity (in m/s) to bodyPoints."""
-        for bodyNumber, body in enumerate(self.listOfBodies):
-            pos = body[POS]
-            vel = body[VEL]
-            self._appendPointsForBody(
-                self.bodyPoints[bodyNumber],
-                pos[0] / AU_METERS,
-                pos[1] / AU_METERS,
-                pos[2] / AU_METERS,
-                vel[0],
-                vel[1],
-                vel[2],
-            )
-
-    def _appendStoredPathFromArrays(self, pos, vel):
-        """Append NumPy position and velocity arrays directly to bodyPoints."""
+        """Append each body's current (x, y) position (in AU) to multi-resolution bodyPoints."""
         invAU = 1.0 / AU_METERS
-        for bodyNumber in range(len(self.listOfBodies)):
-            self._appendPointsForBody(
-                self.bodyPoints[bodyNumber],
-                pos[bodyNumber, 0] * invAU,
-                pos[bodyNumber, 1] * invAU,
-                pos[bodyNumber, 2] * invAU,
-                vel[bodyNumber, 0],
-                vel[bodyNumber, 1],
-                vel[bodyNumber, 2],
-            )
+        xsAU = [body[POS][0] * invAU for body in self.listOfBodies]
+        ysAU = [body[POS][1] * invAU for body in self.listOfBodies]
+        self._recordSampleCoords(xsAU, ysAU)
+
+    def _appendStoredPathFromArrays(self, pos):
+        """Append NumPy (N, 3) position array (x, y in AU) directly to multi-resolution bodyPoints."""
+        invAU = 1.0 / AU_METERS
+        self._recordSampleCoords(pos[:, 0] * invAU, pos[:, 1] * invAU)
 
     def tickSimulation(self):
         """Advance the simulation by one tick on the scalar path after resolving any collisions."""
@@ -807,12 +822,26 @@ class PlanetarySimulationEngine:
             pos += vel * dt
 
             if self.ticksPerStorageUpdate > 0 and self.simulationTime % self.ticksPerStorageUpdate == 0:
-                self._appendStoredPathFromArrays(pos, vel)
+                self._appendStoredPathFromArrays(pos)
 
             self.simulationTime += 1
 
         self._syncNumpyState(pos, vel)
         self.invalidatePairCache()
+
+    def _pushRollbackSnapshot(self):
+        """Capture a compact pre-step 3D checkpoint for exact rollback across all tiers."""
+        snapshots = self.bodyPoints["snapshots"]
+        snapshots.append({
+            "time": self.simulationTime,
+            "sampleCount": self.bodyPoints["sampleCount"],
+            "state": [
+                [b[POS][0], b[POS][1], b[POS][2], b[VEL][0], b[VEL][1], b[VEL][2]]
+                for b in self.listOfBodies
+            ],
+        })
+        if len(snapshots) > MAX_ROLLBACK_SNAPSHOTS:
+            del snapshots[:-MAX_ROLLBACK_SNAPSHOTS]
 
     def runSimulation(self, setTicks=None):
         """Advance the simulation until targetTicks (or indefinitely if setTicks is None)."""
@@ -822,6 +851,7 @@ class PlanetarySimulationEngine:
             if targetTicks <= self.simulationTime:
                 return
 
+        self._pushRollbackSnapshot()
         startTime = self.simulationTime
         if len(self.listOfBodies) >= NUMPY_BODY_THRESHOLD:
             self._runSimulationNumpy(targetTicks)
@@ -847,30 +877,44 @@ class PlanetarySimulationEngine:
         self.ticksPerStorageUpdate = round(template["storageSeconds"] / dt)
         self.ticksPerPageUpdate = round(template["pageSeconds"] / dt)
         self.simulationName = template["name"]
-        self.bodyPoints = [[[], [], [[], [], []], []] for _ in self.listOfBodies]
-        self.invalidatePairCache()
+        self.resetHistory()
 
     def rollbackSimulation(self):
-        """Roll back the simulation by one page-update interval without rendering."""
-        storedValuesPerUpdate = (
-            max(1, round(self.ticksPerPageUpdate / self.ticksPerStorageUpdate))
-            if self.ticksPerStorageUpdate > 0 else 0
-        )
-        poppedAny = False
-        for _ in range(storedValuesPerUpdate):
-            for index, body in enumerate(self.listOfBodies):
-                points = self.bodyPoints[index]
-                if not points[0]:
-                    continue
-                body[POS][0] = points[0].pop() * AU_METERS
-                body[POS][1] = points[1].pop() * AU_METERS
-                body[VEL][0] = points[2][0].pop()
-                body[VEL][1] = points[2][1].pop()
-                body[VEL][2] = points[2][2].pop()
-                if len(points) > 3 and points[3]:
-                    body[POS][2] = points[3].pop() * AU_METERS
-                poppedAny = True
+        """Roll back the simulation to the most recent pre-step snapshot and rewind trail tiers."""
+        snapshots = self.bodyPoints["snapshots"]
+        numBodies = len(self.listOfBodies)
+        snap = None
+        while snapshots:
+            candidate = snapshots.pop()
+            if len(candidate["state"]) == numBodies:
+                snap = candidate
+                break
 
-        if poppedAny:
-            self.simulationTime = max(0, self.simulationTime - self.ticksPerPageUpdate)
+        if snap is None:
+            self.invalidatePairCache()
+            return
+
+        self.simulationTime = snap["time"]
+        for body, st in zip(self.listOfBodies, snap["state"]):
+            body[POS][0], body[POS][1], body[POS][2] = st[0], st[1], st[2]
+            body[VEL][0], body[VEL][1], body[VEL][2] = st[3], st[4], st[5]
+
+        oldCount = snap["sampleCount"]
+        currCount = self.bodyPoints["sampleCount"]
+        strides = self.bodyPoints["strides"]
+        bodyHistories = self.bodyPoints["bodies"]
+        for tierIdx, stride in enumerate(strides):
+            toDrop = _countTierAppends(oldCount, currCount, stride)
+            if toDrop <= 0:
+                continue
+            for bodyHist in bodyHistories:
+                tier = bodyHist["tiers"][tierIdx]
+                if toDrop >= len(tier[0]):
+                    tier[0].clear()
+                    tier[1].clear()
+                else:
+                    del tier[0][-toDrop:]
+                    del tier[1][-toDrop:]
+
+        self.bodyPoints["sampleCount"] = oldCount
         self.invalidatePairCache()

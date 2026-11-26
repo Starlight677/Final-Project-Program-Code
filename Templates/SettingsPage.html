@@ -17,6 +17,14 @@
                     </button>
                 </li>
             {% endfor %}
+            <li><h3 style="color:white">Template Options:</h3></li>
+            <li>
+                <button type="submit" name="showExperimentalTemplates"
+                        value="{% if showExperimentalTemplates %}0{% else %}1{% endif %}"
+                        class="choice-item{% if showExperimentalTemplates %} selected{% endif %}">
+                    Experimental Templates: {% if showExperimentalTemplates %}Enabled{% else %}Disabled{% endif %}
+                </button>
+            </li>
         </ul>
     </form>
 {% endblock %}

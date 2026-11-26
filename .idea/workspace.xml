@@ -6,8 +6,11 @@
   <component name="ChangeListManager">
     <list default="true" id="d071fc40-22ed-46e2-977b-dded7baf679a" name="Changes" comment="Initial modifications from the review.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/admin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/planetarySimulationEngine.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/planetarySimulationEngine.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/PlanetaryOrbitSimulator/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/NewSystemPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/NewSystemPage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templates/SettingsPage.html" beforeDir="false" afterPath="$PROJECT_DIR$/Templates/SettingsPage.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,23 +47,23 @@
 }</component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.000000070813485" />
-      <entry key="MS500" value="1.0644965930480519" />
-      <entry key="S2" value="2.7557651917953203" />
-      <entry key="S5" value="5.7178472814124826" />
-      <entry key="S10" value="8.04231336248096" />
-      <entry key="S30" value="10.430473567316128" />
-      <entry key="S60" value="11.178283535105914" />
-      <entry key="M2" value="11.628522764351157" />
-      <entry key="M5" value="14.660017975061486" />
-      <entry key="M10" value="26.780229246186764" />
-      <entry key="M15" value="41.10730228509625" />
-      <entry key="M30" value="77.96166617628276" />
-      <entry key="H1" value="120.69910420445397" />
-      <entry key="H2" value="155.91190325331314" />
-      <entry key="H4" value="179.01994952890942" />
-      <entry key="D1" value="201.9507302592244" />
-      <entry key="W1" value="206.26852876970864" />
+      <entry key="MS100" value="1.9304860203630687" />
+      <entry key="MS500" value="4.613529657070186" />
+      <entry key="S2" value="14.032423547927326" />
+      <entry key="S5" value="23.03141428047745" />
+      <entry key="S10" value="28.130616244634776" />
+      <entry key="S30" value="32.474386507888134" />
+      <entry key="S60" value="33.70529381013478" />
+      <entry key="M2" value="34.36532462982872" />
+      <entry key="M5" value="34.97406494808726" />
+      <entry key="M10" value="36.47089228893156" />
+      <entry key="M15" value="40.533705342525266" />
+      <entry key="M30" value="63.248283475059495" />
+      <entry key="H1" value="108.92674017318247" />
+      <entry key="H2" value="159.9674677331061" />
+      <entry key="H4" value="199.3963203319324" />
+      <entry key="D1" value="242.86770446336902" />
+      <entry key="W1" value="251.5198794390108" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -82,23 +85,23 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.9592641877266396" />
-      <entry key="MS500" value="1.0557849770961474" />
-      <entry key="S2" value="2.7507608257767764" />
-      <entry key="S5" value="5.713675641491784" />
-      <entry key="S10" value="8.039326470069966" />
-      <entry key="S30" value="10.42916061469408" />
-      <entry key="S60" value="11.177576660464684" />
-      <entry key="M2" value="11.628139953174777" />
-      <entry key="M5" value="14.659523336094352" />
-      <entry key="M10" value="26.779439174971024" />
-      <entry key="M15" value="41.10644442826126" />
-      <entry key="M30" value="77.96087362815338" />
-      <entry key="H1" value="120.69850737419581" />
-      <entry key="H2" value="155.9115218775466" />
-      <entry key="H4" value="179.01973137194196" />
-      <entry key="D1" value="201.95068932196156" />
-      <entry key="W1" value="206.26852279784364" />
+      <entry key="MS100" value="1.8718162363113229" />
+      <entry key="MS500" value="4.58411942161704" />
+      <entry key="S2" value="14.005723863054177" />
+      <entry key="S5" value="23.01132876583707" />
+      <entry key="S10" value="28.11766709045832" />
+      <entry key="S30" value="32.46921262526045" />
+      <entry key="S60" value="33.70258282331191" />
+      <entry key="M2" value="34.363929614105665" />
+      <entry key="M5" value="34.97346766843953" />
+      <entry key="M10" value="36.47048896617306" />
+      <entry key="M15" value="40.53327003117477" />
+      <entry key="M30" value="63.247710484390595" />
+      <entry key="H1" value="108.92615994485841" />
+      <entry key="H2" value="159.9670274237474" />
+      <entry key="H4" value="199.39604425774527" />
+      <entry key="D1" value="242.86764837147473" />
+      <entry key="W1" value="251.5198711418069" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -109,29 +112,29 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultHtmlFileTemplate": "HTML File",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.main.executor": "Run",
-    "Python.twobodytesting.executor": "Run",
-    "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "git-widget-placeholder": "Extensive-Overwrite",
-    "last_opened_file_path": "C:/Users/mcleo/OneDrive/Documents/ARU Year 4/Final Project/Final Project Program",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.jshint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.jshint": "",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "python.packages.toolwindow.project.migrated.to.right.top.v2": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.twobodytesting.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;Extensive-Overwrite&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/mcleo/OneDrive/Documents/ARU Year 4/Final Project/Final Project Program&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.jshint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.jshint&quot;: &quot;&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;python.packages.toolwindow.project.migrated.to.right.top.v2&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\mcleo\OneDrive\Documents\ARU Year 4\Final Project\Final Project Program\PlanetaryOrbitSimulator" />
